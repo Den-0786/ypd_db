@@ -1,0 +1,321 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Analytics Dashboard - YPG Database{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Attendance Bar Chart
+    fetch('{% url "core:api_attendance_chart_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('attendanceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Sunday Attendance',
+                        data: data.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Attendance Count'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Sunday Attendance Over Time'
+                        }
+                    }
+                }
+            });
+        });
+
+    // Congregation Distribution Pie Chart
+    fetch('{% url "core:api_congregation_pie_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('congregationPieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: data.colors,
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Member Distribution by Congregation'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        });
+
+    // Gender Distribution Histogram
+    fetch('{% url "core:api_gender_distribution" %}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('genderHistogram').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Male',
+                        data: data.male_data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }, {
+                        label: 'Female',
+                        data: data.female_data,
+                        backgroundColor: 'rgba(255, 99, 132, 0.8)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Member Count'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Congregation'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Gender Distribution by Congregation'
+                        }
+                    }
+                }
+            });
+        });
+
+    // Attendance Trends Line Chart
+    fetch('{% url "core:api_attendance_trends" %}')
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Average Attendance',
+                        data: data.data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Average Attendance'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Attendance Trends Over Time'
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line"></i> Analytics Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-download"></i> Export Data
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:export_members_csv' %}" class="btn btn-success w-100">
+                            <i class="fas fa-users"></i> Export Members CSV
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:export_attendance_csv' %}" class="btn btn-info w-100">
+                            <i class="fas fa-calendar"></i> Export Attendance CSV
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:export_members_pdf' %}" class="btn btn-danger w-100">
+                            <i class="fas fa-file-pdf"></i> Export Members PDF
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:export_attendance_pdf' %}" class="btn btn-warning w-100">
+                            <i class="fas fa-file-pdf"></i> Export Attendance PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Sunday Attendance
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="attendanceChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie"></i> Congregation Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="congregationPieChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar"></i> Gender Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="genderHistogram" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> Attendance Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendsChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Analytics Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Sunday Attendance Chart</h6>
+                        <p class="text-muted">Shows attendance trends over the last 8 weeks. Helps identify patterns and growth.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Congregation Distribution</h6>
+                        <p class="text-muted">Pie chart showing member distribution across congregations. Each congregation has its unique color.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6>Gender Distribution</h6>
+                        <p class="text-muted">Histogram showing male vs female members per congregation for demographic analysis.</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h6>Attendance Trends</h6>
+                        <p class="text-muted">Line chart showing average attendance over time to identify long-term trends and seasonal patterns.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Data Export</h6>
+                        <p class="text-muted">Export member and attendance data as CSV files for external analysis and reporting.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

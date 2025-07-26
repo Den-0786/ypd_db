@@ -1,0 +1,116 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Dashboard - YPG Database{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-users"></i> Total Members
+                </h5>
+                <h2 class="card-text">{{ total_members }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-user-check"></i> Active Members
+                </h5>
+                <h2 class="card-text">{{ active_members }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-church"></i> Congregations
+                </h5>
+                <h2 class="card-text">{{ congregations.count }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-church"></i> Congregations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for congregation in congregations %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100" style="border-left: 4px solid {{ congregation.background_color }}">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ congregation.name }}</h5>
+                                <p class="card-text text-muted">{{ congregation.location }}</p>
+                                <a href="{% url 'core:congregation_dashboard' congregation.id %}" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-eye"></i> View Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted">No congregations found. <a href="/admin/">Add some in the admin panel.</a></p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-tools"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:add_member' %}" class="btn btn-success w-100">
+                            <i class="fas fa-user-plus"></i> Add Member
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:log_attendance' %}" class="btn btn-info w-100">
+                            <i class="fas fa-calendar-check"></i> Log Attendance
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:bulk_registration' %}" class="btn btn-warning w-100">
+                            <i class="fas fa-users"></i> Bulk Registration
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'core:export_members_csv' %}" class="btn btn-secondary w-100">
+                            <i class="fas fa-download"></i> Export CSV
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
