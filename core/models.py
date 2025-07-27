@@ -112,6 +112,12 @@ class Guilder(models.Model):
 
     class Meta:
         ordering = ["first_name", "last_name"]
+        indexes = [
+            models.Index(fields=['first_name', 'last_name']),
+            models.Index(fields=['phone_number']),
+            models.Index(fields=['congregation', 'membership_status']),
+            models.Index(fields=['is_executive', 'executive_position']),
+        ]
 
 
 class SundayAttendance(models.Model):
@@ -126,6 +132,10 @@ class SundayAttendance(models.Model):
     class Meta:
         unique_together = ["congregation", "date"]
         ordering = ["-date"]
+        indexes = [
+            models.Index(fields=['congregation', 'date']),
+            models.Index(fields=['date']),
+        ]
 
     def save(self, *args, **kwargs):
         self.total_count = self.male_count + self.female_count
@@ -190,6 +200,11 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['congregation', 'notification_type']),
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
