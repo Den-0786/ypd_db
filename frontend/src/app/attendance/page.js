@@ -499,24 +499,24 @@ export default function AttendancePage() {
       )}
       <div className="space-y-6">
         {/* Attendance Management Card */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                 <i className="fas fa-calendar-check text-blue-600 mr-3"></i>
                 Attendance Management
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 dark:text-gray-300 mt-2">
                 Track Sunday attendance across congregations
               </p>
               <div className="mt-2">
-                <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-semibold mr-2">
+                <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-semibold mr-2">
                   This Sunday Progress: {sundayProgress}
                 </span>
               </div>
               <div className="mt-2 flex flex-col md:flex-row gap-2">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex-1">
-                  <div className="font-semibold text-green-700 text-xs mb-1">
+                <div className="bg-green-50 dark:bg-gray-700 border border-green-200 dark:border-gray-600 rounded-lg p-3 flex-1">
+                  <div className="font-semibold text-green-700 dark:text-green-300 text-xs mb-1">
                     Submitted ({submittedCongregations.length})
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -524,19 +524,21 @@ export default function AttendancePage() {
                       submittedCongregations.map((name) => (
                         <span
                           key={name}
-                          className="bg-green-200 text-green-900 px-2 py-0.5 rounded text-xs font-medium"
+                          className="bg-green-200 dark:bg-green-800 text-green-900 dark:text-green-200 px-2 py-0.5 rounded text-xs font-medium"
                         >
                           {name}
                         </span>
                       ))
                     ) : (
-                      <span className="text-gray-400 text-xs">None</span>
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">
+                        None
+                      </span>
                     )}
                   </div>
                 </div>
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex-1">
+                <div className="bg-red-50 dark:bg-gray-700 border border-red-200 dark:border-gray-600 rounded-lg p-3 flex-1">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="font-semibold text-red-700 text-xs">
+                    <div className="font-semibold text-red-700 dark:text-red-300 text-xs">
                       Not Submitted ({notSubmittedCongregations.length})
                     </div>
                     {notSubmittedCongregations.length > 0 && (
@@ -560,13 +562,15 @@ export default function AttendancePage() {
                       notSubmittedCongregations.map((name) => (
                         <span
                           key={name}
-                          className="bg-red-200 text-red-900 px-2 py-0.5 rounded text-xs font-medium"
+                          className="bg-red-200 dark:bg-red-800 text-red-900 dark:text-red-200 px-2 py-0.5 rounded text-xs font-medium"
                         >
                           {name}
                         </span>
                       ))
                     ) : (
-                      <span className="text-gray-400 text-xs">None</span>
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">
+                        None
+                      </span>
                     )}
                   </div>
                 </div>
@@ -583,22 +587,26 @@ export default function AttendancePage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white shadow rounded-lg p-4 flex flex-col sm:flex-row flex-wrap gap-2 items-center">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 flex flex-col sm:flex-row flex-wrap gap-2 items-center">
           <div className="w-full max-w-xs sm:w-40">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
               Congregation
             </label>
             <select
               value={selectedCongregation}
               onChange={(e) => setSelectedCongregation(e.target.value)}
-              className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+              className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
               aria-label="Filter by congregation"
             >
-              <option value="" className="text-gray-800">
+              <option value="" className="text-gray-800 dark:text-white">
                 All Congregations
               </option>
               {congregationNames.map((name) => (
-                <option key={name} value={name} className="text-gray-800">
+                <option
+                  key={name}
+                  value={name}
+                  className="text-gray-800 dark:text-white"
+                >
                   {name}
                 </option>
               ))}
@@ -606,62 +614,70 @@ export default function AttendancePage() {
           </div>
           <div className="flex flex-row gap-2 w-full sm:w-auto">
             <div className="w-full max-w-xs sm:w-28">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Week
               </label>
               <select
                 value={selectedWeek}
                 onChange={(e) => setSelectedWeek(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="Filter by week"
               >
-                <option value="All" className="text-gray-800">
+                <option value="All" className="text-gray-800 dark:text-white">
                   All
                 </option>
                 {allWeeks.map((week) => (
                   <option
                     key={week}
                     value={week}
-                    className="text-gray-800"
+                    className="text-gray-800 dark:text-white"
                   >{`Week ${week}`}</option>
                 ))}
               </select>
             </div>
             <div className="w-full max-w-xs sm:w-28">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Month
               </label>
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="Filter by month"
               >
-                <option value="All" className="text-gray-800">
+                <option value="All" className="text-gray-800 dark:text-white">
                   All
                 </option>
                 {allMonths.map((month) => (
-                  <option key={month} value={month} className="text-gray-800">
+                  <option
+                    key={month}
+                    value={month}
+                    className="text-gray-800 dark:text-white"
+                  >
                     {month}
                   </option>
                 ))}
               </select>
             </div>
             <div className="w-full max-w-xs sm:w-28">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Year
               </label>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="Filter by year"
               >
-                <option value="All" className="text-gray-800">
+                <option value="All" className="text-gray-800 dark:text-white">
                   All
                 </option>
                 {allYears.map((year) => (
-                  <option key={year} value={year} className="text-gray-800">
+                  <option
+                    key={year}
+                    value={year}
+                    className="text-gray-800 dark:text-white"
+                  >
                     {year}
                   </option>
                 ))}
@@ -673,7 +689,7 @@ export default function AttendancePage() {
         {/* Colored Summary Cards */}
         <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {/* Each card is min-w-[180px] to fit horizontally and whitespace-nowrap for scroll */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
+          <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Total Male</p>
@@ -686,7 +702,7 @@ export default function AttendancePage() {
               {yearProgress}
             </div>
           </div>
-          <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
+          <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Total Female</p>
@@ -699,7 +715,7 @@ export default function AttendancePage() {
               {yearProgress}
             </div>
           </div>
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
+          <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Grand Total</p>
@@ -712,7 +728,7 @@ export default function AttendancePage() {
               {yearProgress}
             </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
+          <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Congregations</p>
@@ -731,12 +747,12 @@ export default function AttendancePage() {
         </div>
 
         {/* Attendance Records Table */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
           {/* Table Area for Print */}
           <div id="attendance-table-area">
-            <div className="px-6 py-4 border-b border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   Recent Attendance Records
                 </h3>
                 {selectedRecords.length > 0 && (
@@ -763,10 +779,10 @@ export default function AttendancePage() {
             </div>
 
             <div className="overflow-x-auto w-full">
-              <table className="w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-12">
                       <input
                         type="checkbox"
                         checked={selectAll}
@@ -775,32 +791,32 @@ export default function AttendancePage() {
                         title="Select all records"
                       />
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/6">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/4">
                       Congregation
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/8">
                       Male
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/8">
                       Female
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/8">
                       Total
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider w-1/8">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {filteredRecords.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
-                        className="py-16 text-center text-gray-400"
+                        className="py-16 text-center text-gray-400 dark:text-gray-500"
                       >
                         <div className="flex flex-col items-center justify-center">
                           <i className="fas fa-folder-open text-4xl mb-2"></i>
@@ -817,7 +833,10 @@ export default function AttendancePage() {
                   ) : (
                     <React.Fragment>
                       {filteredRecords.map((record) => (
-                        <tr key={record.id} className="hover:bg-gray-50">
+                        <tr
+                          key={record.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
                           <td className="px-6 py-4 whitespace-nowrap">
                             <input
                               type="checkbox"
@@ -826,20 +845,20 @@ export default function AttendancePage() {
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {new Date(record.date).toLocaleDateString()}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {record.congregation.name}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {record.male_count}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {record.female_count}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                               {record.total_count}
                             </span>
                           </td>
@@ -892,7 +911,7 @@ export default function AttendancePage() {
               </table>
             </div>
             {/* Export/Print Buttons at Bottom */}
-            <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-gray-200 justify-end">
+            <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700 justify-end">
               <button
                 onClick={printTable}
                 className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"

@@ -230,22 +230,22 @@ export default function AnalyticsPage() {
   return (
     <DashboardLayout currentPage="Analytics" currentPageProps={{ filtered }}>
       <div className="space-y-8">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             <i className="fas fa-chart-bar text-blue-600 mr-3"></i>
             Analytics Dashboard
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
             Comprehensive insights into YPG attendance and membership data
           </p>
         </div>
         {/* Filters */}
-        <div className="bg-white shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex flex-row gap-3 items-center overflow-x-auto">
             <div className="min-w-[180px]">
               <label
                 htmlFor="analytics-cong-filter"
-                className="block text-xs font-medium text-gray-700 mb-1"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Congregation
               </label>
@@ -253,12 +253,18 @@ export default function AnalyticsPage() {
                 id="analytics-cong-filter"
                 value={selectedCongregation}
                 onChange={(e) => setSelectedCongregation(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="Filter by congregation"
               >
-                <option value="All">All Congregations</option>
+                <option value="All" className="text-gray-800 dark:text-white">
+                  All Congregations
+                </option>
                 {chartData.membersDatabase.congregations.map((c) => (
-                  <option key={c.name} value={c.name}>
+                  <option
+                    key={c.name}
+                    value={c.name}
+                    className="text-gray-800 dark:text-white"
+                  >
                     {c.name}
                   </option>
                 ))}
@@ -267,7 +273,7 @@ export default function AnalyticsPage() {
             <div className="min-w-[140px]">
               <label
                 htmlFor="analytics-date-start"
-                className="block text-xs font-medium text-gray-700 mb-1"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Start Date
               </label>
@@ -278,14 +284,14 @@ export default function AnalyticsPage() {
                 onChange={(e) =>
                   setDateRange({ ...dateRange, start: e.target.value })
                 }
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="Start date"
               />
             </div>
             <div className="min-w-[140px]">
               <label
                 htmlFor="analytics-date-end"
-                className="block text-xs font-medium text-gray-700 mb-1"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 End Date
               </label>
@@ -296,78 +302,82 @@ export default function AnalyticsPage() {
                 onChange={(e) =>
                   setDateRange({ ...dateRange, end: e.target.value })
                 }
-                className="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-xs"
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
                 aria-label="End date"
               />
             </div>
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             <i className="fas fa-calendar-check text-blue-600 mr-3"></i>
             Sunday Attendance Analytics
           </h2>
 
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 mb-8">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Total Attendance</p>
                   <p className="text-lg font-bold">
                     {chartData.sundayAttendance.totalAttendance}
                   </p>
                 </div>
-                <i className="fas fa-users text-xl opacity-80"></i>
+                <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Average Attendance</p>
                   <p className="text-lg font-bold">
                     {chartData.sundayAttendance.averageAttendance}
                   </p>
                 </div>
-                <i className="fas fa-chart-line text-xl opacity-80"></i>
+                <i className="fas fa-chart-line text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Congregations</p>
                   <p className="text-lg font-bold">
                     {chartData.sundayAttendance.congregationsCount}
                   </p>
                 </div>
-                <i className="fas fa-church text-xl opacity-80"></i>
+                <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Growth</p>
                   <p className="text-lg font-bold">
                     {chartData.sundayAttendance.growth}%
                   </p>
                 </div>
-                <i className="fas fa-arrow-up text-xl opacity-80"></i>
+                <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Weekly Attendance Trend
               </h3>
               <div className="space-y-4">
-                <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
-                  <div className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-md border border-gray-100 dark:border-gray-600">
+                  <div className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
                     <i className="fas fa-calendar-week text-blue-500 mr-2"></i>
                     January 2025
                   </div>
-                  <div className="flex items-end justify-center space-x-4">
+                  <div className="flex items-end justify-between space-x-4">
                     {chartData.sundayAttendance.weeklyTrend
                       .slice(0, 4)
                       .map((week, index) => (
@@ -379,7 +389,9 @@ export default function AnalyticsPage() {
                                 height: `${(week.male / Math.max(...chartData.sundayAttendance.weeklyTrend.map((w) => Math.max(w.male, w.female, w.total)))) * 100}%`,
                               }}
                             >
-                              M: {week.male}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                M: {week.male}
+                              </span>
                             </div>
                             <div
                               className="w-8 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
@@ -387,7 +399,9 @@ export default function AnalyticsPage() {
                                 height: `${(week.female / Math.max(...chartData.sundayAttendance.weeklyTrend.map((w) => Math.max(w.male, w.female, w.total)))) * 100}%`,
                               }}
                             >
-                              F: {week.female}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                F: {week.female}
+                              </span>
                             </div>
                             <div
                               className="w-8 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
@@ -720,37 +734,41 @@ export default function AnalyticsPage() {
               </div>
             </div>
             {/* Monthly Trend Chart */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Monthly Attendance Trend
               </h3>
 
               {/* Large Screen - All months in one card */}
               <div className="hidden lg:block">
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-end justify-between space-x-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-end justify-between">
                     {chartData.sundayAttendance.monthlyTrend.map(
                       (month, index) => (
                         <div key={index} className="flex flex-col items-center">
                           <div className="flex space-x-0 h-48 mb-1 items-end">
                             <div
-                              className="w-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.male / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              M: {month.male}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                M: {month.male}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.female / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              F: {month.female}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                F: {month.female}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.total / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
@@ -760,7 +778,7 @@ export default function AnalyticsPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-gray-600 dark:text-gray-300">
                             {month.month}
                           </div>
                         </div>
@@ -773,31 +791,35 @@ export default function AnalyticsPage() {
               {/* Small Screen - Two separate cards */}
               <div className="lg:hidden space-y-4">
                 {/* January to June */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-end justify-between space-x-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-end justify-between">
                     {chartData.sundayAttendance.monthlyTrend
                       .slice(0, 6)
                       .map((month, index) => (
                         <div key={index} className="flex flex-col items-center">
                           <div className="flex space-x-0 h-48 mb-1 items-end">
                             <div
-                              className="w-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.male / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              M: {month.male}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                M: {month.male}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.female / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              F: {month.female}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                F: {month.female}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.total / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
@@ -807,7 +829,7 @@ export default function AnalyticsPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-gray-600 dark:text-gray-300">
                             {month.month}
                           </div>
                         </div>
@@ -816,31 +838,35 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* July to December */}
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-end justify-between space-x-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-end justify-between">
                     {chartData.sundayAttendance.monthlyTrend
                       .slice(6, 12)
                       .map((month, index) => (
                         <div key={index} className="flex flex-col items-center">
                           <div className="flex space-x-0 h-48 mb-1 items-end">
                             <div
-                              className="w-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.male / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              M: {month.male}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                M: {month.male}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.female / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
                             >
-                              F: {month.female}
+                              <span className="transform -rotate-90 whitespace-nowrap">
+                                F: {month.female}
+                              </span>
                             </div>
                             <div
-                              className="w-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                              className="w-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
                               style={{
                                 height: `${(month.total / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
                               }}
@@ -850,7 +876,7 @@ export default function AnalyticsPage() {
                               </span>
                             </div>
                           </div>
-                          <div className="text-xs text-gray-600">
+                          <div className="text-xs text-gray-600 dark:text-gray-300">
                             {month.month}
                           </div>
                         </div>
@@ -886,7 +912,6 @@ export default function AnalyticsPage() {
                 </div>
 
                 <div className="relative h-[16rem] bg-gray-800 rounded-lg p-4 border border-gray-600">
-                  {/* Grid Lines */}
                   <div className="absolute inset-0 flex flex-col justify-between">
                     {[...Array(6)].map((_, i) => (
                       <div
@@ -896,14 +921,12 @@ export default function AnalyticsPage() {
                     ))}
                   </div>
 
-                  {/* Y-axis labels */}
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400">
                     {[10, 8, 6, 4, 2, 0].map((num) => (
                       <span key={num}>{num}</span>
                     ))}
                   </div>
 
-                  {/* Line Graph */}
                   <svg
                     className="absolute inset-0 w-full h-full"
                     viewBox="0 0 100 100"
@@ -930,7 +953,6 @@ export default function AnalyticsPage() {
                       </filter>
                     </defs>
 
-                    {/* Background Gray Line */}
                     <polyline
                       fill="none"
                       stroke="rgba(156, 163, 175, 0.3)"
@@ -945,7 +967,6 @@ export default function AnalyticsPage() {
                         .join(" ")}
                     />
 
-                    {/* Main Blue Line */}
                     <polyline
                       fill="none"
                       stroke="url(#monthlyLineGradient)"
@@ -1079,34 +1100,38 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Yearly Trend Chart */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Yearly Attendance Trend
               </h3>
 
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-end justify-between space-x-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                <div className="flex items-end justify-between">
                   {chartData.sundayAttendance.yearlyTrend.map((year, index) => (
                     <div key={index} className="flex flex-col items-center">
                       <div className="flex space-x-0 h-48 mb-1 items-end">
                         <div
-                          className="w-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                          className="w-4 lg:w-6 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
                           style={{
                             height: `${(year.male / Math.max(...chartData.sundayAttendance.yearlyTrend.map((y) => Math.max(y.male, y.female, y.total)))) * 100}%`,
                           }}
                         >
-                          M: {year.male}
+                          <span className="transform -rotate-90 whitespace-nowrap">
+                            M: {year.male}
+                          </span>
                         </div>
                         <div
-                          className="w-6 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                          className="w-4 lg:w-6 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
                           style={{
                             height: `${(year.female / Math.max(...chartData.sundayAttendance.yearlyTrend.map((y) => Math.max(y.male, y.female, y.total)))) * 100}%`,
                           }}
                         >
-                          F: {year.female}
+                          <span className="transform -rotate-90 whitespace-nowrap">
+                            F: {year.female}
+                          </span>
                         </div>
                         <div
-                          className="w-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
+                          className="w-4 lg:w-6 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
                           style={{
                             height: `${(year.total / Math.max(...chartData.sundayAttendance.yearlyTrend.map((y) => Math.max(y.male, y.female, y.total)))) * 100}%`,
                           }}
@@ -1116,7 +1141,9 @@ export default function AnalyticsPage() {
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs text-gray-600">{year.year}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-300">
+                        {year.year}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1343,27 +1370,29 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Members Database Analytics Section */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
             <i className="fas fa-database text-green-600 mr-3"></i>
             Members Database Analytics
           </h2>
 
           {/* Members Key Metrics */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 mb-8">
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Total Members</p>
                   <p className="text-lg font-bold">
                     {chartData.membersDatabase.totalMembers}
                   </p>
                 </div>
-                <i className="fas fa-users text-xl opacity-80"></i>
+                <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Male Members</p>
                   <p className="text-lg font-bold">
@@ -1373,11 +1402,12 @@ export default function AnalyticsPage() {
                     )}
                   </p>
                 </div>
-                <i className="fas fa-mars text-xl opacity-80"></i>
+                <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Female Members</p>
                   <p className="text-lg font-bold">
@@ -1387,45 +1417,44 @@ export default function AnalyticsPage() {
                     )}
                   </p>
                 </div>
-                <i className="fas fa-venus text-xl opacity-80"></i>
+                <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-              <div className="flex items-center justify-between">
+            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
                 <div>
                   <p className="text-xs opacity-90">Congregations</p>
                   <p className="text-lg font-bold">
                     {chartData.membersDatabase.congregations.length}
                   </p>
                 </div>
-                <i className="fas fa-church text-xl opacity-80"></i>
+                <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
           </div>
 
-          {/* Members Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Congregation Distribution */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 lg:p-4 lg:max-h-[50rem]">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Members by Congregation
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-3 lg:space-y-2">
                 {chartData.membersDatabase.congregations.map(
                   (congregation, index) => (
                     <div
                       key={index}
-                      className="bg-white rounded-lg p-4 shadow-sm"
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 lg:p-3 shadow-sm"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           {congregation.name}
                         </span>
-                        <span className="text-sm font-bold text-gray-900">
+                        <span className="text-sm font-bold text-gray-900 dark:text-white">
                           {congregation.count}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div
                           className="h-2 rounded-full"
                           style={{
@@ -1441,40 +1470,95 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Gender Distribution */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 Gender Distribution by Congregation
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Large screens - Grid layout with cards */}
+              <div className="hidden lg:grid grid-cols-1 gap-6">
                 {chartData.membersDatabase.genderDistribution.map(
                   (item, index) => (
-                    <div key={index} className="text-center">
-                      <h4 className="text-sm font-medium text-gray-900 mb-3">
-                        {item.congregation}
-                      </h4>
-                      <div className="flex justify-center space-x-4">
-                        <div className="text-center">
-                          <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <i className="fas fa-mars text-white text-lg"></i>
+                    <div
+                      key={index}
+                      className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                      <div className="relative z-10">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
+                          {item.congregation}
+                        </h4>
+                        <div className="flex justify-center space-x-4">
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                              <i className="fas fa-mars text-white text-sm"></i>
+                            </div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {item.male}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Male
+                            </div>
                           </div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.male}
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                              <i className="fas fa-venus text-white text-sm"></i>
+                            </div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              {item.female}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Female
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">Male</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <i className="fas fa-venus text-white text-lg"></i>
-                          </div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {item.female}
-                          </div>
-                          <div className="text-xs text-gray-500">Female</div>
                         </div>
                       </div>
                     </div>
                   )
                 )}
+              </div>
+              {/* Small screens - Horizontal scroll with cards */}
+              <div className="lg:hidden overflow-x-auto pb-2">
+                <div className="flex gap-4 min-w-max">
+                  {chartData.membersDatabase.genderDistribution.map(
+                    (item, index) => (
+                      <div
+                        key={index}
+                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group min-w-[200px] flex-shrink-0"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                        <div className="relative z-10">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
+                            {item.congregation}
+                          </h4>
+                          <div className="flex justify-center space-x-4">
+                            <div className="text-center">
+                              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                                <i className="fas fa-mars text-white text-sm"></i>
+                              </div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {item.male}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Male
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                                <i className="fas fa-venus text-white text-sm"></i>
+                              </div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {item.female}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                Female
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
             </div>
           </div>

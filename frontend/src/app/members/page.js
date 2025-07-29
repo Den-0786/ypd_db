@@ -434,6 +434,12 @@ export default function MembersPage() {
   const totalCommunicants = members.filter(
     (member) => member.attends_communion
   ).length;
+  const totalConfirmants = members.filter(
+    (member) => member.confirmation === "Yes"
+  ).length;
+  const totalBaptisms = members.filter(
+    (member) => member.baptism === "Yes"
+  ).length;
 
   // Filter members based on search and congregation
   const filteredMembers = members.filter((member) => {
@@ -514,94 +520,142 @@ export default function MembersPage() {
         className={`space-y-6${viewModalOpen ? " modal-blur pointer-events-none select-none" : ""}`}
       >
         {/* Statistics Cards */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
+        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Total Members</p>
                 <p className="text-lg font-bold">{totalMembers}</p>
               </div>
-              <i className="fas fa-users text-xl opacity-80"></i>
+              <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
+          <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Male Members</p>
                 <p className="text-lg font-bold">{totalMale}</p>
               </div>
-              <i className="fas fa-mars text-xl opacity-80"></i>
+              <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
+          <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Female Members</p>
                 <p className="text-lg font-bold">{totalFemale}</p>
               </div>
-              <i className="fas fa-venus text-xl opacity-80"></i>
+              <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
+          <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Congregations</p>
                 <p className="text-lg font-bold">{totalCongregations}</p>
               </div>
-              <i className="fas fa-church text-xl opacity-80"></i>
+              <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
+          <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
               <div>
                 <p className="text-xs opacity-90">Communicants</p>
                 <p className="text-lg font-bold">{totalCommunicants}</p>
               </div>
-              <i className="fas fa-wine-glass text-xl opacity-80"></i>
+              <i className="fas fa-wine-glass text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+            </div>
+          </div>
+          <div className="bg-amber-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-amber-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-amber-600/20 dark:from-amber-400/10 dark:to-amber-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-xs opacity-90">Confirmants</p>
+                <p className="text-lg font-bold">{totalConfirmants}</p>
+              </div>
+              <i className="fas fa-cross text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+            </div>
+          </div>
+          <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-xs opacity-90">Baptisms</p>
+                <p className="text-lg font-bold">{totalBaptisms}</p>
+              </div>
+              <i className="fas fa-water text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+            </div>
+          </div>
+          <div className="bg-amber-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-amber-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-amber-600/20 dark:from-amber-400/10 dark:to-amber-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-xs opacity-90">Confirmants</p>
+                <p className="text-lg font-bold">{totalConfirmants}</p>
+              </div>
+              <i className="fas fa-cross text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+            </div>
+          </div>
+          <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-xs opacity-90">Baptisms</p>
+                <p className="text-lg font-bold">{totalBaptisms}</p>
+              </div>
+              <i className="fas fa-water text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
         </div>
 
         {/* District Executives Section - Only show when no congregation is selected */}
         {!selectedCongregation && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
-                <i className="fas fa-crown text-yellow-500 mr-2"></i>
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <i className="fas fa-crown text-blue-500 mr-2"></i>
                 District Executive Committee
               </h2>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full divide-y divide-gray-200">
-                <thead className="bg-yellow-50">
+              <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-blue-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Name
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Phone
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Gender
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Congregation
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Position
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Communicant
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {districtExecutives.map((executive) => (
-                    <tr key={executive.id} className="hover:bg-yellow-50">
+                    <tr
+                      key={executive.id}
+                      className="hover:bg-blue-50 dark:hover:bg-gray-600"
+                    >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -613,17 +667,13 @@ export default function MembersPage() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {executive.first_name} {executive.last_name}
                             </div>
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                              <i className="fas fa-crown mr-1"></i>
-                              District Executive
-                            </span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {executive.phone_number}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -651,7 +701,7 @@ export default function MembersPage() {
                           {executive.congregation.name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {executive.executive_position}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -715,14 +765,14 @@ export default function MembersPage() {
         )}
 
         {/* Congregation Search and Filter */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
             <i className="fas fa-search text-blue-500 mr-2"></i>
             Search & Filter
           </h2>
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+          <div className="flex flex-row gap-4 items-end">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-800 mb-2">
+              <label className="block text-sm font-medium text-gray-800 dark:text-white mb-2">
                 Search Members
               </label>
               <input
@@ -730,23 +780,29 @@ export default function MembersPage() {
                 placeholder="Search by name or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-sm font-medium text-gray-800 mb-2">
+              <label className="block text-sm font-medium text-gray-800 dark:text-white mb-2">
                 Filter by Congregation
               </label>
               <select
                 value={selectedCongregation}
                 onChange={(e) => handleCongregationSelect(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="">All Congregations</option>
+                <option value="" className="dark:text-white">
+                  All Congregations
+                </option>
                 {[
                   ...new Set(members.map((member) => member.congregation.name)),
                 ].map((congregation) => (
-                  <option key={congregation} value={congregation}>
+                  <option
+                    key={congregation}
+                    value={congregation}
+                    className="dark:text-white"
+                  >
                     {congregation}
                   </option>
                 ))}
@@ -757,8 +813,8 @@ export default function MembersPage() {
 
         {/* Congregation Statistics (when congregation is selected) */}
         {selectedCongregation && (
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               <i className="fas fa-church text-purple-500 mr-2"></i>
               {selectedCongregation} Statistics
             </h3>
@@ -782,13 +838,13 @@ export default function MembersPage() {
 
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-blue-600 font-medium">
+                        <p className="text-sm text-blue-600 dark:text-blue-300 font-medium">
                           Total Members
                         </p>
-                        <p className="text-2xl font-bold text-blue-900">
+                        <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
                           {congregationTotal}
                         </p>
                       </div>
@@ -796,13 +852,13 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-green-600 font-medium">
+                        <p className="text-sm text-green-600 dark:text-green-300 font-medium">
                           Male
                         </p>
-                        <p className="text-2xl font-bold text-green-900">
+                        <p className="text-2xl font-bold text-green-900 dark:text-green-100">
                           {congregationMale}
                         </p>
                       </div>
@@ -810,13 +866,13 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
+                  <div className="bg-pink-50 dark:bg-pink-900 border border-pink-200 dark:border-pink-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-pink-600 font-medium">
+                        <p className="text-sm text-pink-600 dark:text-pink-300 font-medium">
                           Female
                         </p>
-                        <p className="text-2xl font-bold text-pink-900">
+                        <p className="text-2xl font-bold text-pink-900 dark:text-pink-100">
                           {congregationFemale}
                         </p>
                       </div>
@@ -824,13 +880,13 @@ export default function MembersPage() {
                     </div>
                   </div>
 
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm text-yellow-600 font-medium">
+                        <p className="text-sm text-yellow-600 dark:text-yellow-300 font-medium">
                           Communicants
                         </p>
-                        <p className="text-2xl font-bold text-yellow-900">
+                        <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
                           {congregationCommunicants}
                         </p>
                       </div>
@@ -852,41 +908,44 @@ export default function MembersPage() {
 
               if (congregationExecutives.length > 0) {
                 return (
-                  <div className="bg-white shadow rounded-lg overflow-hidden mb-6">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                      <h4 className="text-lg font-semibold text-gray-900">
+                  <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden mb-6">
+                    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
                         <i className="fas fa-star text-blue-500 mr-2"></i>
                         {selectedCongregation} Branch Executives
                       </h4>
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full divide-y divide-gray-200">
-                        <thead className="bg-blue-50">
+                      <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-blue-50 dark:bg-blue-900">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Name
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Phone
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Gender
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Position
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Communicant
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-blue-200 uppercase tracking-wider">
                               Actions
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                           {congregationExecutives.map((executive) => (
-                            <tr key={executive.id} className="hover:bg-blue-50">
+                            <tr
+                              key={executive.id}
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                            >
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-10 w-10">
@@ -898,7 +957,7 @@ export default function MembersPage() {
                                     </div>
                                   </div>
                                   <div className="ml-4">
-                                    <div className="text-sm font-medium text-gray-900">
+                                    <div className="text-sm font-medium text-gray-900 dark:text-white">
                                       {executive.first_name}{" "}
                                       {executive.last_name}
                                     </div>
@@ -995,13 +1054,13 @@ export default function MembersPage() {
         )}
 
         {/* Members List */}
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                 Members ({filteredMembers.length} total)
               </h3>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Page {currentPage} of {totalPages}
               </div>
             </div>
@@ -1009,9 +1068,9 @@ export default function MembersPage() {
 
           {/* Top Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
+            <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
                   Showing {indexOfFirstMember + 1} to{" "}
                   {Math.min(indexOfLastMember, filteredMembers.length)} of{" "}
                   {filteredMembers.length} results
@@ -1022,8 +1081,8 @@ export default function MembersPage() {
                     disabled={currentPage === 1}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       currentPage === 1
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                        ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                     }`}
                   >
                     <i className="fas fa-chevron-left mr-1"></i>
@@ -1050,7 +1109,7 @@ export default function MembersPage() {
                           className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                             currentPage === pageNumber
                               ? "bg-blue-600 text-white shadow-sm"
-                              : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                              : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                           }`}
                         >
                           {pageNumber}
@@ -1064,8 +1123,8 @@ export default function MembersPage() {
                     disabled={currentPage === totalPages}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       currentPage === totalPages
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                        ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                     }`}
                   >
                     Next
@@ -1077,19 +1136,19 @@ export default function MembersPage() {
           )}
 
           <div className="overflow-x-auto" id="members-table-area">
-            <table className="w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Phone
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Gender
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Congregation
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1103,9 +1162,12 @@ export default function MembersPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {currentMembers.map((member) => (
-                  <tr key={member.id} className="hover:bg-gray-50">
+                  <tr
+                    key={member.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
@@ -1117,11 +1179,11 @@ export default function MembersPage() {
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {member.first_name} {member.last_name}
                           </div>
                           {member.is_district_executive && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                               <i className="fas fa-crown mr-1"></i>
                               District Executive
                             </span>
@@ -1136,7 +1198,7 @@ export default function MembersPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {member.phone_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1163,7 +1225,7 @@ export default function MembersPage() {
                         {member.congregation.name}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       {member.executive_position
                         ? member.executive_position
                             .replace("_", " ")
@@ -1230,9 +1292,9 @@ export default function MembersPage() {
 
           {/* Bottom Pagination */}
           {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
                   Showing {indexOfFirstMember + 1} to{" "}
                   {Math.min(indexOfLastMember, filteredMembers.length)} of{" "}
                   {filteredMembers.length} results
@@ -1243,8 +1305,8 @@ export default function MembersPage() {
                     disabled={currentPage === 1}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       currentPage === 1
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                        ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                     }`}
                   >
                     <i className="fas fa-chevron-left mr-1"></i>
@@ -1269,7 +1331,7 @@ export default function MembersPage() {
                           className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                             currentPage === pageNumber
                               ? "bg-blue-600 text-white shadow-sm"
-                              : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                              : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                           }`}
                         >
                           {pageNumber}
@@ -1282,8 +1344,8 @@ export default function MembersPage() {
                     disabled={currentPage === totalPages}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                       currentPage === totalPages
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 shadow-sm"
+                        ? "bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                        : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 shadow-sm"
                     }`}
                   >
                     Next
@@ -1301,40 +1363,6 @@ export default function MembersPage() {
             >
               <i className="fas fa-print mr-1"></i> Print Table
             </button>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="bg-white shadow rounded-lg p-4">
-          <h3 className="text-base font-semibold text-gray-900 mb-3">
-            Quick Actions
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <a
-              href="/members/add"
-              className="flex items-center justify-center bg-blue-600 text-white px-2 py-2 rounded-lg hover:bg-blue-700 transition text-xs font-medium shadow-sm"
-            >
-              <i className="fas fa-user-plus mr-2 text-sm"></i>
-              Add New Member
-            </a>
-            <a
-              href="/bulk"
-              className="flex items-center justify-center bg-green-600 text-white px-2 py-2 rounded-lg hover:bg-green-700 transition text-xs font-medium shadow-sm"
-            >
-              <i className="fas fa-users mr-2 text-sm"></i>
-              Bulk Import
-            </a>
-            <button className="flex items-center justify-center bg-purple-600 text-white px-2 py-2 rounded-lg hover:bg-purple-700 transition text-xs font-medium shadow-sm">
-              <i className="fas fa-download mr-2 text-sm"></i>
-              Export Data
-            </button>
-            <a
-              href="/analytics"
-              className="flex items-center justify-center bg-yellow-600 text-white px-2 py-2 rounded-lg hover:bg-yellow-700 transition text-xs font-medium shadow-sm"
-            >
-              <i className="fas fa-chart-bar mr-2 text-sm"></i>
-              View Analytics
-            </a>
           </div>
         </div>
       </div>

@@ -11,12 +11,34 @@ export default function DashboardLayout({
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState("light");
+  const [theme, setTheme] = useState(() => {
+    // Check localStorage first, then system preference, default to light
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        return savedTheme;
+      }
+      // Check system preference
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      ) {
+        return "dark";
+      }
+    }
+    return "light";
+  });
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
   const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Initialize sidebar based on screen size
   useEffect(() => {
@@ -42,6 +64,41 @@ export default function DashboardLayout({
     // Cleanup
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Add this useEffect to sync the 'dark' class on <html> with theme and save to localStorage
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    // Save theme to localStorage
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", theme);
+    }
+  }, [theme]);
+
+  // Listen for system theme preference changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = (e) => {
+        // Only update if user hasn't manually set a preference
+        if (!localStorage.getItem("theme")) {
+          setTheme(e.matches ? "dark" : "light");
+        }
+      };
+
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+  }, []);
+
+  // Debug log to help diagnose theme issues
+  useEffect(() => {
+    console.log("DashboardLayout theme:", theme);
+    console.log("HTML classList:", document.documentElement.classList.value);
+  });
 
   // Sample notifications
   const notifications = [
@@ -73,11 +130,11 @@ export default function DashboardLayout({
 
   return (
     <div
-      className={`min-h-screen ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}
+      className={`min-h-screen ${mounted ? (theme === "dark" ? "dark bg-gray-900" : "bg-gray-50") : "bg-gray-50"}`}
     >
       {/* Header */}
       <header
-        className={`${theme === "dark" ? "bg-gray-800" : "bg-blue-600"} shadow-lg w-full px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between fixed top-0 left-0 z-20`}
+        className={`${mounted && theme === "dark" ? "bg-gray-800" : "bg-blue-600"} shadow-lg w-full px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between fixed top-0 left-0 z-20`}
       >
         <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-6">
           <div className="relative lg:hidden">
@@ -85,21 +142,19 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-white hover:text-blue-200 transition-colors mr-2 lg:hidden focus:outline-none"
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-              onBlur={() =>
-                setTimeout(() => {
-                  const el = document.getElementById("sidebar-tooltip");
-                  if (el) el.style.display = "none";
-                }, 100)
-              }
               onFocus={(e) => {
                 const el = document.getElementById("sidebar-tooltip");
                 if (el) el.style.display = "block";
               }}
-              onMouseEnter={(e) => {
+              onBlur={() => {
+                const el = document.getElementById("sidebar-tooltip");
+                if (el) el.style.display = "none";
+              }}
+              onMouseEnter={() => {
                 const el = document.getElementById("sidebar-tooltip");
                 if (el) el.style.display = "block";
               }}
-              onMouseLeave={(e) => {
+              onMouseLeave={() => {
                 const el = document.getElementById("sidebar-tooltip");
                 if (el) el.style.display = "none";
               }}
@@ -128,6 +183,8 @@ export default function DashboardLayout({
         {currentPage === "Analytics" && (
           <QuickActionsDropdown filtered={currentPageProps?.filtered} />
         )}
+        {/* Quick Actions Dropdown for Members Page */}
+        {currentPage === "Members" && <MembersQuickActionsDropdown />}
       </header>
 
       {/* Sidebar */}
@@ -142,6 +199,7 @@ export default function DashboardLayout({
         setSettingsOpen={setSettingsOpen}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        mounted={mounted}
       />
 
       {/* Settings Modal */}
@@ -644,8 +702,8 @@ export default function DashboardLayout({
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             YPG Database Management System is a comprehensive
-                            solution for managing Young People's Group data,
-                            attendance tracking, and analytics. Built with
+                            solution for managing Young People&apos;s Group
+                            data, attendance tracking, and analytics. Built with
                             modern web technologies to provide a seamless
                             experience for church administrators and youth
                             leaders.
@@ -686,7 +744,7 @@ export default function DashboardLayout({
 
       {/* Main content */}
       <div
-        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"}`}
+        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${mounted && theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
         onClick={() => {
           // Close sidebar when clicking outside on mobile
           if (sidebarOpen && window.innerWidth < 1024) {
@@ -696,6 +754,65 @@ export default function DashboardLayout({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </div>
+    </div>
+  );
+}
+
+// Members Quick Actions Dropdown Component
+function MembersQuickActionsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    if (open) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  return (
+    <div className="relative ml-2" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-200 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <i className="fas fa-bolt text-blue-500"></i>
+        Quick Actions
+        <i
+          className={`fas fa-chevron-${open ? "up" : "down"} text-xs ml-1`}
+        ></i>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
+          <a
+            href="/members/add"
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+          >
+            <i className="fas fa-user-plus"></i> Add New Member
+          </a>
+          <a
+            href="/bulk"
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
+          >
+            <i className="fas fa-users"></i> Bulk Import
+          </a>
+          <button
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
+            onClick={() => alert("Export functionality coming soon!")}
+          >
+            <i className="fas fa-download"></i> Export Data
+          </button>
+          <a
+            href="/analytics"
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-800 focus:bg-yellow-100 dark:focus:bg-yellow-700 transition rounded-b-lg"
+          >
+            <i className="fas fa-chart-bar"></i> View Analytics
+          </a>
+        </div>
+      )}
     </div>
   );
 }
