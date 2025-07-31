@@ -1,3 +1,4 @@
+'use client';
 export default function MemberList({ members, onRemoveMember, onSubmitBulk }) {
   // Function to convert executive position value to display name
   const getExecutivePositionDisplay = (position) => {

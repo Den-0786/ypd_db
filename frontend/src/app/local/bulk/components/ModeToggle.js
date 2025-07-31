@@ -1,3 +1,4 @@
+'use client';
 export default function ModeToggle({ isBulkMode, setIsBulkMode }) {
   return (
     <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">

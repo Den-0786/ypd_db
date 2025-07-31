@@ -21,9 +21,7 @@ export default function MembersPage() {
 
   const fetchMembers = async () => {
     try {
-      // Mock data with more comprehensive information
       const mockMembers = [
-        // District Executives
         {
           id: 1,
           first_name: "John",
@@ -554,18 +552,24 @@ export default function MembersPage() {
 
   // Print Table for Members
   function printTable() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return; // Don't execute on server side
+    }
+
     const printContents =
       document.getElementById("members-table-area").innerHTML;
     const win = window.open("", "", "height=700,width=900");
-    win.document.write("<html><head><title>Print Members</title>");
-    win.document.write(
-      "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;}th{background:#f3f4f6;}</style>"
-    );
-    win.document.write("</head><body>");
-    win.document.write(printContents);
-    win.document.write("</body></html>");
-    win.document.close();
-    win.print();
+    if (win) {
+      win.document.write("<html><head><title>Print Members</title>");
+      win.document.write(
+        "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;}th{background:#f3f4f6;}</style>"
+      );
+      win.document.write("</head><body>");
+      win.document.write(printContents);
+      win.document.write("</body></html>");
+      win.document.close();
+      win.print();
+    }
   }
 
   return (
@@ -1701,18 +1705,18 @@ export default function MembersPage() {
                       </div>
                       <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
                         <div className="flex justify-between items-center">
-                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                              Communicant:
-                            </label>
-                            <span
-                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                selectedMember.communicant === "Yes"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                              }`}
-                            >
-                              {selectedMember.communicant}
-                            </span>
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Communicant:
+                          </label>
+                          <span
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedMember.communicant === "Yes"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                            }`}
+                          >
+                            {selectedMember.communicant}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1743,12 +1747,14 @@ export default function MembersPage() {
                     </button>
 
                     <button
-                      onClick={() =>
-                        window.open(
-                          `tel:${selectedMember.phone_number}`,
-                          "_blank"
-                        )
-                      }
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          window.open(
+                            `tel:${selectedMember.phone_number}`,
+                            "_blank"
+                          );
+                        }
+                      }}
                       className="flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:flex-1"
                     >
                       <i className="fas fa-phone mr-2"></i>
@@ -1756,12 +1762,14 @@ export default function MembersPage() {
                     </button>
 
                     <button
-                      onClick={() =>
-                        window.open(
-                          `sms:${selectedMember.phone_number}`,
-                          "_blank"
-                        )
-                      }
+                      onClick={() => {
+                        if (typeof window !== "undefined") {
+                          window.open(
+                            `sms:${selectedMember.phone_number}`,
+                            "_blank"
+                          );
+                        }
+                      }}
                       className="flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:flex-1"
                     >
                       <i className="fas fa-envelope mr-2"></i>

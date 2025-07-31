@@ -1,3 +1,4 @@
+'us client'
 export default function JointProgramModal({
   showJointProgramModal,
   jointProgramForm,

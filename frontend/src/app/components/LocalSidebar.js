@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 export default function LocalSidebar({
   theme,
@@ -11,9 +10,9 @@ export default function LocalSidebar({
   mounted,
   setSettingsOpen,
 }) {
-  const pathname = usePathname();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
   const notifications = [
     {
       id: 1,
@@ -109,7 +108,7 @@ export default function LocalSidebar({
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${pathname === link.href ? (mounted && theme === "dark" ? "bg-blue-900 text-blue-300" : "bg-blue-50 text-blue-700") : mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
               title={link.label}
             >
               <i className={`${link.icon} text-lg flex-shrink-0`}></i>

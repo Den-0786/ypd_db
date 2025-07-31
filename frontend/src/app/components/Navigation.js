@@ -1,37 +1,46 @@
-'use client';
-
-import { usePathname } from 'next/navigation';
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Navigation() {
-  const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  const navItems = [
-    { href: '/', label: 'Dashboard', icon: 'fas fa-tachometer-alt' },
-    { href: '/members', label: 'Members', icon: 'fas fa-users' },
-    { href: '/attendance', label: 'Attendance', icon: 'fas fa-calendar-check' },
-    { href: '/analytics', label: 'Analytics', icon: 'fas fa-chart-bar' },
-    { href: '/bulk', label: 'Bulk Add', icon: 'fas fa-user-plus' },
-  ];
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null; // Don't render until client-side
+  }
 
   return (
-    <div className="hidden sm:flex items-center space-x-4">
-      {navItems.map((item) => {
-        const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-        return (
-          <a
-            key={item.href}
-            href={item.href}
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-              isActive
-                ? 'bg-blue-700 text-white shadow-md border-b-2 border-white'
-                : 'text-white hover:text-blue-200 hover:bg-blue-700/50'
-            }`}
-          >
-            <i className={`${item.icon} mr-1`}></i>
-            {item.label}
-          </a>
-        );
-      })}
-    </div>
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <h1 className="text-xl font-bold text-gray-800">YPG Database</h1>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Link
+              href="/dashboard"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              Dashboard
+            </Link>
+            <Link href="/members" className="text-gray-600 hover:text-gray-900">
+              Members
+            </Link>
+            <Link
+              href="/attendance"
+              className="text-gray-600 hover:text-gray-900"
+            >
+              Attendance
+            </Link>
+          </div>
+        </div>
+      </div>
+    </nav>
   );
-} 
+}

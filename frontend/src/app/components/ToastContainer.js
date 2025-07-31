@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Toast from "./Toast";
 
 export default function ToastContainer() {
@@ -15,10 +15,12 @@ export default function ToastContainer() {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  // Expose addToast method globally
-  if (typeof window !== "undefined") {
-    window.showToast = addToast;
-  }
+  // Expose addToast method globally only after component mounts
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.showToast = addToast;
+    }
+  }, [addToast]);
 
   return (
     <div className="fixed top-4 right-4 z-50 space-y-2">

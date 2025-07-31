@@ -1,3 +1,4 @@
+'use client';
 export default function WeeklyAttendanceCards({ currentMonthData }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">

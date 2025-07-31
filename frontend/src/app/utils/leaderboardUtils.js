@@ -1,10 +1,9 @@
-// Leaderboard utility functions for frontend calculations and scheduling
 
 /**
  * Calculate weekly winners from attendance data
- * @param {Array} attendanceRecords - Array of attendance records
- * @param {Date} targetDate - The Sunday date to calculate for
- * @returns {Array} Top 3 congregations with their attendance data
+ * @param {Array} attendanceRecords 
+ * @param {Date} targetDate 
+ * @returns {Array} 
  */
 export function calculateWeeklyWinners(attendanceRecords, targetDate) {
   // Get the Sunday date (targetDate should be a Sunday)
@@ -50,9 +49,9 @@ export function calculateWeeklyWinners(attendanceRecords, targetDate) {
 
 /**
  * Calculate monthly winners from attendance data
- * @param {Array} attendanceRecords - Array of attendance records
- * @param {Date} targetMonth - The month to calculate for
- * @returns {Array} Top 3 congregations with their attendance data
+ * @param {Array} attendanceRecords 
+ * @param {Date} targetMonth 
+ * @returns {Array} 
  */
 export function calculateMonthlyWinners(attendanceRecords, targetMonth) {
   const startOfMonth = new Date(
@@ -106,8 +105,8 @@ export function calculateMonthlyWinners(attendanceRecords, targetMonth) {
 
 /**
  * Calculate annual winners from monthly winners data
- * @param {Array} monthlyWinners - Array of monthly winners for the year
- * @returns {Array} Annual winners with win counts and months
+ * @param {Array} monthlyWinners 
+ * @returns {Array} 
  */
 export function calculateAnnualWinners(monthlyWinners) {
   const congregationWins = {};
@@ -150,20 +149,20 @@ export function calculateAnnualWinners(monthlyWinners) {
 
 /**
  * Get the previous week's Sunday date
- * @param {Date} currentDate - Current date
- * @returns {Date} Previous Sunday's date
+ * @param {Date} currentDate 
+ * @returns {Date} 
  */
 export function getPreviousSunday(currentDate = new Date()) {
   const date = new Date(currentDate);
   const day = date.getDay();
-  const diff = date.getDate() - day + (day === 0 ? -7 : 0); // Previous Sunday
+  const diff = date.getDate() - day + (day === 0 ? -7 : 0); 
   return new Date(date.setDate(diff));
 }
 
 /**
- * Get the previous month's date
- * @param {Date} currentDate - Current date
- * @returns {Date} Previous month's date
+ 
+ * @param {Date} currentDate 
+ * @returns {Date} 
  */
 export function getPreviousMonth(currentDate = new Date()) {
   const date = new Date(currentDate);
@@ -172,51 +171,51 @@ export function getPreviousMonth(currentDate = new Date()) {
 }
 
 /**
- * Check if it's time to update weekly leaderboard (Monday 10:00 AM)
- * @param {Date} currentDate - Current date
- * @returns {boolean} True if it's time to update
+
+ * @param {Date} currentDate 
+ * @returns {boolean} 
  */
 export function shouldUpdateWeeklyLeaderboard(currentDate = new Date()) {
   const now = new Date(currentDate);
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday
+  const dayOfWeek = now.getDay(); 
   const hour = now.getHours();
 
-  return dayOfWeek === 1 && hour >= 10; // Monday 10:00 AM or later
+  return dayOfWeek === 1 && hour >= 10; 
 }
 
 /**
- * Check if it's time to update monthly leaderboard (1st of month 10:00 AM)
- * @param {Date} currentDate - Current date
- * @returns {boolean} True if it's time to update
+ 
+ * @param {Date} currentDate 
  */
+
 export function shouldUpdateMonthlyLeaderboard(currentDate = new Date()) {
   const now = new Date(currentDate);
   const dayOfMonth = now.getDate();
   const hour = now.getHours();
 
-  return dayOfMonth === 1 && hour >= 10; // 1st of month 10:00 AM or later
+  return dayOfMonth === 1 && hour >= 10; 
 }
 
 /**
- * Check if it's time to update annual leaderboard (December 31st 10:00 AM)
- * @param {Date} currentDate - Current date
- * @returns {boolean} True if it's time to update
+ 
+ * @param {Date} currentDate
+ * @returns {boolean} 
  */
 export function shouldUpdateAnnualLeaderboard(currentDate = new Date()) {
   const now = new Date(currentDate);
-  const month = now.getMonth(); // 0-11 (December = 11)
+  const month = now.getMonth(); 
   const dayOfMonth = now.getDate();
   const hour = now.getHours();
 
-  return month === 11 && dayOfMonth === 31 && hour >= 10; // December 31st 10:00 AM or later
+  return month === 11 && dayOfMonth === 31 && hour >= 10; 
 }
 
 /**
- * Check if comparison data should be removed (2 days after weekly update, 5 days after monthly update)
- * @param {Date} lastUpdateDate - Date of last leaderboard update
- * @param {string} type - 'weekly' or 'monthly'
- * @param {Date} currentDate - Current date
- * @returns {boolean} True if comparison should be removed
+
+ * @param {Date} lastUpdateDate 
+ * @param {string} type 
+ * @param {Date} currentDate 
+ * @returns {boolean} 
  */
 export function shouldRemoveComparison(
   lastUpdateDate,
@@ -229,9 +228,9 @@ export function shouldRemoveComparison(
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (type === "weekly") {
-    return diffDays >= 2; // Remove after 2 days
+    return diffDays >= 2; 
   } else if (type === "monthly") {
-    return diffDays >= 5; // Remove after 5 days
+    return diffDays >= 5;
   }
 
   return false;
@@ -239,9 +238,9 @@ export function shouldRemoveComparison(
 
 /**
  * Format date for display
- * @param {Date} date - Date to format
- * @param {string} type - 'weekly' or 'monthly'
- * @returns {string} Formatted date string
+ * @param {Date} date 
+ * @param {string} type 
+ * @returns {string} 
  */
 export function formatLeaderboardDate(date, type) {
   const d = new Date(date);

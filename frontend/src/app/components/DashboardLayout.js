@@ -11,23 +11,7 @@ export default function DashboardLayout({
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    // Check localStorage first, then system preference, default to light
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        return savedTheme;
-      }
-      // Check system preference
-      if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      ) {
-        return "dark";
-      }
-    }
-    return "light";
-  });
+  const [theme, setTheme] = useState("light"); // Default to light, will be updated in useEffect
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -35,13 +19,32 @@ export default function DashboardLayout({
   const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
   const [mounted, setMounted] = useState(false);
 
-  // Prevent hydration mismatch
+  // Initialize theme and mounted state
   useEffect(() => {
     setMounted(true);
+
+    // Only access window and localStorage after component is mounted
+    if (typeof window !== "undefined") {
+      // Check localStorage first, then system preference, default to light
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        // Check system preference
+        if (
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+        ) {
+          setTheme("dark");
+        }
+      }
+    }
   }, []);
 
   // Initialize sidebar based on screen size
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
         // lg breakpoint
@@ -67,35 +70,39 @@ export default function DashboardLayout({
 
   // Add this useEffect to sync the 'dark' class on <html> with theme and save to localStorage
   useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined")
+      return;
+
     if (theme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
     // Save theme to localStorage
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme", theme);
-    }
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
   // Listen for system theme preference changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-      const handleChange = (e) => {
-        // Only update if user hasn't manually set a preference
-        if (!localStorage.getItem("theme")) {
-          setTheme(e.matches ? "dark" : "light");
-        }
-      };
+    if (typeof window === "undefined") return;
 
-      mediaQuery.addEventListener("change", handleChange);
-      return () => mediaQuery.removeEventListener("change", handleChange);
-    }
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e) => {
+      // Only update if user hasn't manually set a preference
+      if (!localStorage.getItem("theme")) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   // Debug log to help diagnose theme issues
   useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined")
+      return;
+
     console.log("DashboardLayout theme:", theme);
     console.log("HTML classList:", document.documentElement.classList.value);
   });

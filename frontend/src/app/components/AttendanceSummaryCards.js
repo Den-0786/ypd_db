@@ -1,3 +1,4 @@
+'use client';
 export default function AttendanceSummaryCards({ attendanceStats }) {
   return (
     <div className="overflow-x-auto">

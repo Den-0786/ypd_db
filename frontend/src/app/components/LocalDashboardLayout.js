@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import LocalSidebar from "./LocalSidebar";
+import ExportAnalyticsButton from "./ExportAnalyticsButton";
 
 // Members Quick Actions Dropdown Component
 function MembersQuickActionsDropdown({ selectedMembers, onDeleteSelected }) {
@@ -307,36 +308,106 @@ function AttendanceQuickActionsDropdown() {
 export default function LocalDashboardLayout({
   children,
   currentPage,
+  currentPageProps,
   headerAction,
-  selectedMembers = [],
-  onDeleteSelected = () => {},
 }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) return savedTheme;
-      if (
-        window.matchMedia &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches
-      )
-        return "dark";
-    }
-    return "light";
-  });
-  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState("light"); // Default to light, will be updated in useEffect
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
-  const [securityMethod, setSecurityMethod] = useState("password");
+  const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
+  const [mounted, setMounted] = useState(false);
 
+  // Initialize theme and mounted state
   useEffect(() => {
     setMounted(true);
+
+    // Only access window and localStorage after component is mounted
+    if (typeof window !== "undefined") {
+      // Check localStorage first, then system preference, default to light
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else {
+        // Check system preference
+        if (
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+        ) {
+          setTheme("dark");
+        }
+      }
+    }
   }, []);
+
+  // Initialize sidebar based on screen size
   useEffect(() => {
-    if (theme === "dark") document.documentElement.classList.add("dark");
-    else document.documentElement.classList.remove("dark");
-    if (typeof window !== "undefined") localStorage.setItem("theme", theme);
+    if (typeof window === "undefined") return;
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        // lg breakpoint
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    // Set initial state - ensure sidebar is closed on mobile by default
+    if (window.innerWidth >= 1024) {
+      setSidebarOpen(true);
+    } else {
+      setSidebarOpen(false);
+    }
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Add this useEffect to sync the 'dark' class on <html> with theme and save to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined")
+      return;
+
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    // Save theme to localStorage
+    localStorage.setItem("theme", theme);
   }, [theme]);
+
+  // Listen for system theme preference changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e) => {
+      // Only update if user hasn't manually set a preference
+      if (!localStorage.getItem("theme")) {
+        setTheme(e.matches ? "dark" : "light");
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  // Debug log to help diagnose theme issues
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined")
+      return;
+
+    console.log("LocalDashboardLayout theme:", theme);
+    console.log("HTML classList:", document.documentElement.classList.value);
+  });
 
   return (
     <div
@@ -390,8 +461,10 @@ export default function LocalDashboardLayout({
           {/* Quick Actions Dropdown for Members Page */}
           {currentPage === "Members" && (
             <MembersQuickActionsDropdown
-              selectedMembers={selectedMembers}
-              onDeleteSelected={onDeleteSelected}
+              selectedMembers={currentPageProps?.selectedMembers || []}
+              onDeleteSelected={
+                currentPageProps?.onDeleteSelected || (() => {})
+              }
             />
           )}
           {/* Quick Actions Dropdown for Attendance Page */}

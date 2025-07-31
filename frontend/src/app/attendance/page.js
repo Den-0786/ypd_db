@@ -302,45 +302,58 @@ export default function AttendancePage() {
 
   // Export CSV (bulk)
   function exportSelectedToCSV() {
-    if (selectedRecords.length === 0) return;
-    const headers = ["Date", "Congregation", "Male", "Female", "Total"];
-    const selected = filteredRecords.filter((r) =>
+    if (selectedRecords.length === 0) {
+      showToast("Please select records to export", "error");
+      return;
+    }
+
+    const selectedData = attendanceRecords.filter((r) =>
       selectedRecords.includes(r.id)
     );
-    if (selected.length === 0) return;
-    const rows = selected.map((r) => [
-      r.date,
-      r.congregation.name,
-      r.male_count,
-      r.female_count,
-      r.total_count,
-    ]);
-    const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "attendance-selected.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Selected records exported as CSV!", "success");
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      "Congregation,Date,Male Count,Female Count,Total Count\n" +
+      selectedData
+        .map(
+          (r) =>
+            `${r.congregation.name},${r.date},${r.male_count},${r.female_count},${r.total_count}`
+        )
+        .join("\n");
+
+    if (typeof window !== "undefined") {
+      const blob = new Blob([csvContent], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "attendance-selected.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Selected records exported as CSV!", "success");
+    }
   }
 
   // Print Table
   function printTable() {
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return; // Don't execute on server side
+    }
+
     const printContents = document.getElementById(
       "attendance-table-area"
     ).innerHTML;
     const win = window.open("", "", "height=700,width=900");
-    win.document.write("<html><head><title>Print Attendance</title>");
-    win.document.write(
-      "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;}th{background:#f3f4f6;}</style>"
-    );
-    win.document.write("</head><body>");
-    win.document.write(printContents);
-    win.document.write("</body></html>");
-    win.document.close();
-    win.print();
+    if (win) {
+      win.document.write("<html><head><title>Print Attendance</title>");
+      win.document.write(
+        "<style>table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;}th{background:#f3f4f6;}</style>"
+      );
+      win.document.write("</head><body>");
+      win.document.write(printContents);
+      win.document.write("</body></html>");
+      win.document.close();
+      win.print();
+    }
   }
 
   if (loading) {

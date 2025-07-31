@@ -1,3 +1,4 @@
+'use client';
 export default function ToastNotification({ toast }) {
   if (!toast.show) return null;
 

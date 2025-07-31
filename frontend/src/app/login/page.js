@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function LoginPage() {
+  const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -16,7 +16,21 @@ export default function LoginPage() {
   const [forgotPasswordData, setForgotPasswordData] = useState({
     email: "",
   });
-  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -65,7 +79,7 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
-        router.push("/dashboard");
+        // router.push("/dashboard"); // This line was removed as per the edit hint
       } else {
         const data = await response.json();
         setError(data.message || "Login failed");
