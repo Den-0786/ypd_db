@@ -75,6 +75,17 @@ export default function Sidebar({
             </Link>
 
             <Link
+              href="/"
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${pathname === "/" ? (mounted && theme === "dark" ? "bg-blue-900 text-blue-300" : "bg-blue-50 text-blue-700") : mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              title="Home"
+            >
+              <i className="fas fa-home text-lg flex-shrink-0"></i>
+              {sidebarOpen && (
+                <span className="font-medium truncate">Home</span>
+              )}
+            </Link>
+
+            <Link
               href="/members"
               className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${pathname === "/members" ? (mounted && theme === "dark" ? "bg-blue-900 text-blue-300" : "bg-blue-50 text-blue-700") : mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
               title="Members"
@@ -130,34 +141,58 @@ export default function Sidebar({
             </Link>
 
             {/* Theme Toggle */}
-            <button
-              onClick={toggleTheme}
+            <div
               className={`w-full flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
-              title={
-                mounted && theme === "light"
-                  ? "Switch to Dark Mode"
-                  : "Switch to Light Mode"
-              }
             >
-              <i
-                className={`fas ${mounted && theme === "light" ? "fa-moon" : "fa-sun"} text-lg flex-shrink-0`}
-              ></i>
+              <button
+                onClick={toggleTheme}
+                className="relative w-12 h-6 bg-gray-200 dark:bg-gray-800 rounded-full p-0.5 transition-all duration-300 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                aria-label="Toggle theme"
+                title={
+                  mounted && theme === "light"
+                    ? "Switch to Dark Mode"
+                    : "Switch to Light Mode"
+                }
+              >
+                {/* Toggle Track */}
+                <div className="relative w-full h-full rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 shadow-inner">
+                  {/* Toggle Handle */}
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 bg-white dark:bg-gray-600 rounded-full shadow-lg transition-all duration-300 transform ${
+                      mounted && theme === "dark"
+                        ? "translate-x-6"
+                        : "translate-x-0"
+                    }`}
+                  >
+                    {/* Moon Icon for Dark Mode */}
+                    {mounted && theme === "dark" && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 bg-cyan-400 rounded-full shadow-lg animate-pulse" />
+                      </div>
+                    )}
+
+                    {/* Sun Icon for Light Mode */}
+                    {mounted && theme === "light" && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-lg" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Glow Effect */}
+                  <div
+                    className={`absolute inset-0 rounded-full transition-all duration-300 ${
+                      mounted && theme === "dark"
+                        ? "bg-gradient-to-r from-cyan-400/20 to-blue-500/20 shadow-lg shadow-cyan-400/30"
+                        : "bg-gradient-to-r from-yellow-400/20 to-orange-500/20 shadow-lg shadow-yellow-400/30"
+                    }`}
+                  />
+                </div>
+              </button>
               {sidebarOpen && (
                 <span className="font-medium truncate">Theme</span>
               )}
-            </button>
-
-            {/* Home Link */}
-            <Link
-              href="/"
-              className={`flex items-center space-x-3 p-3 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
-              title="Home"
-            >
-              <i className="fas fa-home text-lg flex-shrink-0"></i>
-              {sidebarOpen && (
-                <span className="font-medium truncate">Home</span>
-              )}
-            </Link>
+            </div>
           </nav>
 
           {/* Notifications */}

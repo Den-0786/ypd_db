@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import QuickActionsDropdown from "../components/DashboardLayout";
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -241,8 +240,8 @@ export default function AnalyticsPage() {
         </div>
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <div className="flex flex-row gap-3 items-center overflow-x-auto">
-            <div className="min-w-[180px]">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div>
               <label
                 htmlFor="analytics-cong-filter"
                 className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -270,7 +269,7 @@ export default function AnalyticsPage() {
                 ))}
               </select>
             </div>
-            <div className="min-w-[140px]">
+            <div>
               <label
                 htmlFor="analytics-date-start"
                 className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -288,7 +287,7 @@ export default function AnalyticsPage() {
                 aria-label="Start date"
               />
             </div>
-            <div className="min-w-[140px]">
+            <div className="col-span-2 lg:col-span-1">
               <label
                 htmlFor="analytics-date-end"
                 className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
@@ -315,8 +314,8 @@ export default function AnalyticsPage() {
             Sunday Attendance Analytics
           </h2>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 mb-8">
-            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -328,7 +327,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -340,7 +339,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-chart-line text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
+            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -352,7 +351,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+            <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -422,7 +421,7 @@ export default function AnalyticsPage() {
                   </div>
                   {/* Weekly Trend Line Graph */}
                   <div
-                    className="mt-6 p-4 h-[30rem] bg-gray-900 rounded-lg border border-gray-700 shadow-lg"
+                    className="mt-6 p-4 h-[30rem] bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg"
                     style={{ boxShadow: "0 0 20px rgba(249, 115, 22, 0.3)" }}
                   >
                     <div className="flex justify-between items-center mb-4">
@@ -447,19 +446,19 @@ export default function AnalyticsPage() {
                       </div>
                     </div>
 
-                    <div className="relative h-[16rem] bg-gray-800 rounded-lg p-4 border border-gray-600">
+                    <div className="relative h-[16rem] bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                       {/* Grid Lines */}
                       <div className="absolute inset-0 flex flex-col justify-between">
                         {[...Array(6)].map((_, i) => (
                           <div
                             key={i}
-                            className="border-b border-gray-600 opacity-30"
+                            className="border-b border-gray-300 dark:border-gray-600 opacity-30"
                           ></div>
                         ))}
                       </div>
 
                       {/* Y-axis labels */}
-                      <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400">
+                      <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
                         {[10, 8, 6, 4, 2, 0].map((num) => (
                           <span key={num}>{num}</span>
                         ))}
@@ -887,7 +886,7 @@ export default function AnalyticsPage() {
 
               {/* Monthly Trend Analytics Card */}
               <div
-                className="mt-6 p-4 h-[30rem] bg-gray-900 rounded-lg border border-gray-700 shadow-lg"
+                className="mt-6 p-4 h-[30rem] bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg"
                 style={{ boxShadow: "0 0 20px rgba(59, 130, 246, 0.3)" }}
               >
                 <div className="flex justify-between items-center mb-4">
@@ -911,17 +910,17 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="relative h-[16rem] bg-gray-800 rounded-lg p-4 border border-gray-600">
+                <div className="relative h-[16rem] bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                   <div className="absolute inset-0 flex flex-col justify-between">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
-                        className="border-b border-gray-600 opacity-30"
+                        className="border-b border-gray-300 dark:border-gray-600 opacity-30"
                       ></div>
                     ))}
                   </div>
 
-                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400">
+                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
                     {[10, 8, 6, 4, 2, 0].map((num) => (
                       <span key={num}>{num}</span>
                     ))}
@@ -1151,7 +1150,7 @@ export default function AnalyticsPage() {
 
               {/* Yearly Trend Analytics Card */}
               <div
-                className="mt-6 p-4 h-[30rem] bg-gray-900 rounded-lg border border-gray-700 shadow-lg"
+                className="mt-6 p-4 h-[30rem] bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg"
                 style={{ boxShadow: "0 0 20px rgba(16, 185, 129, 0.3)" }}
               >
                 <div className="flex justify-between items-center mb-4">
@@ -1175,19 +1174,19 @@ export default function AnalyticsPage() {
                   </div>
                 </div>
 
-                <div className="relative h-[16rem] bg-gray-800 rounded-lg p-4 border border-gray-600">
+                <div className="relative h-[16rem] bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
                   {/* Grid Lines */}
                   <div className="absolute inset-0 flex flex-col justify-between">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
-                        className="border-b border-gray-600 opacity-30"
+                        className="border-b border-gray-300 dark:border-gray-600 opacity-30"
                       ></div>
                     ))}
                   </div>
 
                   {/* Y-axis labels */}
-                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-400">
+                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
                     {[10, 8, 6, 4, 2, 0].map((num) => (
                       <span key={num}>{num}</span>
                     ))}
@@ -1377,8 +1376,8 @@ export default function AnalyticsPage() {
           </h2>
 
           {/* Members Key Metrics */}
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 mb-8">
-            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -1390,7 +1389,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+            <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -1405,7 +1404,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
+            <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -1420,7 +1419,7 @@ export default function AnalyticsPage() {
                 <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
               </div>
             </div>
-            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[160px] flex-shrink-0 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
+            <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
               <div className="relative z-10 flex items-center justify-between">
                 <div>
@@ -1516,14 +1515,14 @@ export default function AnalyticsPage() {
                   )
                 )}
               </div>
-              {/* Small screens - Horizontal scroll with cards */}
-              <div className="lg:hidden overflow-x-auto pb-2">
-                <div className="flex gap-4 min-w-max">
+              {/* Small screens - Grid layout with evenly distributed cards */}
+              <div className="lg:hidden">
+                <div className="grid grid-cols-2 gap-4">
                   {chartData.membersDatabase.genderDistribution.map(
                     (item, index) => (
                       <div
                         key={index}
-                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group min-w-[200px] flex-shrink-0"
+                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
                         <div className="relative z-10">

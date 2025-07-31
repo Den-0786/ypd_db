@@ -80,7 +80,9 @@ export default function LeaderboardPage() {
                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                       <li>• Updated every Monday at 10:00 AM</li>
                       <li>• Shows top 3 congregations from previous Sunday</li>
-                      <li>• Previous week's winner shown for comparison</li>
+                      <li>
+                        • Previous week&apos;s winner shown for comparison
+                      </li>
                       <li>
                         • Comparison removed after 2 days (Wednesday 10:00 AM)
                       </li>
@@ -106,7 +108,9 @@ export default function LeaderboardPage() {
                     <ul className="text-sm text-green-800 dark:text-green-200 space-y-1">
                       <li>• Updated on the 1st of each month at 10:00 AM</li>
                       <li>• Shows top 3 congregations from previous month</li>
-                      <li>• Previous month's winner shown for comparison</li>
+                      <li>
+                        • Previous month&apos;s winner shown for comparison
+                      </li>
                       <li>
                         • Comparison removed after 5 days (6th of month 10:00
                         AM)

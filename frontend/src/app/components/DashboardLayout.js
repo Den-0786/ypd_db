@@ -761,59 +761,136 @@ export default function DashboardLayout({
 // Members Quick Actions Dropdown Component
 function MembersQuickActionsDropdown() {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const ref = useRef();
+  const exportRef = useRef();
 
   useEffect(() => {
-    function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+        setShowExportModal(false);
+      }
     }
-    if (open) document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setShowExportModal(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleExport = (format) => {
+    console.log(`Exporting as ${format}`);
+    // Here you would implement actual export logic
+    setShowExportModal(false);
+  };
 
   return (
-    <div className="relative ml-2" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-200 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
-        aria-haspopup="true"
-        aria-expanded={open}
-      >
-        <i className="fas fa-bolt text-blue-500"></i>
-        Quick Actions
-        <i
-          className={`fas fa-chevron-${open ? "up" : "down"} text-xs ml-1`}
-        ></i>
-      </button>
-      {open && (
-        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
-          <a
-            href="/members/add"
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
-          >
-            <i className="fas fa-user-plus"></i> Add New Member
-          </a>
-          <a
-            href="/bulk"
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
-          >
-            <i className="fas fa-users"></i> Bulk Import
-          </a>
-          <button
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
-            onClick={() => alert("Export functionality coming soon!")}
-          >
-            <i className="fas fa-download"></i> Export Data
-          </button>
-          <a
-            href="/analytics"
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-800 focus:bg-yellow-100 dark:focus:bg-yellow-700 transition rounded-b-lg"
-          >
-            <i className="fas fa-chart-bar"></i> View Analytics
-          </a>
-        </div>
-      )}
-    </div>
+    <>
+      <div className="relative ml-2" ref={ref}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-200 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+          aria-haspopup="true"
+          aria-expanded={open}
+        >
+          <i className="fas fa-bolt text-blue-500"></i>
+          Quick Actions
+          <i
+            className={`fas fa-chevron-${open ? "up" : "down"} text-xs ml-1`}
+          ></i>
+        </button>
+        {open && (
+          <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
+            <a
+              href="/members/add"
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+            >
+              <i className="fas fa-user-plus"></i> Add New Member
+            </a>
+            <a
+              href="/bulk"
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
+            >
+              <i className="fas fa-users"></i> Bulk Import
+            </a>
+            <div className="relative">
+              <button
+                onClick={() => setShowExportModal(!showExportModal)}
+                className="w-full flex items-center justify-between px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-download"></i>
+                  <span>Export Data As</span>
+                </div>
+                <i
+                  className={`fas fa-chevron-${showExportModal ? "down" : "right"} text-xs`}
+                ></i>
+              </button>
+
+              {/* Export Modal */}
+              {showExportModal && (
+                <div
+                  ref={exportRef}
+                  className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-3"
+                  style={{
+                    minWidth: "140px",
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
+                      Export As
+                    </h3>
+                    <button
+                      onClick={() => setShowExportModal(false)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => handleExport("CSV")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-csv text-green-600 text-xs"></i>
+                      <span>CSV</span>
+                    </button>
+                    <button
+                      onClick={() => handleExport("Excel")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-excel text-green-600 text-xs"></i>
+                      <span>Excel</span>
+                    </button>
+                    <button
+                      onClick={() => handleExport("PDF")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-pdf text-red-600 text-xs"></i>
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-800 focus:bg-orange-100 dark:focus:bg-orange-700 transition"
+            >
+              <i className="fas fa-print"></i> Print Table
+            </button>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

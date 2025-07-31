@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 
 export default function MembersPage() {
@@ -9,6 +9,8 @@ export default function MembersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCongregation, setSelectedCongregation] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedExecutives, setSelectedExecutives] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
   const [membersPerPage] = useState(20);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
@@ -485,7 +487,59 @@ export default function MembersPage() {
 
   const handleCongregationSelect = (congregation) => {
     setSelectedCongregation(congregation);
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
+  };
+
+  const handleSelectAllExecutives = () => {
+    if (selectedExecutives.length === districtExecutives.length) {
+      setSelectedExecutives([]);
+    } else {
+      setSelectedExecutives(districtExecutives.map((exec) => exec.id));
+    }
+  };
+
+  const handleSelectExecutive = (executiveId) => {
+    setSelectedExecutives((prev) =>
+      prev.includes(executiveId)
+        ? prev.filter((id) => id !== executiveId)
+        : [...prev, executiveId]
+    );
+  };
+
+  const handleSelectAllMembers = () => {
+    if (selectedMembers.length === currentMembers.length) {
+      setSelectedMembers([]);
+    } else {
+      setSelectedMembers(currentMembers.map((member) => member.id));
+    }
+  };
+
+  const handleSelectMember = (memberId) => {
+    setSelectedMembers((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const handleDeleteSelectedMembers = () => {
+    if (selectedMembers.length === 0) {
+      alert("Please select members to delete");
+      return;
+    }
+
+    const confirmDelete = confirm(
+      `Are you sure you want to delete ${selectedMembers.length} selected member(s)?`
+    );
+
+    if (confirmDelete) {
+      const updatedMembers = members.filter(
+        (member) => !selectedMembers.includes(member.id)
+      );
+      setMembers(updatedMembers);
+      setSelectedMembers([]);
+      alert(`${selectedMembers.length} member(s) deleted successfully!`);
+    }
   };
 
   if (loading) {
@@ -591,28 +645,7 @@ export default function MembersPage() {
               <i className="fas fa-water text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
             </div>
           </div>
-          <div className="bg-amber-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-amber-500/20 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-amber-400/20 to-amber-600/20 dark:from-amber-400/10 dark:to-amber-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Confirmants</p>
-                <p className="text-lg font-bold">{totalConfirmants}</p>
-              </div>
-              <i className="fas fa-cross text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-            </div>
-          </div>
-          <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-4 min-w-[180px] flex-shrink-0 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Baptisms</p>
-                <p className="text-lg font-bold">{totalBaptisms}</p>
-              </div>
-              <i className="fas fa-water text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-            </div>
-          </div>
         </div>
-
         {/* District Executives Section - Only show when no congregation is selected */}
         {!selectedCongregation && (
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
@@ -627,16 +660,28 @@ export default function MembersPage() {
               <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-blue-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Name
+                    <th className="px-[7rem] py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <div className="flex items-center justify-end">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedExecutives.length ===
+                              districtExecutives.length &&
+                            districtExecutives.length > 0
+                          }
+                          onChange={handleSelectAllExecutives}
+                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                        />
+                        Name
+                      </div>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Phone
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Gender
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Congregation
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -654,10 +699,16 @@ export default function MembersPage() {
                   {districtExecutives.map((executive) => (
                     <tr
                       key={executive.id}
-                      className="hover:bg-blue-50 dark:hover:bg-gray-600"
+                      className="hover:bg-blue-50 dark:hover:bg-gray-600 relative overflow-hidden group bg-gradient-to-r from-blue-400/5 to-blue-600/5 dark:from-blue-400/3 dark:to-blue-600/3 animate-pulse"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
+                      <td className="px-6 py-4 whitespace-nowrap text-left">
+                        <div className="flex items-center justify-start">
+                          <input
+                            type="checkbox"
+                            checked={selectedExecutives.includes(executive.id)}
+                            onChange={() => handleSelectExecutive(executive.id)}
+                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
+                          />
                           <div className="flex-shrink-0 h-10 w-10">
                             <div className="h-10 w-10 rounded-full bg-yellow-500 flex items-center justify-center">
                               <span className="text-sm font-medium text-white">
@@ -667,13 +718,13 @@ export default function MembersPage() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white text-right">
                               {executive.first_name} {executive.last_name}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                         {executive.phone_number}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -690,7 +741,7 @@ export default function MembersPage() {
                           {executive.gender}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         <span
                           className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                           style={{
@@ -723,20 +774,22 @@ export default function MembersPage() {
                               setSelectedMember(executive);
                               setViewModalOpen(true);
                             }}
-                            className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                            className="text-blue-600 hover:text-blue-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                             title="View member details"
                           >
-                            <i className="fas fa-eye"></i>
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-blue-600/10 dark:from-blue-400/5 dark:to-blue-600/5 animate-pulse"></div>
+                            <i className="fas fa-eye relative z-10"></i>
                           </button>
                           <a
                             href={`/members/${executive.id}/edit`}
-                            className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200"
+                            className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                             title="Edit member"
                           >
-                            <i className="fas fa-edit"></i>
+                            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 dark:from-yellow-400/5 dark:to-yellow-600/5 animate-pulse"></div>
+                            <i className="fas fa-edit relative z-10"></i>
                           </a>
                           <button
-                            className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                            className="text-red-600 hover:text-red-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                             title="Delete member"
                             onClick={() => {
                               if (
@@ -752,7 +805,8 @@ export default function MembersPage() {
                               }
                             }}
                           >
-                            <i className="fas fa-trash"></i>
+                            <div className="absolute inset-0 bg-gradient-to-r from-red-400/10 to-red-600/10 dark:from-red-400/5 dark:to-red-600/5 animate-pulse"></div>
+                            <i className="fas fa-trash relative z-10"></i>
                           </button>
                         </div>
                       </td>
@@ -764,12 +818,15 @@ export default function MembersPage() {
           </div>
         )}
 
-        {/* Congregation Search and Filter */}
+        {/* Search & Filter */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-            <i className="fas fa-search text-blue-500 mr-2"></i>
-            Search & Filter
-          </h2>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
+              <i className="fas fa-search text-blue-500 mr-2"></i>
+              Search & Filter
+            </h2>
+          </div>
+
           <div className="flex flex-row gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-800 dark:text-white mb-2">
@@ -944,7 +1001,7 @@ export default function MembersPage() {
                           {congregationExecutives.map((executive) => (
                             <tr
                               key={executive.id}
-                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900 relative overflow-hidden group bg-gradient-to-r from-blue-400/5 to-blue-600/5 dark:from-blue-400/3 dark:to-blue-600/3 animate-pulse"
                             >
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
@@ -1007,20 +1064,22 @@ export default function MembersPage() {
                                       setSelectedMember(executive);
                                       setViewModalOpen(true);
                                     }}
-                                    className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                    className="text-blue-600 hover:text-blue-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                                     title="View member details"
                                   >
-                                    <i className="fas fa-eye"></i>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-blue-600/10 dark:from-blue-400/5 dark:to-blue-600/5 animate-pulse"></div>
+                                    <i className="fas fa-eye relative z-10"></i>
                                   </button>
                                   <a
                                     href={`/members/${executive.id}/edit`}
-                                    className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200"
+                                    className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                                     title="Edit member"
                                   >
-                                    <i className="fas fa-edit"></i>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 dark:from-yellow-400/5 dark:to-yellow-600/5 animate-pulse"></div>
+                                    <i className="fas fa-edit relative z-10"></i>
                                   </a>
                                   <button
-                                    className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                    className="text-red-600 hover:text-red-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                                     title="Delete member"
                                     onClick={() => {
                                       if (
@@ -1036,7 +1095,8 @@ export default function MembersPage() {
                                       }
                                     }}
                                   >
-                                    <i className="fas fa-trash"></i>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-red-400/10 to-red-600/10 dark:from-red-400/5 dark:to-red-600/5 animate-pulse"></div>
+                                    <i className="fas fa-trash relative z-10"></i>
                                   </button>
                                 </div>
                               </td>
@@ -1071,7 +1131,7 @@ export default function MembersPage() {
             <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing {indexOfFirstMember + 1} to{" "}
+                  {indexOfFirstMember + 1} to{" "}
                   {Math.min(indexOfLastMember, filteredMembers.length)} of{" "}
                   {filteredMembers.length} results
                 </div>
@@ -1086,7 +1146,7 @@ export default function MembersPage() {
                     }`}
                   >
                     <i className="fas fa-chevron-left mr-1"></i>
-                    Previous
+                    Prev
                   </button>
 
                   <div className="flex space-x-1">
@@ -1139,16 +1199,27 @@ export default function MembersPage() {
             <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Name
+                  <th className="px-[7rem] py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-end">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedMembers.length === currentMembers.length &&
+                          currentMembers.length > 0
+                        }
+                        onChange={handleSelectAllMembers}
+                        className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
+                      />
+                      Name
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Phone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Gender
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Congregation
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1166,10 +1237,16 @@ export default function MembersPage() {
                 {currentMembers.map((member) => (
                   <tr
                     key={member.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700 relative overflow-hidden group bg-gradient-to-r from-gray-400/5 to-gray-600/5 dark:from-gray-400/3 dark:to-gray-600/3 animate-pulse"
                   >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
+                    <td className="px-6 py-4 whitespace-nowrap text-left">
+                      <div className="flex items-center justify-start">
+                        <input
+                          type="checkbox"
+                          checked={selectedMembers.includes(member.id)}
+                          onChange={() => handleSelectMember(member.id)}
+                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
+                        />
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                             <span className="text-sm font-medium text-gray-700">
@@ -1179,26 +1256,13 @@ export default function MembersPage() {
                           </div>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white text-right">
                             {member.first_name} {member.last_name}
                           </div>
-                          {member.is_district_executive && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                              <i className="fas fa-crown mr-1"></i>
-                              District Executive
-                            </span>
-                          )}
-                          {member.is_executive &&
-                            !member.is_district_executive && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                <i className="fas fa-star mr-1"></i>
-                                Local Executive
-                              </span>
-                            )}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white text-center">
                       {member.phone_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -1215,7 +1279,7 @@ export default function MembersPage() {
                         {member.gender}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                         style={{
@@ -1251,20 +1315,22 @@ export default function MembersPage() {
                             setSelectedMember(member);
                             setViewModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                          className="text-blue-600 hover:text-blue-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                           title="View member details"
                         >
-                          <i className="fas fa-eye"></i>
+                          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/10 to-blue-600/10 dark:from-blue-400/5 dark:to-blue-600/5 animate-pulse"></div>
+                          <i className="fas fa-eye relative z-10"></i>
                         </button>
                         <a
                           href={`/members/${member.id}/edit`}
-                          className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200"
+                          className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                           title="Edit member"
                         >
-                          <i className="fas fa-edit"></i>
+                          <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 dark:from-yellow-400/5 dark:to-yellow-600/5 animate-pulse"></div>
+                          <i className="fas fa-edit relative z-10"></i>
                         </a>
                         <button
-                          className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                          className="text-red-600 hover:text-red-900 transition-colors duration-200 relative overflow-hidden group p-1 rounded"
                           title="Delete member"
                           onClick={() => {
                             if (
@@ -1280,7 +1346,8 @@ export default function MembersPage() {
                             }
                           }}
                         >
-                          <i className="fas fa-trash"></i>
+                          <div className="absolute inset-0 bg-gradient-to-r from-red-400/10 to-red-600/10 dark:from-red-400/5 dark:to-red-600/5 animate-pulse"></div>
+                          <i className="fas fa-trash relative z-10"></i>
                         </button>
                       </div>
                     </td>
@@ -1295,7 +1362,7 @@ export default function MembersPage() {
             <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing {indexOfFirstMember + 1} to{" "}
+                  {indexOfFirstMember + 1} to{" "}
                   {Math.min(indexOfLastMember, filteredMembers.length)} of{" "}
                   {filteredMembers.length} results
                 </div>
@@ -1310,7 +1377,7 @@ export default function MembersPage() {
                     }`}
                   >
                     <i className="fas fa-chevron-left mr-1"></i>
-                    Previous
+                    Prev
                   </button>
                   <div className="flex space-x-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1356,346 +1423,356 @@ export default function MembersPage() {
             </div>
           )}
           {/* Print Table Button at Bottom */}
-          <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-gray-200 justify-end">
-            <button
-              onClick={printTable}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-            >
-              <i className="fas fa-print mr-1"></i> Print Table
-            </button>
+          <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-gray-200 justify-between">
+            <div className="flex gap-2">
+              {selectedMembers.length > 0 && (
+                <button
+                  onClick={handleDeleteSelectedMembers}
+                  className="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors flex items-center text-xs font-medium relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                  <i className="fas fa-trash mr-1.5 relative z-10"></i>
+                  <span className="relative z-10">
+                    Delete Selected ({selectedMembers.length})
+                  </span>
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={printTable}
+                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center text-xs font-medium relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                <i className="fas fa-print mr-1.5 relative z-10"></i>
+                <span className="relative z-10">Print Table</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
       {/* Member Details Modal */}
       {viewModalOpen && selectedMember && (
-        <>
-          <div
-            className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm z-50"
-            style={{ background: "rgba(0,0,0,0.15)" }}
-            onClick={() => setViewModalOpen(false)}
-          />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-              {/* Modal Header */}
-              <div className="relative p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    <i className="fas fa-user-circle text-blue-500 mr-3"></i>
-                    Member Details
-                  </h2>
-                  <button
-                    onClick={() => setViewModalOpen(false)}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <i className="fas fa-times text-xl"></i>
-                  </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Member Details - {selectedMember.first_name}{" "}
+                {selectedMember.last_name}
+              </h3>
+              <button
+                onClick={() => setViewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <i className="fas fa-times text-xl"></i>
+              </button>
+            </div>
+
+            <div className="p-4 sm:p-6">
+              <div className="space-y-4 sm:space-y-6">
+                {/* Personal & Contact Information */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 sm:p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Personal Information */}
+                    <div>
+                      <div className="flex items-center mb-3 sm:mb-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                          <i className="fas fa-user text-blue-600 dark:text-blue-400 text-sm sm:text-base"></i>
+                        </div>
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Personal Information
+                        </h4>
+                      </div>
+
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              First Name:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.first_name}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Last Name:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.last_name}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Gender:
+                            </label>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedMember.gender === "Male"
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                  : "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200"
+                              }`}
+                            >
+                              {selectedMember.gender}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div>
+                      <div className="flex items-center mb-3 sm:mb-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                          <i className="fas fa-phone text-green-600 dark:text-green-400 text-sm sm:text-base"></i>
+                        </div>
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Contact Information
+                        </h4>
+                      </div>
+
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Phone Number:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.phone_number}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Email Address:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.email || "Not provided"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Address:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.address || "Not provided"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Modal Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-                <div className="space-y-6">
-                  {/* Profile Header */}
-                  <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
-                      <span className="text-3xl font-bold text-white">
-                        {selectedMember.first_name[0]}
-                        {selectedMember.last_name[0]}
-                      </span>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      {selectedMember.first_name} {selectedMember.last_name}
-                    </h3>
-                    <div className="flex items-center justify-center space-x-2 mb-4">
-                      {selectedMember.is_district_executive && (
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                          <i className="fas fa-crown mr-1"></i>
-                          District Executive
-                        </span>
-                      )}
-                      {selectedMember.is_executive &&
-                        !selectedMember.is_district_executive && (
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            <i className="fas fa-star mr-1"></i>
-                            Branch Executive
-                          </span>
-                        )}
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                          selectedMember.gender === "Male"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-pink-100 text-pink-800"
-                        }`}
-                      >
-                        <i
-                          className={`fas fa-${selectedMember.gender === "Male" ? "mars" : "venus"} mr-1`}
-                        ></i>
-                        {selectedMember.gender}
-                      </span>
-                    </div>
-                  </div>
+                {/* Church & Religious Information */}
+                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-4 sm:p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Church Information */}
+                    <div>
+                      <div className="flex items-center mb-3 sm:mb-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                          <i className="fas fa-church text-indigo-600 dark:text-indigo-400 text-sm sm:text-base"></i>
+                        </div>
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Church Information
+                        </h4>
+                      </div>
 
-                  {/* Contact Information */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <i className="fas fa-phone text-blue-500 mr-2"></i>
-                      Contact Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-phone text-blue-600"></i>
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Congregation:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.congregation.name}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Phone Number</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.phone_number}
-                          </p>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Position:
+                            </label>
+                            <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
+                              {selectedMember.executive_position || "Member"}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-church text-green-600"></i>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Membership Status:
+                            </label>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedMember.membership_status === "Active"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              }`}
+                            >
+                              {selectedMember.membership_status}
+                            </span>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Congregation</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.congregation.name}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-envelope text-purple-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Email Address</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.email || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-map-marker-alt text-orange-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Address</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.address || "Not provided"}
-                          </p>
+
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Executive Level:
+                            </label>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedMember.is_district_executive
+                                  ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                                  : selectedMember.is_executive
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                              }`}
+                            >
+                              {selectedMember.is_district_executive
+                                ? "District Executive"
+                                : selectedMember.is_executive
+                                  ? "Branch Executive"
+                                  : "Regular Member"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Membership Details */}
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <i className="fas fa-id-card text-green-500 mr-2"></i>
-                      Membership Details
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-user-check text-green-600"></i>
+                    {/* Religious Information */}
+                    <div>
+                      <div className="flex items-center mb-3 sm:mb-4">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-2 sm:mr-3">
+                          <i className="fas fa-cross text-red-600 dark:text-red-400 text-sm sm:text-base"></i>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Status</p>
+                        <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Religious Information
+                        </h4>
+                      </div>
+
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Communicant:
+                            </label>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedMember.attends_communion
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              }`}
+                            >
+                              {selectedMember.attends_communion ? "Yes" : "No"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                        <div className="flex justify-between items-center">
+                          <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                            Baptism:
+                          </label>
                           <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              selectedMember.membership_status === "Active"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-yellow-100 text-yellow-800"
+                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              selectedMember.baptism === "Yes"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                             }`}
                           >
-                            {selectedMember.membership_status}
+                            {selectedMember.baptism}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-user-tie text-purple-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Position</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.executive_position
-                              ? selectedMember.executive_position
-                                  .replace("_", " ")
-                                  .replace(/\b\w/g, (l) => l.toUpperCase())
-                              : "Member"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-calendar-plus text-blue-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Date of Birth</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.date_of_birth || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-graduation-cap text-indigo-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Education Level
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.education_level || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-briefcase text-teal-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Occupation</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.occupation || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-heart text-pink-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Marital Status
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.marital_status || "Not provided"}
-                          </p>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
+                              Communicant:
+                            </label>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedMember.communicant === "Yes"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              }`}
+                            >
+                              {selectedMember.communicant}
+                            </span>
                         </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Additional Information */}
-                  <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <i className="fas fa-info-circle text-purple-500 mr-2"></i>
-                      Additional Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-wine-glass text-purple-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Communion Status
-                          </p>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              selectedMember.attends_communion
-                                ? "bg-green-100 text-green-800"
-                                : "bg-gray-100 text-gray-800"
-                            }`}
-                          >
-                            <i className={`fas fa-wine-glass mr-1`}></i>
-                            {selectedMember.attends_communion
-                              ? "Attends"
-                              : "Does Not Attend"}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-calendar-alt text-orange-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Member Since</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.member_since || "January 2024"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-users text-yellow-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Emergency Contact
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.emergency_contact || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-phone-alt text-red-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            Emergency Phone
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.emergency_phone || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-notes-medical text-cyan-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Medical Info</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.medical_info || "Not provided"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-lime-100 rounded-full flex items-center justify-center">
-                          <i className="fas fa-comment text-lime-600"></i>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Notes</p>
-                          <p className="font-medium text-gray-900">
-                            {selectedMember.notes || "No notes"}
-                          </p>
-                        </div>
-                      </div>
+                {/* Quick Actions Section */}
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 rounded-xl p-4 sm:p-6 mt-6">
+                  <div className="flex items-center mb-4">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center mr-3">
+                      <i className="fas fa-tools text-gray-600 dark:text-gray-400 text-sm sm:text-base"></i>
                     </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-6">
-                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <i className="fas fa-tools text-gray-500 mr-2"></i>
+                    <h4 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                       Quick Actions
                     </h4>
-                    <div className="flex space-x-3">
-                      <button className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center">
-                        <i className="fas fa-edit mr-2"></i>
-                        Edit Member
-                      </button>
-                      <button className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center">
-                        <i className="fas fa-phone mr-2"></i>
-                        Call Member
-                      </button>
-                      <button className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center">
-                        <i className="fas fa-envelope mr-2"></i>
-                        Send SMS
-                      </button>
-                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                    <button
+                      onClick={() => {
+                        // Handle edit member
+                        setViewModalOpen(false);
+                      }}
+                      className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:flex-1"
+                    >
+                      <i className="fas fa-edit mr-2"></i>
+                      Edit Member
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `tel:${selectedMember.phone_number}`,
+                          "_blank"
+                        )
+                      }
+                      className="flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:flex-1"
+                    >
+                      <i className="fas fa-phone mr-2"></i>
+                      Call Member
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `sms:${selectedMember.phone_number}`,
+                          "_blank"
+                        )
+                      }
+                      className="flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200 font-medium text-sm sm:flex-1"
+                    >
+                      <i className="fas fa-envelope mr-2"></i>
+                      Send SMS
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </DashboardLayout>
   );

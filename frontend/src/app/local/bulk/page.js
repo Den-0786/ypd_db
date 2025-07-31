@@ -1,0 +1,115 @@
+"use client";
+
+import { useState } from "react";
+import DashboardLayout from "../../components/DashboardLayout";
+import BulkAddForm from "./components/BulkAddForm";
+import MemberList from "./components/MemberList";
+import ModeToggle from "./components/ModeToggle";
+import ToastNotification from "./components/ToastNotification";
+
+export default function LocalBulkAddPage() {
+  const [members, setMembers] = useState([]);
+  const [isBulkMode, setIsBulkMode] = useState(true);
+  const [toast, setToast] = useState({
+    show: false,
+    message: "",
+    type: "success",
+  });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type }), 3000);
+  };
+
+  const handleAddMember = (member) => {
+    setMembers([...members, { ...member, id: Date.now() }]);
+    showToast("Member added to list successfully!", "success");
+  };
+
+  const handleRemoveMember = (id) => {
+    setMembers(members.filter((member) => member.id !== id));
+    showToast("Member removed from list", "success");
+  };
+
+  const handleSubmitBulk = async () => {
+    if (members.length === 0) {
+      showToast("Please add at least one member before submitting", "error");
+      return;
+    }
+
+    try {
+      // TODO: Submit to Django API
+      console.log("Submitting members:", members);
+      showToast("Members submitted successfully!", "success");
+      setMembers([]);
+    } catch (error) {
+      console.error("Error submitting members:", error);
+      showToast("Error submitting members. Please try again.", "error");
+    }
+  };
+
+  return (
+    <DashboardLayout
+      currentPage="Bulk Add"
+      headerAction={
+        <div className="flex items-center space-x-2">
+          <div className="bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/30 transition-all duration-200 hover:scale-105 shadow-lg">
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-blue-200 font-medium">Added</span>
+              <span className="text-lg font-bold text-blue-500">
+                {members.length}
+              </span>
+              <i className="fas fa-user-plus text-white text-sm"></i>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      {/* Toast Notification */}
+      <ToastNotification toast={toast} />
+
+      <div className="space-y-6">
+        {/* Page Header */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+              <i className="fas fa-users text-blue-600 mr-3"></i>
+              <span className="whitespace-nowrap">
+                {isBulkMode
+                  ? "Bulk Member Registration"
+                  : "Single Member Registration"}
+              </span>
+            </h1>
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-gray-600 dark:text-gray-300">
+                {isBulkMode
+                  ? "Add multiple members to the system at once"
+                  : "Add a single member to the system"}
+              </p>
+              <ModeToggle
+                isBulkMode={isBulkMode}
+                setIsBulkMode={setIsBulkMode}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Add Member Form */}
+        <BulkAddForm
+          isBulkMode={isBulkMode}
+          onAddMember={handleAddMember}
+          onSubmitSingle={showToast}
+        />
+
+        {/* Member List (only show in bulk mode) */}
+        {isBulkMode && members.length > 0 && (
+          <MemberList
+            members={members}
+            onRemoveMember={handleRemoveMember}
+            onSubmitBulk={handleSubmitBulk}
+          />
+        )}
+      </div>
+    </DashboardLayout>
+  );
+}

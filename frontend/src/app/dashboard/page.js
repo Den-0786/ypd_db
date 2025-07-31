@@ -129,8 +129,7 @@ export default function DashboardPage() {
       return;
     }
 
-    // Check if name exists in database (mock check)
-    const isNameInDatabase = Math.random() > 0.3; // 70% chance of being in database
+    const isNameInDatabase = Math.random() > 0.3; 
 
     if (!isNameInDatabase) {
       showToast("Name not found in database. Submission rejected.", "error");
@@ -161,7 +160,7 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout currentPage="Dashboard">
-      {/* Toast Notification */}
+     
       {toast.show && (
         <div
           className={`fixed top-6 right-6 z-50 px-4 py-2 rounded shadow-lg text-white text-sm font-semibold transition-all duration-300
@@ -175,7 +174,7 @@ export default function DashboardPage() {
       )}
 
       <div className="space-y-6">
-        {/* Quiz Management Section */}
+        
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -422,7 +421,7 @@ export default function DashboardPage() {
               className="bg-purple-600 hover:bg-purple-700 mt-6 text-white px-3 py-2 rounded-md font-medium transition-colors duration-200 flex items-center"
             >
               <i className="fas fa-sync-alt mr-2"></i>
-              G N Password
+              G N P
             </button>
           </div>
         </div>
