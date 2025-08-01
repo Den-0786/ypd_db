@@ -2,9 +2,13 @@
 import { useState, useEffect, useRef } from "react";
 import LocalSidebar from "./LocalSidebar";
 import ExportAnalyticsButton from "./ExportAnalyticsButton";
+import { useTheme } from "./ThemeProvider";
 
 // Members Quick Actions Dropdown Component
-function MembersQuickActionsDropdown({ selectedMembers, onDeleteSelected }) {
+function MembersQuickActionsDropdown({
+  selectedMembers = [],
+  onDeleteSelected = () => {},
+}) {
   const [open, setOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const ref = useRef(null);
@@ -128,7 +132,11 @@ function MembersQuickActionsDropdown({ selectedMembers, onDeleteSelected }) {
               )}
             </div>
             <button
-              onClick={onDeleteSelected}
+              onClick={() => {
+                if (selectedMembers.length > 0) {
+                  onDeleteSelected();
+                }
+              }}
               disabled={selectedMembers.length === 0}
               className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm transition ${
                 selectedMembers.length === 0
@@ -307,41 +315,20 @@ function AttendanceQuickActionsDropdown() {
 
 export default function LocalDashboardLayout({
   children,
-  currentPage,
-  currentPageProps,
-  headerAction,
+  currentPage = "",
+  currentPageProps = {},
+  headerAction = null,
+  selectedMembers = [],
+  onDeleteSelected = () => {},
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState("light"); // Default to light, will be updated in useEffect
+  const { theme, setTheme, mounted } = useTheme();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
   const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
-  const [mounted, setMounted] = useState(false);
-
-  // Initialize theme and mounted state
-  useEffect(() => {
-    setMounted(true);
-
-    // Only access window and localStorage after component is mounted
-    if (typeof window !== "undefined") {
-      // Check localStorage first, then system preference, default to light
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        setTheme(savedTheme);
-      } else {
-        // Check system preference
-        if (
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-        ) {
-          setTheme("dark");
-        }
-      }
-    }
-  }, []);
 
   // Initialize sidebar based on screen size
   useEffect(() => {
@@ -370,44 +357,33 @@ export default function LocalDashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Add this useEffect to sync the 'dark' class on <html> with theme and save to localStorage
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined")
-      return;
-
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    // Save theme to localStorage
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  // Listen for system theme preference changes
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e) => {
-      // Only update if user hasn't manually set a preference
-      if (!localStorage.getItem("theme")) {
-        setTheme(e.matches ? "dark" : "light");
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  // Debug log to help diagnose theme issues
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined")
-      return;
-
-    console.log("LocalDashboardLayout theme:", theme);
-    console.log("HTML classList:", document.documentElement.classList.value);
-  });
+  // Sample notifications
+  const notifications = [
+    {
+      id: 1,
+      message: "New member registration pending approval",
+      time: "2 min ago",
+      type: "info",
+    },
+    {
+      id: 2,
+      message: "Weekly attendance report is ready",
+      time: "1 hour ago",
+      type: "success",
+    },
+    {
+      id: 3,
+      message: "System backup completed successfully",
+      time: "3 hours ago",
+      type: "success",
+    },
+    {
+      id: 4,
+      message: "Database maintenance scheduled for tonight",
+      time: "5 hours ago",
+      type: "warning",
+    },
+  ];
 
   return (
     <div
@@ -417,69 +393,69 @@ export default function LocalDashboardLayout({
       <header
         className={`${mounted && theme === "dark" ? "bg-gray-800" : "bg-blue-600"} shadow-lg w-full px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between fixed top-0 left-0 z-20`}
       >
-        <div className="flex justify-between items-center w-full pl-2 sm:pl-6">
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <div className="relative lg:hidden">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-white hover:text-blue-200 transition-colors mr-2 lg:hidden focus:outline-none"
-                aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
-                onFocus={() => {
-                  const el = document.getElementById("sidebar-tooltip");
-                  if (el) el.style.display = "block";
-                }}
-                onBlur={() => {
-                  const el = document.getElementById("sidebar-tooltip");
-                  if (el) el.style.display = "none";
-                }}
-                onMouseEnter={() => {
-                  const el = document.getElementById("sidebar-tooltip");
-                  if (el) el.style.display = "block";
-                }}
-                onMouseLeave={() => {
-                  const el = document.getElementById("sidebar-tooltip");
-                  if (el) el.style.display = "none";
-                }}
-              >
-                <i className="fas fa-bars text-lg"></i>
-              </button>
-              <div
-                id="sidebar-tooltip"
-                style={{ display: "none" }}
-                className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 rounded bg-gray-900 text-white text-xs shadow z-50 whitespace-nowrap"
-                role="tooltip"
-              >
-                {sidebarOpen ? "Close sidebar" : "Open sidebar"}
-              </div>
+        <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-6">
+          <div className="relative lg:hidden">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="text-white hover:text-blue-200 transition-colors mr-2 lg:hidden focus:outline-none"
+              aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+              onFocus={(e) => {
+                const el = document.getElementById("sidebar-tooltip");
+                if (el) el.style.display = "block";
+              }}
+              onBlur={() => {
+                const el = document.getElementById("sidebar-tooltip");
+                if (el) el.style.display = "none";
+              }}
+              onMouseEnter={() => {
+                const el = document.getElementById("sidebar-tooltip");
+                if (el) el.style.display = "block";
+              }}
+              onMouseLeave={() => {
+                const el = document.getElementById("sidebar-tooltip");
+                if (el) el.style.display = "none";
+              }}
+            >
+              <i className="fas fa-bars text-lg"></i>
+            </button>
+            <div
+              id="sidebar-tooltip"
+              style={{ display: "none" }}
+              className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1 rounded bg-gray-900 text-white text-xs shadow z-50 whitespace-nowrap"
+              role="tooltip"
+            >
+              {sidebarOpen ? "Close sidebar" : "Open sidebar"}
             </div>
-            <i className="fas fa-database text-white text-lg sm:text-2xl"></i>
-            <span className="text-white text-lg sm:text-2xl font-bold">
-              {currentPage}
-            </span>
           </div>
-          {headerAction && <div>{headerAction}</div>}
-          {/* Quick Actions Dropdown for Members Page */}
-          {currentPage === "Members" && (
-            <MembersQuickActionsDropdown
-              selectedMembers={currentPageProps?.selectedMembers || []}
-              onDeleteSelected={
-                currentPageProps?.onDeleteSelected || (() => {})
-              }
-            />
-          )}
-          {/* Quick Actions Dropdown for Attendance Page */}
-          {currentPage === "Attendance" && <AttendanceQuickActionsDropdown />}
+          <i className="fas fa-database text-white text-lg sm:text-2xl"></i>
+          <span className="text-white text-lg sm:text-2xl font-bold">
+            {currentPage}
+          </span>
         </div>
+        {/* Optional right-aligned header action */}
+        {headerAction && (
+          <div className="flex items-center">{headerAction}</div>
+        )}
+        {/* Quick Actions Dropdown for Analytics Page */}
+        {currentPage === "Analytics" && (
+          <QuickActionsDropdown filtered={currentPageProps?.filtered} />
+        )}
+        {/* Quick Actions Dropdown for Members Page */}
+        {currentPage === "Members" && (
+          <MembersQuickActionsDropdown
+            selectedMembers={selectedMembers}
+            onDeleteSelected={onDeleteSelected}
+          />
+        )}
       </header>
+
       {/* Sidebar */}
       <LocalSidebar
-        theme={theme}
-        setTheme={setTheme}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        mounted={mounted}
         setSettingsOpen={setSettingsOpen}
       />
+
       {/* Settings Modal */}
       {settingsOpen && (
         <>
@@ -1012,6 +988,53 @@ export default function LocalDashboardLayout({
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </div>
+    </div>
+  );
+}
+
+function QuickActionsDropdown({ filtered }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div className="relative ml-2" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-200 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-haspopup="true"
+        aria-expanded={open}
+      >
+        <i className="fas fa-bolt text-blue-500"></i>
+        Quick Actions
+        <i
+          className={`fas fa-chevron-${open ? "up" : "down"} text-xs ml-1`}
+        ></i>
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
+          <ExportAnalyticsButton />
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition">
+            <i className="fas fa-chart-line"></i> Generate Report
+          </button>
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition">
+            <i className="fas fa-share"></i> Share Analytics
+          </button>
+          <hr className="my-1 border-gray-200 dark:border-gray-700" />
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            <i className="fas fa-cog"></i> Settings
+          </button>
+        </div>
+      )}
     </div>
   );
 }

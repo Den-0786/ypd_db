@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import React from "react"; // Added missing import for React.Fragment
+import JointProgramModal from "../components/JointProgramModal";
+import React from "react";
 
 // Helper functions for week/month/year
-function getWeekOfMonth(date) {
+const getWeekOfMonth = (date) => {
   const d = new Date(date);
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   return Math.ceil((d.getDate() + firstDay.getDay()) / 7);
-}
+};
 function getMonthName(date) {
   return new Date(date).toLocaleString("default", { month: "short" });
 }
@@ -20,19 +21,31 @@ function getYear(date) {
 export default function AttendancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showLogForm, setShowLogForm] = useState(false);
+  const [showJointProgramModal, setShowJointProgramModal] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [formData, setFormData] = useState({
-    congregation: "",
-    date: new Date().toISOString().split("T")[0],
-    male_count: 0,
-    female_count: 0,
+  const [jointProgramForm, setJointProgramForm] = useState({
+    week: "",
+    month: "",
+    year: "",
+    date: "",
+    programTitle: "",
+    location: "",
   });
   const [selectedCongregation, setSelectedCongregation] = useState("");
   const [selectedWeek, setSelectedWeek] = useState("All");
   const [selectedMonth, setSelectedMonth] = useState("All");
   const [selectedYear, setSelectedYear] = useState("All");
+
+  // Monthly and yearly summary table states
+  const [selectedMonthlyRecords, setSelectedMonthlyRecords] = useState([]);
+  const [selectedYearlyRecords, setSelectedYearlyRecords] = useState([]);
+  const [selectAllMonthly, setSelectAllMonthly] = useState(false);
+  const [selectAllYearly, setSelectAllYearly] = useState(false);
+  const [showMonthlyViewModal, setShowMonthlyViewModal] = useState(false);
+  const [showYearlyViewModal, setShowYearlyViewModal] = useState(false);
+  const [selectedMonthlyRecord, setSelectedMonthlyRecord] = useState(null);
+  const [selectedYearlyRecord, setSelectedYearlyRecord] = useState(null);
   // Custom toast state
   const [toast, setToast] = useState({
     show: false,
@@ -56,50 +69,89 @@ export default function AttendancePage() {
     setConfirmDialog({ show: false, message: "", onConfirm: null });
   }
 
+  const [jointPrograms, setJointPrograms] = useState([]);
+
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+
   useEffect(() => {
     fetchAttendanceRecords();
   }, []);
 
+  // Click outside handlers for dropdowns
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest(".quick-actions-dropdown")) {
+        setShowQuickActions(false);
+        setShowExportModal(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fetchAttendanceRecords = async () => {
     try {
-      // Mock data for now
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth();
+
+      const firstWeekDate = new Date(currentYear, currentMonth, 5);
+      const secondWeekDate = new Date(currentYear, currentMonth, 12);
+
+      const prevMonth1 = new Date(currentYear, currentMonth - 1, 5);
+      const prevMonth2 = new Date(currentYear, currentMonth - 1, 12);
+      const prevMonth3 = new Date(currentYear, currentMonth - 2, 5);
+      const prevMonth4 = new Date(currentYear, currentMonth - 2, 12);
+
       const mockRecords = [
         {
           id: 1,
           congregation: { name: "Emmanuel Congregation Ahinsan" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 25,
           female_count: 30,
           total_count: 55,
+          loggedBy: "John Doe",
+          position: "President",
         },
         {
           id: 2,
           congregation: { name: "Peniel Congregation Esreso No1" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 18,
           female_count: 22,
           total_count: 40,
+          loggedBy: "Sarah Johnson",
+          position: "Secretary",
         },
         {
           id: 3,
           congregation: { name: "Mizpah Congregation Odagya No1" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 15,
           female_count: 20,
           total_count: 35,
+          loggedBy: "Michael Wilson",
+          position: "Vice President",
         },
         {
           id: 4,
           congregation: { name: "Christ Congregation Ahinsan Estate" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 12,
           female_count: 18,
           total_count: 30,
+          loggedBy: "David Brown",
+          position: "Treasurer",
         },
         {
           id: 5,
           congregation: { name: "Ebenezer Congregation Dompoase Aprabo" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 10,
           female_count: 14,
           total_count: 24,
@@ -107,7 +159,7 @@ export default function AttendancePage() {
         {
           id: 6,
           congregation: { name: "Favour Congregation Esreso No2" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 8,
           female_count: 12,
           total_count: 20,
@@ -115,7 +167,7 @@ export default function AttendancePage() {
         {
           id: 7,
           congregation: { name: "Liberty Congregation Esreso High Tension" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 7,
           female_count: 9,
           total_count: 16,
@@ -123,7 +175,7 @@ export default function AttendancePage() {
         {
           id: 8,
           congregation: { name: "Odagya No2" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 6,
           female_count: 8,
           total_count: 14,
@@ -131,7 +183,7 @@ export default function AttendancePage() {
         {
           id: 9,
           congregation: { name: "NOM" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 5,
           female_count: 7,
           total_count: 12,
@@ -139,92 +191,12 @@ export default function AttendancePage() {
         {
           id: 10,
           congregation: { name: "Kokobriko" },
-          date: "2025-01-05",
+          date: firstWeekDate.toISOString().split("T")[0],
           male_count: 4,
           female_count: 6,
           total_count: 10,
         },
-        // Add a second week for each congregation
-        {
-          id: 11,
-          congregation: { name: "Emmanuel Congregation Ahinsan" },
-          date: "2025-01-12",
-          male_count: 28,
-          female_count: 32,
-          total_count: 60,
-        },
-        {
-          id: 12,
-          congregation: { name: "Peniel Congregation Esreso No1" },
-          date: "2025-01-12",
-          male_count: 20,
-          female_count: 25,
-          total_count: 45,
-        },
-        {
-          id: 13,
-          congregation: { name: "Mizpah Congregation Odagya No1" },
-          date: "2025-01-12",
-          male_count: 16,
-          female_count: 21,
-          total_count: 37,
-        },
-        {
-          id: 14,
-          congregation: { name: "Christ Congregation Ahinsan Estate" },
-          date: "2025-01-12",
-          male_count: 13,
-          female_count: 19,
-          total_count: 32,
-        },
-        {
-          id: 15,
-          congregation: { name: "Ebenezer Congregation Dompoase Aprabo" },
-          date: "2025-01-12",
-          male_count: 11,
-          female_count: 15,
-          total_count: 26,
-        },
-        {
-          id: 16,
-          congregation: { name: "Favour Congregation Esreso No2" },
-          date: "2025-01-12",
-          male_count: 9,
-          female_count: 13,
-          total_count: 22,
-        },
-        {
-          id: 17,
-          congregation: { name: "Liberty Congregation Esreso High Tension" },
-          date: "2025-01-12",
-          male_count: 8,
-          female_count: 10,
-          total_count: 18,
-        },
-        {
-          id: 18,
-          congregation: { name: "Odagya No2" },
-          date: "2025-01-12",
-          male_count: 7,
-          female_count: 9,
-          total_count: 16,
-        },
-        {
-          id: 19,
-          congregation: { name: "NOM" },
-          date: "2025-01-12",
-          male_count: 6,
-          female_count: 8,
-          total_count: 14,
-        },
-        {
-          id: 20,
-          congregation: { name: "Kokobriko" },
-          date: "2025-01-12",
-          male_count: 5,
-          female_count: 7,
-          total_count: 12,
-        },
+        // Second week of current month
       ];
       setAttendanceRecords(mockRecords);
     } catch (error) {
@@ -234,19 +206,71 @@ export default function AttendancePage() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    // TODO: Submit to Django API
-    console.log("Submitting attendance:", formData);
-    setShowLogForm(false);
-    setFormData({
-      congregation: "",
-      date: new Date().toISOString().split("T")[0],
-      male_count: 0,
-      female_count: 0,
-    });
-    showToast("Attendance logged successfully!", "success");
+  // Joint program handlers
+  const handleJointProgramInputChange = (field, value) => {
+    setJointProgramForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const handleJointProgram = () => setShowJointProgramModal(true);
+
+  const handleCloseJointProgramModal = () => {
+    setShowJointProgramModal(false);
+    setJointProgramForm({
+      week: "",
+      month: "",
+      year: "",
+      date: "",
+      programTitle: "",
+      location: "",
+    });
+  };
+
+  const handleSubmitJointProgram = () => {
+    const newJointProgram = {
+      id: Date.now(),
+      ...jointProgramForm,
+      createdAt: new Date().toISOString(),
+    };
+    setJointPrograms([...jointPrograms, newJointProgram]);
+    showToast("Joint program scheduled successfully!", "success");
+    handleCloseJointProgramModal();
+  };
+
+  const handleViewRecord = (record) => {
+    setSelectedRecord(record);
+    setShowViewModal(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setSelectedRecord(null);
+  };
+
+  const handleExport = (format) => {
+    console.log(`Exporting as ${format}`);
+    if (format === "CSV") {
+      exportSelectedToCSV();
+    } else if (format === "Excel") {
+      showToast("Excel export coming soon!", "success");
+    } else if (format === "PDF") {
+      showToast("PDF export coming soon!", "success");
+    }
+    setShowExportModal(false);
+  };
+
+  // Check if there's a joint program for the current Sunday
+  const getCurrentSunday = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? 0 : 7);
+    const sunday = new Date(today.setDate(diff));
+    return sunday.toISOString().split("T")[0];
+  };
+
+  const currentSunday = getCurrentSunday();
+  const hasJointProgramThisWeek = jointPrograms.some(
+    (program) => program.date === currentSunday
+  );
 
   const handleSelectAll = () => {
     if (selectAll) {
@@ -293,11 +317,139 @@ export default function AttendancePage() {
 
   const handleBulkExport = () => {
     if (selectedRecords.length === 0) {
-      alert("Please select records to export");
+      showToast("Please select records to export", "error");
       return;
     }
-    // TODO: Implement bulk export
-    console.log("Exporting records:", selectedRecords);
+    exportSelectedToCSV();
+  };
+
+  // Monthly and yearly summary table handlers
+  const handleSelectAllMonthly = () => {
+    if (selectAllMonthly) {
+      setSelectedMonthlyRecords([]);
+      setSelectAllMonthly(false);
+    } else {
+      const monthlyCongregations = Object.keys(
+        (() => {
+          const congregationMonthData = {};
+          currentMonthRecords.forEach((record) => {
+            const congName = record.congregation.name;
+            if (!congregationMonthData[congName]) {
+              congregationMonthData[congName] = {
+                male: 0,
+                female: 0,
+                total: 0,
+              };
+            }
+            congregationMonthData[congName].male += record.male_count;
+            congregationMonthData[congName].female += record.female_count;
+            congregationMonthData[congName].total += record.total_count;
+          });
+          return congregationMonthData;
+        })()
+      );
+      setSelectedMonthlyRecords(monthlyCongregations);
+      setSelectAllMonthly(true);
+    }
+  };
+
+  const handleSelectMonthlyRecord = (congregationName) => {
+    setSelectedMonthlyRecords((prev) =>
+      prev.includes(congregationName)
+        ? prev.filter((name) => name !== congregationName)
+        : [...prev, congregationName]
+    );
+  };
+
+  const handleSelectAllYearly = () => {
+    if (selectAllYearly) {
+      setSelectedYearlyRecords([]);
+      setSelectAllYearly(false);
+    } else {
+      const yearlyCongregations = Object.keys(
+        (() => {
+          const congregationYearData = {};
+          currentYearRecords.forEach((record) => {
+            const congName = record.congregation.name;
+            if (!congregationYearData[congName]) {
+              congregationYearData[congName] = {
+                male: 0,
+                female: 0,
+                total: 0,
+              };
+            }
+            congregationYearData[congName].male += record.male_count;
+            congregationYearData[congName].female += record.female_count;
+            congregationYearData[congName].total += record.total_count;
+          });
+          return congregationYearData;
+        })()
+      );
+      setSelectedYearlyRecords(yearlyCongregations);
+      setSelectAllYearly(true);
+    }
+  };
+
+  const handleSelectYearlyRecord = (congregationName) => {
+    setSelectedYearlyRecords((prev) =>
+      prev.includes(congregationName)
+        ? prev.filter((name) => name !== congregationName)
+        : [...prev, congregationName]
+    );
+  };
+
+  const handleViewMonthlyRecord = (congregationName, data) => {
+    setSelectedMonthlyRecord({ congregationName, ...data });
+    setShowMonthlyViewModal(true);
+  };
+
+  const handleViewYearlyRecord = (congregationName, data) => {
+    setSelectedYearlyRecord({ congregationName, ...data });
+    setShowYearlyViewModal(true);
+  };
+
+  const handleCloseMonthlyViewModal = () => {
+    setShowMonthlyViewModal(false);
+    setSelectedMonthlyRecord(null);
+  };
+
+  const handleCloseYearlyViewModal = () => {
+    setShowYearlyViewModal(false);
+    setSelectedYearlyRecord(null);
+  };
+
+  const handleDeleteMonthlyRecords = () => {
+    if (selectedMonthlyRecords.length === 0) {
+      showToast("Please select records to delete", "error");
+      return;
+    }
+    openConfirmDialog(
+      `Are you sure you want to delete ${selectedMonthlyRecords.length} monthly record(s)?`,
+      () => {
+        // Here you would typically make an API call to delete the records
+        showToast("Monthly records deleted successfully!", "success");
+        setSelectedMonthlyRecords([]);
+        setSelectAllMonthly(false);
+        closeConfirmDialog();
+      }
+    );
+  };
+
+  const handleDeleteYearlyRecords = () => {
+    if (selectedYearlyRecords.length === 0) {
+      showToast("Please select records to delete", "error");
+      return;
+    }
+    openConfirmDialog(
+      `Are you sure you want to delete ${selectedYearlyRecords.length} yearly record(s)?`,
+      () => {
+        // Here you would typically make an API call to delete the records
+        showToast("Yearly records deleted successfully!", "success");
+        setSelectedYearlyRecords([]);
+        setSelectAllYearly(false);
+        closeConfirmDialog();
+      }
+    );
   };
 
   // Export CSV (bulk)
@@ -418,12 +570,60 @@ export default function AttendancePage() {
   );
   const grandTotal = filteredRecords.reduce((sum, r) => sum + r.total_count, 0);
 
-  // Progress for week/month/year
+  // Current date for calculations
   const currentDate = new Date();
+
+  // Current month and year calculations
+  const currentMonthNum = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+
+  // Filter records for current month only
+  const currentMonthRecords = attendanceRecords.filter((r) => {
+    const recordDate = new Date(r.date);
+    return (
+      recordDate.getMonth() === currentMonthNum &&
+      recordDate.getFullYear() === currentYear
+    );
+  });
+
+  // Filter records for current year only
+  const currentYearRecords = attendanceRecords.filter((r) => {
+    const recordDate = new Date(r.date);
+    return recordDate.getFullYear() === currentYear;
+  });
+
+  // Calculate current month totals
+  const currentMonthMale = currentMonthRecords.reduce(
+    (sum, r) => sum + r.male_count,
+    0
+  );
+  const currentMonthFemale = currentMonthRecords.reduce(
+    (sum, r) => sum + r.female_count,
+    0
+  );
+  const currentMonthTotal = currentMonthRecords.reduce(
+    (sum, r) => sum + r.total_count,
+    0
+  );
+
+  // Calculate current year totals
+  const currentYearMale = currentYearRecords.reduce(
+    (sum, r) => sum + r.male_count,
+    0
+  );
+  const currentYearFemale = currentYearRecords.reduce(
+    (sum, r) => sum + r.female_count,
+    0
+  );
+  const currentYearTotal = currentYearRecords.reduce(
+    (sum, r) => sum + r.total_count,
+    0
+  );
+
+  // Progress for week/month/year
   const currentMonth = currentDate.toLocaleString("default", {
     month: "short",
   });
-  const currentYear = currentDate.getFullYear();
   const currentWeek = getWeekOfMonth(currentDate);
   const weekProgress =
     selectedMonth === "All"
@@ -432,15 +632,6 @@ export default function AttendancePage() {
   const monthProgress = `${selectedMonth !== "All" ? allMonths.indexOf(selectedMonth) + 1 : currentDate.getMonth() + 1}/12`;
   const yearProgress = `${selectedYear !== "All" ? allYears.indexOf(Number(selectedYear)) + 1 : allYears.indexOf(currentYear) + 1}/${allYears.length}`;
 
-  // Find current Sunday (today or most recent Sunday)
-  function getCurrentSunday() {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? 0 : 7); // last Sunday if today is not Sunday
-    const sunday = new Date(today.setDate(diff));
-    return sunday.toISOString().split("T")[0];
-  }
-  const currentSunday = getCurrentSunday();
   // All congregation names
   const allCongNames = [
     "Emmanuel Congregation Ahinsan",
@@ -463,8 +654,123 @@ export default function AttendancePage() {
   );
   const sundayProgress = `${submittedCongregations.length}/${allCongNames.length}`;
 
+  // Quick Actions Component for Header
+  const AttendanceQuickActions = () => (
+    <div className="relative quick-actions-dropdown">
+      <button
+        onClick={() => setShowQuickActions(!showQuickActions)}
+        className="flex items-center gap-2 px-3 py-1.5 bg-white/90 hover:bg-blue-50 text-blue-700 rounded-lg shadow-sm border border-blue-200 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-400"
+        aria-haspopup="true"
+        aria-expanded={showQuickActions}
+      >
+        <i className="fas fa-bolt text-blue-500"></i>
+        Quick Actions
+        <i
+          className={`fas fa-chevron-${showQuickActions ? "up" : "down"} text-xs ml-1`}
+        ></i>
+      </button>
+      {showQuickActions && (
+        <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
+          <button
+            onClick={printTable}
+            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+          >
+            <i className="fas fa-print"></i> Print Table
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowExportModal(!showExportModal)}
+              className="w-full flex items-center justify-between px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
+            >
+              <div className="flex items-center gap-2">
+                <i className="fas fa-download"></i>
+                <span>Export Data As</span>
+              </div>
+              <i
+                className={`fas fa-chevron-${showExportModal ? "down" : "right"} text-xs`}
+              ></i>
+            </button>
+
+            {/* Export Modal */}
+            {showExportModal && (
+              <div
+                className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-3"
+                style={{ minWidth: "140px" }}
+              >
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
+                    Export As
+                  </h3>
+                  <button
+                    onClick={() => setShowExportModal(false)}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <i className="fas fa-times text-xs"></i>
+                  </button>
+                </div>
+                <div className="space-y-1">
+                  <button
+                    onClick={() => handleExport("CSV")}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <i className="fas fa-file-csv text-green-600 text-xs"></i>
+                    <span>CSV</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport("Excel")}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <i className="fas fa-file-excel text-green-600 text-xs"></i>
+                    <span>Excel</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport("PDF")}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                  >
+                    <i className="fas fa-file-pdf text-red-600 text-xs"></i>
+                    <span>PDF</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleBulkDelete}
+            disabled={selectedRecords.length === 0}
+            className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-800 focus:bg-red-100 dark:focus:bg-red-700 transition ${selectedRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <i className="fas fa-trash"></i> Delete Selected
+          </button>
+
+          <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+
+          <button
+            onClick={handleDeleteMonthlyRecords}
+            disabled={selectedMonthlyRecords.length === 0}
+            className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-800 focus:bg-orange-100 dark:focus:bg-orange-700 transition ${selectedMonthlyRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <i className="fas fa-calendar-alt"></i> Delete Monthly Selected
+          </button>
+
+          <button
+            onClick={handleDeleteYearlyRecords}
+            disabled={selectedYearlyRecords.length === 0}
+            className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-800 focus:bg-indigo-100 dark:focus:bg-indigo-700 transition ${selectedYearlyRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <i className="fas fa-calendar"></i> Delete Yearly Selected
+          </button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <DashboardLayout currentPage="Attendance">
+    <DashboardLayout
+      currentPage="Attendance"
+      headerAction={<AttendanceQuickActions />}
+    >
       {/* Custom Toast Notification */}
       {toast.show && (
         <div
@@ -522,6 +828,24 @@ export default function AttendancePage() {
               <p className="text-gray-600 dark:text-gray-300 mt-2">
                 Track Sunday attendance across congregations
               </p>
+
+              {/* Joint Program Status */}
+              {hasJointProgramThisWeek && (
+                <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center">
+                    <i className="fas fa-handshake text-purple-600 dark:text-purple-400 mr-2"></i>
+                    <div>
+                      <div className="font-semibold text-purple-800 dark:text-purple-200 text-sm">
+                        Joint Program Scheduled
+                      </div>
+                      <div className="text-purple-600 dark:text-purple-300 text-xs">
+                        No individual attendance reminders this week
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="mt-2">
                 <span className="inline-block bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-xs font-semibold mr-2">
                   This Sunday Progress: {sundayProgress}
@@ -554,21 +878,25 @@ export default function AttendancePage() {
                     <div className="font-semibold text-red-700 dark:text-red-300 text-xs">
                       Not Submitted ({notSubmittedCongregations.length})
                     </div>
-                    {notSubmittedCongregations.length > 0 && (
-                      <button
-                        onClick={() =>
-                          showToast(
-                            "Reminders sent to all non-submitting congregations!",
-                            "success"
-                          )
-                        }
-                        className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-red-700 transition"
-                        aria-label="Remind all non-submitting congregations"
-                      >
-                        <i className="fas fa-bell mr-1" aria-hidden="true"></i>{" "}
-                        Remind All
-                      </button>
-                    )}
+                    {notSubmittedCongregations.length > 0 &&
+                      !hasJointProgramThisWeek && (
+                        <button
+                          onClick={() =>
+                            showToast(
+                              "Reminders sent to all non-submitting congregations!",
+                              "success"
+                            )
+                          }
+                          className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-red-700 transition"
+                          aria-label="Remind all non-submitting congregations"
+                        >
+                          <i
+                            className="fas fa-bell mr-1"
+                            aria-hidden="true"
+                          ></i>{" "}
+                          Remind All
+                        </button>
+                      )}
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {notSubmittedCongregations.length > 0 ? (
@@ -589,13 +917,15 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setShowLogForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200 w-full sm:w-auto"
-            >
-              <i className="fas fa-plus mr-2"></i>
-              Log Attendance
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={handleJointProgram}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition duration-200 w-full sm:w-auto"
+              >
+                <i className="fas fa-handshake mr-2"></i>
+                Schedule Joint Program
+              </button>
+            </div>
           </div>
         </div>
 
@@ -700,61 +1030,121 @@ export default function AttendancePage() {
         </div>
 
         {/* Colored Summary Cards */}
-        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-          {/* Each card is min-w-[180px] to fit horizontally and whitespace-nowrap for scroll */}
-          <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Total Male</p>
-                <p className="text-lg font-bold">{totalMale}</p>
+        <div className="overflow-x-auto">
+          <div className="flex justify-between min-w-max p-1 gap-4">
+            {/* Total Male Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 min-w-[280px] relative overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/5 to-blue-300/5 dark:from-blue-300/10 dark:to-blue-200/10 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-blue-100/30 dark:bg-blue-400/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-blue-100/30 dark:bg-blue-400/10 rounded-full -ml-8 -mb-8"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3">
+                    <i className="fas fa-mars text-blue-600 dark:text-blue-400 text-xl"></i>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                      Total Male
+                    </div>
+                    <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                      {totalMale.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">
+                    Week: {weekProgress || "All"} | Month: {monthProgress} |
+                    Year: {yearProgress}
+                  </div>
+                </div>
               </div>
-              <i className="fas fa-mars text-xl opacity-80"></i>
             </div>
-            <div className="text-[10px] mt-1">
-              Week: {weekProgress || "All"} | Month: {monthProgress} | Year:{" "}
-              {yearProgress}
-            </div>
-          </div>
-          <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Total Female</p>
-                <p className="text-lg font-bold">{totalFemale}</p>
+
+            {/* Total Female Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 min-w-[280px] relative overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-pink-400/5 to-pink-300/5 dark:from-pink-300/10 dark:to-pink-200/10 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-pink-100/30 dark:bg-pink-400/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-pink-100/30 dark:bg-pink-400/10 rounded-full -ml-8 -mb-8"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-pink-100 dark:bg-pink-900/30 rounded-lg p-3">
+                    <i className="fas fa-venus text-pink-600 dark:text-pink-400 text-xl"></i>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                      Total Female
+                    </div>
+                    <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                      {totalFemale.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">
+                    Week: {weekProgress || "All"} | Month: {monthProgress} |
+                    Year: {yearProgress}
+                  </div>
+                </div>
               </div>
-              <i className="fas fa-venus text-xl opacity-80"></i>
             </div>
-            <div className="text-[10px] mt-1">
-              Week: {weekProgress || "All"} | Month: {monthProgress} | Year:{" "}
-              {yearProgress}
-            </div>
-          </div>
-          <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Grand Total</p>
-                <p className="text-lg font-bold">{grandTotal}</p>
+
+            {/* Grand Total Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 min-w-[280px] relative overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/5 to-green-300/5 dark:from-green-300/10 dark:to-green-200/10 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-green-100/30 dark:bg-green-400/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-green-100/30 dark:bg-green-400/10 rounded-full -ml-8 -mb-8"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-3">
+                    <i className="fas fa-users text-green-600 dark:text-green-400 text-xl"></i>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                      Grand Total
+                    </div>
+                    <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                      {grandTotal.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">
+                    Week: {weekProgress || "All"} | Month: {monthProgress} |
+                    Year: {yearProgress}
+                  </div>
+                </div>
               </div>
-              <i className="fas fa-users text-xl opacity-80"></i>
             </div>
-            <div className="text-[10px] mt-1">
-              Week: {weekProgress || "All"} | Month: {monthProgress} | Year:{" "}
-              {yearProgress}
-            </div>
-          </div>
-          <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 min-w-[180px] flex-shrink-0 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs opacity-90">Congregations</p>
-                <p className="text-lg font-bold">
-                  {selectedCongregation ? 1 : congregationNames.length}
-                </p>
+
+            {/* Congregations Card */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 min-w-[280px] relative overflow-hidden border border-gray-200 dark:border-gray-700">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/5 to-purple-300/5 dark:from-purple-300/10 dark:to-purple-200/10 animate-pulse"></div>
+              <div className="absolute top-0 right-0 w-20 h-20 bg-purple-100/30 dark:bg-purple-400/10 rounded-full -mr-10 -mt-10"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-purple-100/30 dark:bg-purple-400/10 rounded-full -ml-8 -mb-8"></div>
+
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="bg-purple-100 dark:bg-purple-900/30 rounded-lg p-3">
+                    <i className="fas fa-church text-purple-600 dark:text-purple-400 text-xl"></i>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-gray-600 dark:text-gray-400 text-sm">
+                      Congregations
+                    </div>
+                    <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                      {selectedCongregation ? 1 : congregationNames.length}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-gray-600 dark:text-gray-400 text-sm">
+                    {selectedCongregation || "All Congregations"}
+                  </div>
+                </div>
               </div>
-              <i className="fas fa-church text-xl opacity-80"></i>
-            </div>
-            <div className="text-[10px] mt-1">
-              {selectedCongregation
-                ? selectedCongregation
-                : "All Congregations"}
             </div>
           </div>
         </div>
@@ -766,7 +1156,7 @@ export default function AttendancePage() {
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Recent Attendance Records
+                  Current Week Records
                 </h3>
                 {selectedRecords.length > 0 && (
                   <div className="flex space-x-2">
@@ -777,14 +1167,6 @@ export default function AttendancePage() {
                     >
                       <i className="fas fa-trash mr-1"></i>
                       Delete ({selectedRecords.length})
-                    </button>
-                    <button
-                      onClick={handleBulkExport}
-                      className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700 transition duration-200 text-sm"
-                      title="Export selected records"
-                    >
-                      <i className="fas fa-download mr-1"></i>
-                      Export ({selectedRecords.length})
                     </button>
                   </div>
                 )}
@@ -880,15 +1262,9 @@ export default function AttendancePage() {
                               <button
                                 className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
                                 title="View attendance details"
+                                onClick={() => handleViewRecord(record)}
                               >
                                 <i className="fas fa-eye"></i>
-                              </button>
-                              <button
-                                className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200"
-                                title="Edit attendance record"
-                                disabled
-                              >
-                                <i className="fas fa-edit"></i>
                               </button>
                               <button
                                 className="text-red-600 hover:text-red-900 transition-colors duration-200"
@@ -923,191 +1299,556 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
-            {/* Export/Print Buttons at Bottom */}
-            <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700 justify-end">
-              <button
-                onClick={printTable}
-                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-                aria-label="Print attendance table"
-              >
-                <i className="fas fa-print mr-1" aria-hidden="true"></i> Print
-                Table
-              </button>
-              <button
-                onClick={exportSelectedToCSV}
-                disabled={selectedRecords.length === 0}
-                className={`bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm ${selectedRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                aria-label="Export selected attendance records to CSV"
-              >
-                <i className="fas fa-file-csv mr-1" aria-hidden="true"></i>{" "}
-                Export Selected
-              </button>
-              <button
-                onClick={handleBulkDelete}
-                disabled={selectedRecords.length === 0}
-                className={`bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm ${selectedRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
-                aria-label="Delete selected attendance records"
-              >
-                <i className="fas fa-trash mr-1" aria-hidden="true"></i> Delete
-                Selected
-              </button>
-            </div>
           </div>
           {/* end #attendance-table-area */}
         </div>
 
-        {/* Log Attendance Form Modal */}
-        {showLogForm && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Log Sunday Attendance
-                </h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+        {/* Current Month Summary by Congregation */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 relative overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-400/5 to-orange-300/5 dark:from-orange-300/10 dark:to-orange-200/10 animate-pulse"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-100/30 dark:bg-orange-400/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-orange-100/30 dark:bg-orange-400/10 rounded-full -ml-8 -mb-8"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-3">
+                <i className="fas fa-calendar-alt text-orange-600 dark:text-orange-400 text-xl"></i>
+              </div>
+              <div className="text-right">
+                <div className="text-gray-600 dark:text-gray-400 text-sm">
+                  Current Month Summary
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                  {new Date().toLocaleString("default", { month: "long" })}{" "}
+                  {currentYear}
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectAllMonthly}
+                        onChange={handleSelectAllMonthly}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        title="Select all monthly records"
+                      />
+                    </th>
+                    <th scope="col" className="px-6 py-3">
                       Congregation
-                    </label>
-                    <select
-                      value={formData.congregation}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          congregation: e.target.value,
-                        })
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Male
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Female
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Total
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Group current month records by congregation
+                    const congregationMonthData = {};
+                    currentMonthRecords.forEach((record) => {
+                      const congName = record.congregation.name;
+                      if (!congregationMonthData[congName]) {
+                        congregationMonthData[congName] = {
+                          male: 0,
+                          female: 0,
+                          total: 0,
+                        };
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
-                      required
-                    >
-                      <option value="" className="text-gray-800">
-                        Select Congregation
-                      </option>
-                      <option
-                        value="Emmanuel Congregation Ahinsan"
-                        className="text-gray-800"
-                      >
-                        Emmanuel Congregation Ahinsan
-                      </option>
-                      <option
-                        value="Peniel Congregation Esreso No1"
-                        className="text-gray-800"
-                      >
-                        Peniel Congregation Esreso No1
-                      </option>
-                      <option
-                        value="Mizpah Congregation Odagya No1"
-                        className="text-gray-800"
-                      >
-                        Mizpah Congregation Odagya No1
-                      </option>
-                      <option
-                        value="Christ Congregation Ahinsan Estate"
-                        className="text-gray-800"
-                      >
-                        Christ Congregation Ahinsan Estate
-                      </option>
-                      <option
-                        value="Ebenezer Congregation Dompoase Aprabo"
-                        className="text-gray-800"
-                      >
-                        Ebenezer Congregation Dompoase Aprabo
-                      </option>
-                      <option
-                        value="Favour Congregation Esreso No2"
-                        className="text-gray-800"
-                      >
-                        Favour Congregation Esreso No2
-                      </option>
-                      <option
-                        value="Liberty Congregation Esreso High Tension"
-                        className="text-gray-800"
-                      >
-                        Liberty Congregation Esreso High Tension
-                      </option>
-                      <option value="Odagya No2" className="text-gray-800">
-                        Odagya No2
-                      </option>
-                      <option value="NOM" className="text-gray-800">
-                        NOM
-                      </option>
-                      <option value="Kokobriko" className="text-gray-800">
-                        Kokobriko
-                      </option>
-                    </select>
-                  </div>
+                      congregationMonthData[congName].male += record.male_count;
+                      congregationMonthData[congName].female +=
+                        record.female_count;
+                      congregationMonthData[congName].total +=
+                        record.total_count;
+                    });
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
-                    </label>
-                    <input
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) =>
-                        setFormData({ ...formData, date: e.target.value })
+                    return Object.entries(congregationMonthData).map(
+                      ([congName, data]) => (
+                        <tr
+                          key={congName}
+                          className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedMonthlyRecords.includes(
+                                congName
+                              )}
+                              onChange={() =>
+                                handleSelectMonthlyRecord(congName)
+                              }
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            {congName}
+                          </td>
+                          <td className="px-6 py-4 text-center text-blue-600 dark:text-blue-400 font-semibold">
+                            {data.male.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-center text-pink-600 dark:text-pink-400 font-semibold">
+                            {data.female.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-center text-green-600 dark:text-green-400 font-semibold">
+                            {data.total.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2 justify-center">
+                              <button
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                title="View monthly details"
+                                onClick={() =>
+                                  handleViewMonthlyRecord(congName, data)
+                                }
+                              >
+                                <i className="fas fa-eye"></i>
+                              </button>
+                              <button
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                title="Delete monthly record"
+                                onClick={() => {
+                                  openConfirmDialog(
+                                    "Are you sure you want to delete this monthly record?",
+                                    () => {
+                                      // Here you would typically make an API call to delete the records
+                                      showToast(
+                                        "Monthly record deleted successfully!",
+                                        "success"
+                                      );
+                                      closeConfirmDialog();
+                                    }
+                                  );
+                                }}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Year Summary by Congregation */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 relative overflow-hidden border border-gray-200 dark:border-gray-700">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-400/5 to-indigo-300/5 dark:from-indigo-300/10 dark:to-indigo-200/10 animate-pulse"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-100/30 dark:bg-indigo-400/10 rounded-full -mr-10 -mt-10"></div>
+          <div className="absolute bottom-0 left-0 w-16 h-16 bg-indigo-100/30 dark:bg-indigo-400/10 rounded-full -ml-8 -mb-8"></div>
+
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-6">
+              <div className="bg-indigo-100 dark:bg-indigo-900/30 rounded-lg p-3">
+                <i className="fas fa-calendar text-indigo-600 dark:text-indigo-400 text-xl"></i>
+              </div>
+              <div className="text-right">
+                <div className="text-gray-600 dark:text-gray-400 text-sm">
+                  Current Year Summary
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl font-bold">
+                  {currentYear} - All Months
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 w-12">
+                      <input
+                        type="checkbox"
+                        checked={selectAllYearly}
+                        onChange={handleSelectAllYearly}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        title="Select all yearly records"
+                      />
+                    </th>
+                    <th scope="col" className="px-6 py-3">
+                      Congregation
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Male
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Female
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Total
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-center">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(() => {
+                    // Group current year records by congregation
+                    const congregationYearData = {};
+                    currentYearRecords.forEach((record) => {
+                      const congName = record.congregation.name;
+                      if (!congregationYearData[congName]) {
+                        congregationYearData[congName] = {
+                          male: 0,
+                          female: 0,
+                          total: 0,
+                        };
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    />
-                  </div>
+                      congregationYearData[congName].male += record.male_count;
+                      congregationYearData[congName].female +=
+                        record.female_count;
+                      congregationYearData[congName].total +=
+                        record.total_count;
+                    });
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Male Count
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.male_count}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            male_count: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
+                    return Object.entries(congregationYearData).map(
+                      ([congName, data]) => (
+                        <tr
+                          key={congName}
+                          className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <input
+                              type="checkbox"
+                              checked={selectedYearlyRecords.includes(congName)}
+                              onChange={() =>
+                                handleSelectYearlyRecord(congName)
+                              }
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </td>
+                          <td className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            {congName}
+                          </td>
+                          <td className="px-6 py-4 text-center text-blue-600 dark:text-blue-400 font-semibold">
+                            {data.male.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-center text-pink-600 dark:text-pink-400 font-semibold">
+                            {data.female.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 text-center text-green-600 dark:text-green-400 font-semibold">
+                            {data.total.toLocaleString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2 justify-center">
+                              <button
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                title="View yearly details"
+                                onClick={() =>
+                                  handleViewYearlyRecord(congName, data)
+                                }
+                              >
+                                <i className="fas fa-eye"></i>
+                              </button>
+                              <button
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                title="Delete yearly record"
+                                onClick={() => {
+                                  openConfirmDialog(
+                                    "Are you sure you want to delete this yearly record?",
+                                    () => {
+                                      // Here you would typically make an API call to delete the records
+                                      showToast(
+                                        "Yearly record deleted successfully!",
+                                        "success"
+                                      );
+                                      closeConfirmDialog();
+                                    }
+                                  );
+                                }}
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Joint Program Modal */}
+        <JointProgramModal
+          showJointProgramModal={showJointProgramModal}
+          jointProgramForm={jointProgramForm}
+          handleJointProgramInputChange={handleJointProgramInputChange}
+          handleCloseJointProgramModal={handleCloseJointProgramModal}
+          handleSubmitJointProgram={handleSubmitJointProgram}
+        />
+
+        {/* View Attendance Record Modal */}
+        {showViewModal && selectedRecord && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <i className="fas fa-eye text-blue-500 mr-2"></i>
+                    Attendance Record Details
+                  </h3>
+                  <button
+                    onClick={handleCloseViewModal}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Congregation:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {selectedRecord.congregation.name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Date:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {new Date(selectedRecord.date).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Male Count:
+                        </span>
+                        <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
+                          {selectedRecord.male_count}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Female Count:
+                        </span>
+                        <span className="ml-2 font-medium text-pink-600 dark:text-pink-400">
+                          {selectedRecord.female_count}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Total:
+                        </span>
+                        <span className="ml-2 font-medium text-green-600 dark:text-green-400">
+                          {selectedRecord.total_count}
+                        </span>
+                      </div>
+                      {selectedRecord.loggedBy && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Logged By:
+                          </span>
+                          <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                            {selectedRecord.loggedBy}
+                          </span>
+                        </div>
+                      )}
+                      {selectedRecord.position && (
+                        <div>
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Position:
+                          </span>
+                          <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                            {selectedRecord.position}
+                          </span>
+                        </div>
+                      )}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Female Count
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.female_count}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            female_count: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      />
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleCloseViewModal}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Monthly Summary View Modal */}
+        {showMonthlyViewModal && selectedMonthlyRecord && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <i className="fas fa-calendar-alt text-orange-500 mr-2"></i>
+                    Monthly Summary Details
+                  </h3>
+                  <button
+                    onClick={handleCloseMonthlyViewModal}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Congregation:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {selectedMonthlyRecord.congregationName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Period:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {new Date().toLocaleString("default", {
+                            month: "long",
+                          })}{" "}
+                          {currentYear}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Male Count:
+                        </span>
+                        <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
+                          {selectedMonthlyRecord.male.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Female Count:
+                        </span>
+                        <span className="ml-2 font-medium text-pink-600 dark:text-pink-400">
+                          {selectedMonthlyRecord.female.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Total:
+                        </span>
+                        <span className="ml-2 font-medium text-green-600 dark:text-green-400">
+                          {selectedMonthlyRecord.total.toLocaleString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex justify-end space-x-3 pt-4">
+                  <div className="flex justify-end">
                     <button
-                      type="button"
-                      onClick={() => setShowLogForm(false)}
-                      className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition duration-200"
+                      onClick={handleCloseMonthlyViewModal}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
                     >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition duration-200"
-                    >
-                      Log Attendance
+                      Close
                     </button>
                   </div>
-                </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Yearly Summary View Modal */}
+        {showYearlyViewModal && selectedYearlyRecord && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <i className="fas fa-calendar text-indigo-500 mr-2"></i>
+                    Yearly Summary Details
+                  </h3>
+                  <button
+                    onClick={handleCloseYearlyViewModal}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Congregation:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {selectedYearlyRecord.congregationName}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Period:
+                        </span>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {currentYear} - All Months
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Male Count:
+                        </span>
+                        <span className="ml-2 font-medium text-blue-600 dark:text-blue-400">
+                          {selectedYearlyRecord.male.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Female Count:
+                        </span>
+                        <span className="ml-2 font-medium text-pink-600 dark:text-pink-400">
+                          {selectedYearlyRecord.female.toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Total:
+                        </span>
+                        <span className="ml-2 font-medium text-green-600 dark:text-green-400">
+                          {selectedYearlyRecord.total.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleCloseYearlyViewModal}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

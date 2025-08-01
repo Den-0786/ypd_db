@@ -1013,7 +1013,7 @@ export default function LocalMembersPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                Showing {startIndex + 1} to{" "}
+                {startIndex + 1} to{" "}
                 {Math.min(endIndex, filteredMembers.length)} of{" "}
                 {filteredMembers.length} members
               </div>

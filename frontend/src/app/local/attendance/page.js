@@ -23,6 +23,8 @@ export default function LocalAttendancePage() {
     male: 0,
     female: 0,
     total: 0,
+    loggedBy: "",
+    position: "",
   });
   const [jointProgramForm, setJointProgramForm] = useState({
     week: "",
@@ -51,6 +53,7 @@ export default function LocalAttendancePage() {
       { week: "Week 2", male: 0, female: 0, total: 0, isJointProgram: false },
       { week: "Week 3", male: 0, female: 0, total: 0, isJointProgram: false },
       { week: "Week 4", male: 0, female: 0, total: 0, isJointProgram: false },
+      { week: "Week 5", male: 0, female: 0, total: 0, isJointProgram: false },
     ],
   });
 
@@ -103,6 +106,8 @@ export default function LocalAttendancePage() {
       male: 0,
       female: 0,
       total: 0,
+      loggedBy: "",
+      position: "",
     });
   };
 

@@ -2,44 +2,22 @@
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import ExportAnalyticsButton from "./ExportAnalyticsButton";
+import { useTheme } from "./ThemeProvider";
 
 export default function DashboardLayout({
   children,
-  currentPage,
-  currentPageProps,
-  headerAction,
+  currentPage = "",
+  currentPageProps = {},
+  headerAction = null,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState("light"); // Default to light, will be updated in useEffect
+  const { theme, setTheme, mounted } = useTheme();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
-  const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
-  const [mounted, setMounted] = useState(false);
-
-  // Initialize theme and mounted state
-  useEffect(() => {
-    setMounted(true);
-
-    // Only access window and localStorage after component is mounted
-    if (typeof window !== "undefined") {
-      // Check localStorage first, then system preference, default to light
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme) {
-        setTheme(savedTheme);
-      } else {
-        // Check system preference
-        if (
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches
-        ) {
-          setTheme("dark");
-        }
-      }
-    }
-  }, []);
+  const [securityMethod, setSecurityMethod] = useState("password");
 
   // Initialize sidebar based on screen size
   useEffect(() => {
@@ -67,45 +45,6 @@ export default function DashboardLayout({
     // Cleanup
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Add this useEffect to sync the 'dark' class on <html> with theme and save to localStorage
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined")
-      return;
-
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-    // Save theme to localStorage
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  // Listen for system theme preference changes
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e) => {
-      // Only update if user hasn't manually set a preference
-      if (!localStorage.getItem("theme")) {
-        setTheme(e.matches ? "dark" : "light");
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  // Debug log to help diagnose theme issues
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof document === "undefined")
-      return;
-
-    console.log("DashboardLayout theme:", theme);
-    console.log("HTML classList:", document.documentElement.classList.value);
-  });
 
   // Sample notifications
   const notifications = [
@@ -196,18 +135,28 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <Sidebar
-        theme={theme}
-        setTheme={setTheme}
         notifications={notifications}
         notificationsOpen={notificationsOpen}
         setNotificationsOpen={setNotificationsOpen}
         userMenuOpen={userMenuOpen}
         setUserMenuOpen={setUserMenuOpen}
-        setSettingsOpen={setSettingsOpen}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
-        mounted={mounted}
+        setSettingsOpen={setSettingsOpen}
       />
+
+      {/* Main content */}
+      <div
+        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${mounted && theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
+        onClick={() => {
+          // Close sidebar when clicking outside on mobile
+          if (sidebarOpen && window.innerWidth < 1024) {
+            setSidebarOpen(false);
+          }
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
+      </div>
 
       {/* Settings Modal */}
       {settingsOpen && (
@@ -216,10 +165,10 @@ export default function DashboardLayout({
             className="fixed inset-0 bg-black bg-opacity-50 z-50"
             onClick={() => setSettingsOpen(false)}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-lg sm:max-w-2xl max-h-[95vh] overflow-hidden">
+              <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                   Settings
                 </h2>
                 <button
@@ -229,197 +178,166 @@ export default function DashboardLayout({
                   <i className="fas fa-times text-lg"></i>
                 </button>
               </div>
-
               <div className="flex h-96">
                 {/* Settings Sidebar */}
                 <div className="w-48 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <nav className="p-4 space-y-2">
                     <button
                       onClick={() => setActiveSettingsTab("profile")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "profile"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "profile" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-user mr-2"></i>Profile
                     </button>
                     <button
                       onClick={() => setActiveSettingsTab("security")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "security"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "security" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-shield-alt mr-2"></i>Security
                     </button>
                     <button
+                      onClick={() => setActiveSettingsTab("privacy")}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "privacy" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                    >
+                      <i className="fas fa-user-secret mr-2"></i>Privacy
+                    </button>
+                    <button
                       onClick={() => setActiveSettingsTab("notifications")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "notifications"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "notifications" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-bell mr-2"></i>Notifications
                     </button>
                     <button
                       onClick={() => setActiveSettingsTab("appearance")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "appearance"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "appearance" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-palette mr-2"></i>Appearance
                     </button>
                     <button
                       onClick={() => setActiveSettingsTab("data")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "data"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "data" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-database mr-2"></i>Data Management
                     </button>
                     <button
                       onClick={() => setActiveSettingsTab("about")}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        activeSettingsTab === "about"
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "about" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-info-circle mr-2"></i>About
                     </button>
                   </nav>
                 </div>
-
                 {/* Settings Content */}
                 <div className="flex-1 p-6 overflow-y-auto">
                   {activeSettingsTab === "profile" && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Profile Settings
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Full Name
                           </label>
                           <input
                             type="text"
                             defaultValue="Admin User"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Email
                           </label>
                           <input
                             type="email"
                             defaultValue="admin@ypg.com"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Phone
                           </label>
                           <input
                             type="tel"
                             defaultValue="+233 20 123 4567"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Role
                           </label>
-                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base">
                             <option>System Administrator</option>
                             <option>Data Manager</option>
                             <option>Viewer</option>
                           </select>
                         </div>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
                           Update Profile
                         </button>
                       </div>
                     </div>
                   )}
-
                   {activeSettingsTab === "security" && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Security Settings
                       </h3>
-
                       {/* Authentication Method Toggle */}
-                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 sm:p-4">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2 sm:mb-3">
                           Authentication Method
                         </h4>
-                        <div className="flex space-x-4">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
                           <button
                             onClick={() => setSecurityMethod("password")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              securityMethod === "password"
-                                ? "bg-blue-600 text-white"
-                                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${securityMethod === "password" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"}`}
                           >
-                            <i className="fas fa-key mr-2"></i>
-                            Username & Password
+                            <i className="fas fa-key mr-2"></i>Username &
+                            Password
                           </button>
                           <button
                             onClick={() => setSecurityMethod("pin")}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                              securityMethod === "pin"
-                                ? "bg-blue-600 text-white"
-                                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"
-                            }`}
+                            className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${securityMethod === "pin" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600"}`}
                           >
-                            <i className="fas fa-mobile-alt mr-2"></i>
-                            PIN Authentication
+                            <i className="fas fa-mobile-alt mr-2"></i>PIN
+                            Authentication
                           </button>
                         </div>
                       </div>
-
                       {/* Password Authentication Form */}
                       {securityMethod === "password" && (
-                        <div className="space-y-4">
-                          <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                        <div className="space-y-3 sm:space-y-4">
+                          <h4 className="text-xs sm:text-md font-medium text-gray-900 dark:text-white">
                             Password Settings
                           </h4>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Current Password
                             </label>
                             <input
                               type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               New Password
                             </label>
                             <input
                               type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Confirm New Password
                             </label>
                             <input
                               type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div className="flex items-center space-x-2">
@@ -430,58 +348,57 @@ export default function DashboardLayout({
                             />
                             <label
                               htmlFor="2fa"
-                              className="text-sm text-gray-700 dark:text-gray-300"
+                              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
                             >
                               Enable Two-Factor Authentication
                             </label>
                           </div>
-                          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
                             Update Password Settings
                           </button>
                         </div>
                       )}
-
                       {/* PIN Authentication Form */}
                       {securityMethod === "pin" && (
-                        <div className="space-y-4">
-                          <h4 className="text-md font-medium text-gray-900 dark:text-white">
+                        <div className="space-y-3 sm:space-y-4">
+                          <h4 className="text-xs sm:text-md font-medium text-gray-900 dark:text-white">
                             PIN Settings
                           </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2 sm:mb-4">
                             PIN authentication is used for quick actions and
                             sensitive operations.
                           </p>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Current PIN
                             </label>
                             <input
                               type="password"
                               maxLength="6"
                               placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               New PIN
                             </label>
                             <input
                               type="password"
                               maxLength="6"
                               placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Confirm New PIN
                             </label>
                             <input
                               type="password"
                               maxLength="6"
                               placeholder="Confirm 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div className="flex items-center space-x-2">
@@ -493,28 +410,42 @@ export default function DashboardLayout({
                             />
                             <label
                               htmlFor="pin-actions"
-                              className="text-sm text-gray-700 dark:text-gray-300"
+                              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
                             >
                               Require PIN for sensitive actions
                             </label>
                           </div>
-                          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
                             Update PIN Settings
                           </button>
                         </div>
                       )}
                     </div>
                   )}
-
-                  {activeSettingsTab === "notifications" && (
+                  {activeSettingsTab === "privacy" && (
                     <div className="space-y-6">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        Notification Preferences
+                        Privacy Policy
                       </h3>
                       <div className="space-y-4">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          Your data is protected and used only for church
+                          administration purposes. We do not share your
+                          information with third parties. For more details,
+                          contact your administrator.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {activeSettingsTab === "notifications" && (
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                        Notification Preferences
+                      </h3>
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               Email Notifications
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -529,7 +460,7 @@ export default function DashboardLayout({
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               New Member Alerts
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -544,7 +475,7 @@ export default function DashboardLayout({
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               Weekly Reports
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -555,7 +486,7 @@ export default function DashboardLayout({
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                               System Updates
                             </h4>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -568,27 +499,26 @@ export default function DashboardLayout({
                             className="rounded"
                           />
                         </div>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
                           Save Preferences
                         </button>
                       </div>
                     </div>
                   )}
-
                   {activeSettingsTab === "appearance" && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Appearance Settings
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Theme
                           </label>
                           <select
                             value={theme}
                             onChange={(e) => setTheme(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           >
                             <option value="light">Light Mode</option>
                             <option value="dark">Dark Mode</option>
@@ -596,10 +526,10 @@ export default function DashboardLayout({
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Language
                           </label>
-                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base">
                             <option>English</option>
                             <option>Twi</option>
                             <option>Ga</option>
@@ -607,30 +537,29 @@ export default function DashboardLayout({
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Font Size
                           </label>
-                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base">
                             <option>Small</option>
                             <option>Medium</option>
                             <option>Large</option>
                           </select>
                         </div>
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
                           Apply Changes
                         </button>
                       </div>
                     </div>
                   )}
-
                   {activeSettingsTab === "data" && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Data Management
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
                             Export Data
                           </h4>
                           <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
@@ -652,7 +581,7 @@ export default function DashboardLayout({
                           </div>
                         </div>
                         <div className="p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
-                          <h4 className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
                             Backup & Restore
                           </h4>
                           <p className="text-xs text-yellow-700 dark:text-yellow-300 mb-3">
@@ -669,7 +598,7 @@ export default function DashboardLayout({
                           </div>
                         </div>
                         <div className="p-4 bg-red-50 dark:bg-red-900 rounded-lg">
-                          <h4 className="text-sm font-medium text-red-900 dark:text-red-100 mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-red-900 dark:text-red-100 mb-2">
                             Danger Zone
                           </h4>
                           <p className="text-xs text-red-700 dark:text-red-300 mb-3">
@@ -682,29 +611,28 @@ export default function DashboardLayout({
                       </div>
                     </div>
                   )}
-
                   {activeSettingsTab === "about" && (
-                    <div className="space-y-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <div className="space-y-4 sm:space-y-6">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         About YPG Database
                       </h3>
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Version Information
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             Version: 1.0.0
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Build: 2024.1.1
+                            Build: 2025.1.1
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             Last Updated: January 2024
                           </p>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Description
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -717,7 +645,7 @@ export default function DashboardLayout({
                           </p>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Features
                           </h4>
                           <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
@@ -731,12 +659,17 @@ export default function DashboardLayout({
                           </ul>
                         </div>
                         <div>
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                          <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white mb-2">
                             Support
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             For technical support or feature requests, please
                             contact the development team.
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+                            Developed by Neststack Incoporate
                           </p>
                         </div>
                       </div>
@@ -748,24 +681,10 @@ export default function DashboardLayout({
           </div>
         </>
       )}
-
-      {/* Main content */}
-      <div
-        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${mounted && theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
-        onClick={() => {
-          // Close sidebar when clicking outside on mobile
-          if (sidebarOpen && window.innerWidth < 1024) {
-            setSidebarOpen(false);
-          }
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
-      </div>
     </div>
   );
 }
 
-// Members Quick Actions Dropdown Component
 function MembersQuickActionsDropdown() {
   const [open, setOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -822,96 +741,108 @@ function MembersQuickActionsDropdown() {
             >
               <i className="fas fa-user-plus"></i> Add New Member
             </a>
-            <a
-              href="/bulk"
-              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
-            >
-              <i className="fas fa-users"></i> Bulk Import
-            </a>
-            <div className="relative">
-              <button
-                onClick={() => setShowExportModal(!showExportModal)}
-                className="w-full flex items-center justify-between px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
-              >
-                <div className="flex items-center gap-2">
-                  <i className="fas fa-download"></i>
-                  <span>Export Data As</span>
-                </div>
-                <i
-                  className={`fas fa-chevron-${showExportModal ? "down" : "right"} text-xs`}
-                ></i>
-              </button>
-
-              {/* Export Modal */}
-              {showExportModal && (
-                <div
-                  ref={exportRef}
-                  className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-3"
-                  style={{
-                    minWidth: "140px",
-                  }}
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
-                      Export As
-                    </h3>
-                    <button
-                      onClick={() => setShowExportModal(false)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    >
-                      <i className="fas fa-times text-xs"></i>
-                    </button>
-                  </div>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => handleExport("CSV")}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                    >
-                      <i className="fas fa-file-csv text-green-600 text-xs"></i>
-                      <span>CSV</span>
-                    </button>
-                    <button
-                      onClick={() => handleExport("Excel")}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                    >
-                      <i className="fas fa-file-excel text-green-600 text-xs"></i>
-                      <span>Excel</span>
-                    </button>
-                    <button
-                      onClick={() => handleExport("PDF")}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                    >
-                      <i className="fas fa-file-pdf text-red-600 text-xs"></i>
-                      <span>PDF</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
             <button
-              onClick={() => window.print()}
-              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-800 focus:bg-orange-100 dark:focus:bg-orange-700 transition"
+              onClick={() => setShowExportModal(true)}
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
             >
-              <i className="fas fa-print"></i> Print Table
+              <i className="fas fa-download"></i> Export Data
+            </button>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+            >
+              <i className="fas fa-upload"></i> Import Data
+            </button>
+            <hr className="my-1 border-gray-200 dark:border-gray-700" />
+            <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-800 focus:bg-red-100 dark:focus:bg-red-700 transition">
+              <i className="fas fa-trash"></i> Clear All Data
             </button>
           </div>
         )}
       </div>
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div
+            ref={exportRef}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4"
+          >
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Export Data
+              </h3>
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Choose the format for your data export:
+              </p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => handleExport("csv")}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
+                >
+                  <i className="fas fa-file-csv text-green-500"></i>
+                  <div>
+                    <div className="font-medium">CSV Format</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Comma-separated values
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleExport("excel")}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
+                >
+                  <i className="fas fa-file-excel text-green-600"></i>
+                  <div>
+                    <div className="font-medium">Excel Format</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Microsoft Excel (.xlsx)
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleExport("pdf")}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
+                >
+                  <i className="fas fa-file-pdf text-red-500"></i>
+                  <div>
+                    <div className="font-medium">PDF Format</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Portable Document Format
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
 
-// Quick Actions Dropdown Component
 function QuickActionsDropdown({ filtered }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const ref = useRef();
+
   useEffect(() => {
     function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
     }
-    if (open) document.addEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [open]);
+  }, []);
+
   return (
     <div className="relative ml-2" ref={ref}>
       <button
@@ -928,27 +859,16 @@ function QuickActionsDropdown({ filtered }) {
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 py-2 animate-fadeIn">
-          <ExportAnalyticsButton
-            filtered={filtered}
-            label="Export Analytics Report"
-          />
-          <button
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
-            onClick={() => alert("Trend report generation coming soon!")}
-          >
-            <i className="fas fa-chart-line"></i> Generate Trend Report
+          <ExportAnalyticsButton />
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition">
+            <i className="fas fa-chart-line"></i> Generate Report
           </button>
-          <button
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
-            onClick={() => alert("PDF report creation coming soon!")}
-          >
-            <i className="fas fa-file-pdf"></i> Create PDF Report
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition">
+            <i className="fas fa-share"></i> Share Analytics
           </button>
-          <button
-            className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-800 focus:bg-yellow-100 dark:focus:bg-yellow-700 transition rounded-b-lg"
-            onClick={() => window.print()}
-          >
-            <i className="fas fa-calendar"></i> Print Analytics
+          <hr className="my-1 border-gray-200 dark:border-gray-700" />
+          <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            <i className="fas fa-cog"></i> Settings
           </button>
         </div>
       )}
