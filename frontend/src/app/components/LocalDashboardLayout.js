@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import LocalSidebar from "./LocalSidebar";
 import ExportAnalyticsButton from "./ExportAnalyticsButton";
 import { useTheme } from "./ThemeProvider";
@@ -321,7 +321,7 @@ export default function LocalDashboardLayout({
   selectedMembers = [],
   onDeleteSelected = () => {},
 }) {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState("light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme, mounted } = useTheme();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -330,31 +330,25 @@ export default function LocalDashboardLayout({
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
   const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
 
-  // Initialize sidebar based on screen size
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window !== "undefined") {
+      const handleResize = () => {
+        if (window.innerWidth >= 1024) {
+          setSidebarOpen(true);
+        } else {
+          setSidebarOpen(false);
+        }
+      };
 
-    const handleResize = () => {
       if (window.innerWidth >= 1024) {
-        // lg breakpoint
         setSidebarOpen(true);
       } else {
         setSidebarOpen(false);
       }
-    };
 
-    // Set initial state - ensure sidebar is closed on mobile by default
-    if (window.innerWidth >= 1024) {
-      setSidebarOpen(true);
-    } else {
-      setSidebarOpen(false);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
     }
-
-    // Add event listener
-    window.addEventListener("resize", handleResize);
-
-    // Cleanup
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // Sample notifications
@@ -386,9 +380,7 @@ export default function LocalDashboardLayout({
   ];
 
   return (
-    <div
-      className={`min-h-screen ${mounted ? (theme === "dark" ? "dark bg-gray-900" : "bg-gray-50") : "bg-gray-50"}`}
-    >
+    <div className={`min-h-screen ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}>
       {/* Header */}
       <header
         className={`${mounted && theme === "dark" ? "bg-gray-800" : "bg-blue-600"} shadow-lg w-full px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between fixed top-0 left-0 z-20`}
@@ -448,6 +440,7 @@ export default function LocalDashboardLayout({
           />
         )}
       </header>
+
 
       {/* Sidebar */}
       <LocalSidebar
@@ -981,12 +974,11 @@ export default function LocalDashboardLayout({
       )}
       {/* Main content */}
       <div
-        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${mounted && theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
-        onClick={() => {
-          if (sidebarOpen && window.innerWidth < 1024) setSidebarOpen(false);
-        }}
+        className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {children}
+        </div>
       </div>
     </div>
   );
