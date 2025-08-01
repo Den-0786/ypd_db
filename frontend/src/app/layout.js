@@ -1,6 +1,5 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "./components/ThemeProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,16 +18,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body
-        className={`${inter.className} bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text`}
+        className={`${inter.className}`}
       >
-        <ThemeProvider>
-          <div className="min-h-screen flex flex-col">
-            {/* Main Content */}
-            <main className="flex-1 max-w-full mx-auto py-6 px-4 sm:px-6 lg:px-8 xl:px-12">
-              {children}
-            </main>
-          </div>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );
