@@ -2,13 +2,18 @@
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "./Sidebar";
 import ExportAnalyticsButton from "./ExportAnalyticsButton";
+import PinModal from "./PinModal";
 import { useTheme } from "./ThemeProvider";
+import { useToast, ToastContainer } from "./Toast";
 
 export default function DashboardLayout({
   children,
   currentPage = "",
   currentPageProps = {},
   headerAction = null,
+  selectedMembers = [],
+  onDeleteSelected = () => {},
+  onBulkEdit = () => {},
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,6 +23,55 @@ export default function DashboardLayout({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
   const [securityMethod, setSecurityMethod] = useState("password");
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalConfig, setPinModalConfig] = useState({});
+  const [pendingAction, setPendingAction] = useState(null);
+  const [securityAccessGranted, setSecurityAccessGranted] = useState(false);
+  const [reminderSettings, setReminderSettings] = useState({
+    attendance_reminder: {
+      title: "Attendance Reminder",
+      message_template: "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!",
+      is_active: true,
+      target_congregations: "all", // "all", "specific", "non_submitting"
+      selected_congregations: []
+    },
+    birthday_message: {
+      title: "Birthday Message", 
+      message_template: "Happy Birthday {name}! May God bless you abundantly. - YPG",
+      is_active: true,
+      target_congregations: "all",
+      selected_congregations: []
+    },
+    welcome_message: {
+      title: "Welcome Message",
+      message_template: "Welcome {name} to {congregation}! We're glad to have you join us.",
+      is_active: true,
+      target_congregations: "all",
+      selected_congregations: []
+    },
+    joint_program_notification: {
+      title: "Joint Program Notification",
+      message_template: "Joint program scheduled for {date} ({day}) at {location}. All congregations are invited!",
+      is_active: true,
+      target_congregations: "all",
+      selected_congregations: []
+    }
+  });
+
+  // All 10 congregations from the system
+  const [availableCongregations] = useState([
+    "Emmanuel Congregation Ahinsan",
+    "Peniel Congregation Esreso No1",
+    "Mizpah Congregation Odagya No1",
+    "Christ Congregation Ahinsan Estate",
+    "Ebenezer Congregation Dompoase Aprabo",
+    "Favour Congregation Esreso No2",
+    "Liberty Congregation Esreso High Tension",
+    "Odagya No2",
+    "NOM",
+    "Kokobriko"
+  ]);
+  const { toasts, showSuccess, showError, removeToast } = useToast();
 
   // Initialize sidebar based on screen size
   useEffect(() => {
@@ -45,6 +99,154 @@ export default function DashboardLayout({
     // Cleanup
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Handle security tab access
+  const handleSecurityTabClick = () => {
+    if (!securityAccessGranted) {
+      setPendingAction({ type: "security_access" });
+      setPinModalConfig({
+        title: "Security Access",
+        message: "Please enter your PIN to access security settings",
+        type: "edit",
+      });
+      setPinModalOpen(true);
+    } else {
+      setActiveSettingsTab("security");
+    }
+  };
+
+  // Handle PIN confirmation
+  const handlePinConfirm = () => {
+    if (!pendingAction) return;
+
+    switch (pendingAction.type) {
+      case "security_access":
+        setSecurityAccessGranted(true);
+        setActiveSettingsTab("security");
+        showSuccess("Security access granted!");
+        break;
+      default:
+        break;
+    }
+    setPendingAction(null);
+  };
+
+  // Handle PIN close
+  const handlePinClose = () => {
+    setPinModalOpen(false);
+    setPendingAction(null);
+    setPinModalConfig({});
+  };
+
+  // Handle settings actions with toast messages
+  const handleProfileUpdate = () => {
+    showSuccess("Profile updated successfully!");
+  };
+
+  const handlePasswordUpdate = () => {
+    showSuccess("Password settings updated successfully!");
+  };
+
+  const handlePinUpdate = () => {
+    showSuccess("PIN settings updated successfully!");
+  };
+
+  const handleNotificationUpdate = () => {
+    showSuccess("Notification preferences updated successfully!");
+  };
+
+  const handleLogout = () => {
+    showSuccess("Logged out successfully!");
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1000);
+  };
+
+  const handleReminderSettingChange = (settingType, field, value) => {
+    setReminderSettings(prev => ({
+      ...prev,
+      [settingType]: {
+        ...prev[settingType],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSaveReminderSettings = () => {
+    // TODO: Save to backend
+    showSuccess("Reminder settings saved successfully!");
+  };
+
+  const handleSendReminder = (settingType) => {
+    const setting = reminderSettings[settingType];
+    
+    if (!setting.is_active) {
+      showError("This message type is currently disabled. Please enable it first.");
+      return;
+    }
+
+    let targetCongregations = [];
+    
+    switch (setting.target_congregations) {
+      case "all":
+        targetCongregations = availableCongregations;
+        break;
+      case "specific":
+        if (setting.selected_congregations.length === 0) {
+          showError("Please select at least one congregation to send messages to.");
+          return;
+        }
+        targetCongregations = setting.selected_congregations;
+        break;
+      case "non_submitting":
+        // This would be determined by the current attendance data
+        targetCongregations = ["Emmanuel Congregation Ahinsan", "Peniel Congregation Esreso No1"]; // Demo data
+        break;
+    }
+
+    // TODO: Send to backend API
+    const message = setting.message_template
+      .replace('{congregation}', 'Test Congregation')
+      .replace('{date}', new Date().toLocaleDateString())
+      .replace('{day}', new Date().toLocaleDateString('en-US', { weekday: 'long' }))
+      .replace('{name}', 'John Doe')
+      .replace('{location}', 'Main Hall');
+
+    showSuccess(`Sending ${setting.title} to ${targetCongregations.length} congregation(s): ${targetCongregations.join(', ')}`);
+    
+    // Simulate sending
+    setTimeout(() => {
+      showSuccess(`Successfully sent ${setting.title} to ${targetCongregations.length} congregation(s)!`);
+    }, 2000);
+  };
+
+  const handleTestReminder = (settingType) => {
+    const setting = reminderSettings[settingType];
+    const testMessage = setting.message_template
+      .replace('{congregation}', 'Test Congregation')
+      .replace('{date}', '2025-01-19')
+      .replace('{day}', 'Sunday')
+      .replace('{name}', 'John Doe')
+      .replace('{location}', 'Main Hall');
+    
+    showSuccess(`Test message: ${testMessage}`);
+  };
+
+  const handleCongregationSelection = (settingType, congregation) => {
+    const setting = reminderSettings[settingType];
+    const updatedSelected = setting.selected_congregations.includes(congregation)
+      ? setting.selected_congregations.filter(c => c !== congregation)
+      : [...setting.selected_congregations, congregation];
+    
+    handleReminderSettingChange(settingType, 'selected_congregations', updatedSelected);
+  };
+
+  const handleTargetCongregationChange = (settingType, target) => {
+    handleReminderSettingChange(settingType, 'target_congregations', target);
+    if (target === 'all') {
+      handleReminderSettingChange(settingType, 'selected_congregations', []);
+    }
+  };
 
   // Sample notifications
   const notifications = [
@@ -130,7 +332,13 @@ export default function DashboardLayout({
           <QuickActionsDropdown filtered={currentPageProps?.filtered} />
         )}
         {/* Quick Actions Dropdown for Members Page */}
-        {currentPage === "Members" && <MembersQuickActionsDropdown />}
+        {currentPage === "Members" && (
+          <MembersQuickActionsDropdown
+            selectedMembers={selectedMembers}
+            onDeleteSelected={onDeleteSelected}
+            onBulkEdit={onBulkEdit}
+          />
+        )}
       </header>
 
       {/* Sidebar */}
@@ -189,7 +397,7 @@ export default function DashboardLayout({
                       <i className="fas fa-user mr-2"></i>Profile
                     </button>
                     <button
-                      onClick={() => setActiveSettingsTab("security")}
+                      onClick={handleSecurityTabClick}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "security" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-shield-alt mr-2"></i>Security
@@ -223,6 +431,18 @@ export default function DashboardLayout({
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "about" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-info-circle mr-2"></i>About
+                    </button>
+                    <button
+                      onClick={() => setActiveSettingsTab("reminders")}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "reminders" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                    >
+                      <i className="fas fa-bell mr-2"></i>Reminder Messages
+                    </button>
+                    <button
+                      onClick={() => setActiveSettingsTab("website")}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "website" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+                    >
+                      <i className="fas fa-globe mr-2"></i>Website Content
                     </button>
                   </nav>
                 </div>
@@ -274,7 +494,10 @@ export default function DashboardLayout({
                             <option>Viewer</option>
                           </select>
                         </div>
-                        <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                        <button
+                          onClick={handleProfileUpdate}
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                        >
                           Update Profile
                         </button>
                       </div>
@@ -353,7 +576,10 @@ export default function DashboardLayout({
                               Enable Two-Factor Authentication
                             </label>
                           </div>
-                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                          <button
+                            onClick={handlePasswordUpdate}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                          >
                             Update Password Settings
                           </button>
                         </div>
@@ -415,7 +641,10 @@ export default function DashboardLayout({
                               Require PIN for sensitive actions
                             </label>
                           </div>
-                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                          <button
+                            onClick={handlePinUpdate}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                          >
                             Update PIN Settings
                           </button>
                         </div>
@@ -675,17 +904,365 @@ export default function DashboardLayout({
                       </div>
                     </div>
                   )}
+                  {activeSettingsTab === "reminders" && (
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Reminder Messages
+                        </h3>
+                        <button
+                          onClick={handleSaveReminderSettings}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          <i className="fas fa-save mr-2"></i>Save Settings
+                        </button>
+                      </div>
+                      <div className="space-y-4">
+                        {/* Attendance Reminder */}
+                        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg p-2 mr-3">
+                                <i className="fas fa-bell text-blue-600 dark:text-blue-400"></i>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Attendance Reminder
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Message sent to congregations for attendance submission
+                                </p>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={reminderSettings.attendance_reminder.is_active}
+                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "is_active", e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={reminderSettings.attendance_reminder.title}
+                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "title", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Message Template
+                              </label>
+                              <textarea
+                                value={reminderSettings.attendance_reminder.message_template}
+                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "message_template", e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                                placeholder="Use {congregation}, {date}, {day} as placeholders"
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Available placeholders: {"{congregation}"}, {"{date}"}, {"{day}"}
+                              </p>
+                            </div>
+                                                         <div>
+                               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                 Target Congregations
+                               </label>
+                               <div className="space-y-2">
+                                 <div className="flex items-center space-x-3">
+                                   <label className="flex items-center">
+                                     <input
+                                       type="radio"
+                                       name="attendance_target"
+                                       value="all"
+                                       checked={reminderSettings.attendance_reminder.target_congregations === "all"}
+                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                       className="mr-2"
+                                     />
+                                     <span className="text-xs text-gray-700 dark:text-gray-300">All Congregations</span>
+                                   </label>
+                                   <label className="flex items-center">
+                                     <input
+                                       type="radio"
+                                       name="attendance_target"
+                                       value="specific"
+                                       checked={reminderSettings.attendance_reminder.target_congregations === "specific"}
+                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                       className="mr-2"
+                                     />
+                                     <span className="text-xs text-gray-700 dark:text-gray-300">Specific Congregations</span>
+                                   </label>
+                                   <label className="flex items-center">
+                                     <input
+                                       type="radio"
+                                       name="attendance_target"
+                                       value="non_submitting"
+                                       checked={reminderSettings.attendance_reminder.target_congregations === "non_submitting"}
+                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                       className="mr-2"
+                                     />
+                                     <span className="text-xs text-gray-700 dark:text-gray-300">Non-submitting Only</span>
+                                   </label>
+                                 </div>
+                                 {reminderSettings.attendance_reminder.target_congregations === "specific" && (
+                                   <div className="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
+                                     <div className="grid grid-cols-2 gap-1">
+                                       {availableCongregations.map((congregation) => (
+                                         <label key={congregation} className="flex items-center text-xs">
+                                           <input
+                                             type="checkbox"
+                                             checked={reminderSettings.attendance_reminder.selected_congregations.includes(congregation)}
+                                             onChange={() => handleCongregationSelection("attendance_reminder", congregation)}
+                                             className="mr-1"
+                                           />
+                                           <span className="truncate">{congregation}</span>
+                                         </label>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                             <div className="flex space-x-2">
+                               <button
+                                 onClick={() => handleTestReminder("attendance_reminder")}
+                                 className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                               >
+                                 <i className="fas fa-play mr-1"></i>Test Message
+                               </button>
+                               <button
+                                 onClick={() => handleSendReminder("attendance_reminder")}
+                                 className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                               >
+                                 <i className="fas fa-paper-plane mr-1"></i>Send Message
+                               </button>
+                             </div>
+                           </div>
+                         </div>
+
+                        {/* Birthday Message */}
+                        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className="bg-pink-100 dark:bg-pink-900/30 rounded-lg p-2 mr-3">
+                                <i className="fas fa-birthday-cake text-pink-600 dark:text-pink-400"></i>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Birthday Message
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Message sent to members on their birthday
+                                </p>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={reminderSettings.birthday_message.is_active}
+                                onChange={(e) => handleReminderSettingChange("birthday_message", "is_active", e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={reminderSettings.birthday_message.title}
+                                onChange={(e) => handleReminderSettingChange("birthday_message", "title", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Message Template
+                              </label>
+                              <textarea
+                                value={reminderSettings.birthday_message.message_template}
+                                onChange={(e) => handleReminderSettingChange("birthday_message", "message_template", e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                                placeholder="Use {name} as placeholder"
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Available placeholders: {"{name}"}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleTestReminder("birthday_message")}
+                              className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                            >
+                              <i className="fas fa-play mr-1"></i>Test Message
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Welcome Message */}
+                        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-2 mr-3">
+                                <i className="fas fa-handshake text-green-600 dark:text-green-400"></i>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Welcome Message
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Message sent to new members
+                                </p>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={reminderSettings.welcome_message.is_active}
+                                onChange={(e) => handleReminderSettingChange("welcome_message", "is_active", e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={reminderSettings.welcome_message.title}
+                                onChange={(e) => handleReminderSettingChange("welcome_message", "title", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Message Template
+                              </label>
+                              <textarea
+                                value={reminderSettings.welcome_message.message_template}
+                                onChange={(e) => handleReminderSettingChange("welcome_message", "message_template", e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                                placeholder="Use {name}, {congregation} as placeholders"
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Available placeholders: {"{name}"}, {"{congregation}"}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleTestReminder("welcome_message")}
+                              className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                            >
+                              <i className="fas fa-play mr-1"></i>Test Message
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Joint Program Notification */}
+                        <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center">
+                              <div className="bg-purple-100 dark:bg-purple-900/30 rounded-lg p-2 mr-3">
+                                <i className="fas fa-users text-purple-600 dark:text-purple-400"></i>
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                  Joint Program Notification
+                                </h4>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                  Message sent for joint program announcements
+                                </p>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={reminderSettings.joint_program_notification.is_active}
+                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "is_active", e.target.checked)}
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Title
+                              </label>
+                              <input
+                                type="text"
+                                value={reminderSettings.joint_program_notification.title}
+                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "title", e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Message Template
+                              </label>
+                              <textarea
+                                value={reminderSettings.joint_program_notification.message_template}
+                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "message_template", e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
+                                placeholder="Use {date}, {day}, {location} as placeholders"
+                              />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Available placeholders: {"{date}"}, {"{day}"}, {"{location}"}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleTestReminder("joint_program_notification")}
+                              className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                            >
+                              <i className="fas fa-play mr-1"></i>Test Message
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </>
       )}
+
+      {/* PIN Modal */}
+      <PinModal
+        isOpen={pinModalOpen}
+        onClose={handlePinClose}
+        onConfirm={handlePinConfirm}
+        title={pinModalConfig.title}
+        message={pinModalConfig.message}
+        type={pinModalConfig.type}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }
 
-function MembersQuickActionsDropdown() {
+function MembersQuickActionsDropdown({
+  selectedMembers = [],
+  onDeleteSelected = () => {},
+  onBulkEdit = () => {},
+}) {
   const [open, setOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const ref = useRef();
@@ -741,90 +1318,110 @@ function MembersQuickActionsDropdown() {
             >
               <i className="fas fa-user-plus"></i> Add New Member
             </a>
-            <button
-              onClick={() => setShowExportModal(true)}
-              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+            <a
+              href="/bulk"
+              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-800 focus:bg-green-100 dark:focus:bg-green-700 transition"
             >
-              <i className="fas fa-download"></i> Export Data
+              <i className="fas fa-users"></i> Bulk Import
+            </a>
+            <div className="relative">
+              <button
+                onClick={() => setShowExportModal(!showExportModal)}
+                className="w-full flex items-center justify-between px-4 py-2 text-xs sm:text-sm text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-800 focus:bg-purple-100 dark:focus:bg-purple-700 transition"
+              >
+                <div className="flex items-center gap-2">
+                  <i className="fas fa-download"></i>
+                  <span>Export Data As</span>
+                </div>
+                <i
+                  className={`fas fa-chevron-${showExportModal ? "down" : "right"} text-xs`}
+                ></i>
+              </button>
+
+              {/* Export Modal */}
+              {showExportModal && (
+                <div
+                  ref={exportRef}
+                  className="absolute left-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 p-3"
+                  style={{
+                    minWidth: "140px",
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
+                      Export As
+                    </h3>
+                    <button
+                      onClick={() => setShowExportModal(false)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <i className="fas fa-times text-xs"></i>
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => handleExport("CSV")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-csv text-green-600 text-xs"></i>
+                      <span>CSV</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleExport("Excel")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-excel text-green-600 text-xs"></i>
+                      <span>Excel</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleExport("PDF")}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                    >
+                      <i className="fas fa-file-pdf text-red-600 text-xs"></i>
+                      <span>PDF</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                if (selectedMembers.length > 0) {
+                  onBulkEdit();
+                }
+              }}
+              disabled={selectedMembers.length === 0}
+              className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm transition ${
+                selectedMembers.length === 0
+                  ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                  : "text-yellow-700 dark:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-800 focus:bg-yellow-100 dark:focus:bg-yellow-700"
+              }`}
+            >
+              <i className="fas fa-edit"></i> Bulk Edit (
+              {selectedMembers.length})
             </button>
             <button
-              onClick={() => setShowExportModal(true)}
-              className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-800 focus:bg-blue-100 dark:focus:bg-blue-700 transition"
+              onClick={() => {
+                if (selectedMembers.length > 0) {
+                  onDeleteSelected();
+                }
+              }}
+              disabled={selectedMembers.length === 0}
+              className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm transition ${
+                selectedMembers.length === 0
+                  ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                  : "text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-800 focus:bg-red-100 dark:focus:bg-red-700"
+              }`}
             >
-              <i className="fas fa-upload"></i> Import Data
-            </button>
-            <hr className="my-1 border-gray-200 dark:border-gray-700" />
-            <button className="w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-800 focus:bg-red-100 dark:focus:bg-red-700 transition">
-              <i className="fas fa-trash"></i> Clear All Data
+              <i className="fas fa-trash"></i> Delete Selected (
+              {selectedMembers.length})
             </button>
           </div>
         )}
       </div>
-
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div
-            ref={exportRef}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4"
-          >
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Export Data
-              </h3>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <i className="fas fa-times"></i>
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Choose the format for your data export:
-              </p>
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleExport("csv")}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
-                >
-                  <i className="fas fa-file-csv text-green-500"></i>
-                  <div>
-                    <div className="font-medium">CSV Format</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Comma-separated values
-                    </div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleExport("excel")}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
-                >
-                  <i className="fas fa-file-excel text-green-600"></i>
-                  <div>
-                    <div className="font-medium">Excel Format</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Microsoft Excel (.xlsx)
-                    </div>
-                  </div>
-                </button>
-                <button
-                  onClick={() => handleExport("pdf")}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition"
-                >
-                  <i className="fas fa-file-pdf text-red-500"></i>
-                  <div>
-                    <div className="font-medium">PDF Format</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Portable Document Format
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

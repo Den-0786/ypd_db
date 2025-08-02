@@ -1,10 +1,43 @@
 "use client";
 import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import BulkEditModal from "../../components/BulkEditModal";
+import PinModal from "../../components/PinModal";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+import { useToast, ToastContainer } from "../../components/Toast";
 
 export default function LocalMembersPage() {
   const [mounted, setMounted] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalConfig, setPinModalConfig] = useState({});
+  const [pendingAction, setPendingAction] = useState(null);
+  const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
+  const [deleteConfirmConfig, setDeleteConfirmConfig] = useState({});
+  const { toasts, showSuccess, showError, removeToast } = useToast();
+  const [editForm, setEditForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    gender: "",
+    email: "",
+    date_of_birth: "",
+    place_of_residence: "",
+    residential_address: "",
+    profession: "",
+    hometown: "",
+    relative_contact: "",
+    congregation: "",
+    position: "",
+    membership_status: "",
+    confirmation: "",
+    baptism: "",
+    communicant: "",
+    is_executive: false,
+    executive_position: "",
+    executive_level: "",
+  });
 
   // Mock data for statistics
   const stats = {
@@ -14,6 +47,8 @@ export default function LocalMembersPage() {
     communicant: 892,
     confirmed: 756,
     baptism: 634,
+    activeGuilders: 1150,
+    distantGuilders: 97,
   };
 
   // Mock data for executives
@@ -287,6 +322,66 @@ export default function LocalMembersPage() {
       interests: "Education, Sports",
       notes: "New member with teaching background",
     },
+    {
+      id: 10,
+      name: "Emma Wilson",
+      phone: "+233 25 111 2222",
+      position: "",
+      communicant: "No",
+      email: "emma.wilson@example.com",
+      hometown: "Kumasi",
+      residentialAddress: "789 Distant Road, Kumasi",
+      residence: "Kumasi",
+      confirmant: "No",
+      baptism: "No",
+      gender: "Female",
+      status: "Distant",
+      dateOfBirth: "1992-07-15",
+      phoneNumber: "+233 25 111 2222",
+      emailAddress: "emma.wilson@example.com",
+      emergencyContact: "John Wilson",
+      emergencyPhone: "+233 25 333 4444",
+      occupation: "Student",
+      education: "University",
+      maritalStatus: "Single",
+      spouseName: "",
+      children: "0",
+      dateJoined: "2023-01-10",
+      previousChurch: "None",
+      skills: "Studying",
+      interests: "Reading, Traveling",
+      notes: "Distant member studying abroad",
+    },
+    {
+      id: 11,
+      name: "Michael Brown",
+      phone: "+233 26 555 6666",
+      position: "",
+      communicant: "No",
+      email: "michael.brown@example.com",
+      hometown: "Tamale",
+      residentialAddress: "456 Remote Street, Tamale",
+      residence: "Tamale",
+      confirmant: "No",
+      baptism: "No",
+      gender: "Male",
+      status: "Distant",
+      dateOfBirth: "1988-11-30",
+      phoneNumber: "+233 26 555 6666",
+      emailAddress: "michael.brown@example.com",
+      emergencyContact: "Sarah Brown",
+      emergencyPhone: "+233 26 777 8888",
+      occupation: "Engineer",
+      education: "Master's Degree",
+      maritalStatus: "Married",
+      spouseName: "Sarah Brown",
+      children: "1",
+      dateJoined: "2022-08-15",
+      previousChurch: "Methodist Church",
+      skills: "Engineering, Problem Solving",
+      interests: "Technology, Sports",
+      notes: "Distant member working in different city",
+    },
   ];
 
   const [selectedMember, setSelectedMember] = useState(null);
@@ -303,15 +398,52 @@ export default function LocalMembersPage() {
   };
 
   const handleEditMember = (member) => {
-    // Handle edit functionality
-    console.log("Edit member:", member);
+    setPendingAction({ type: "edit", member });
+    setPinModalConfig({
+      title: "Edit Member",
+      message: `Please enter your PIN to edit ${member.name || `${member.first_name} ${member.last_name}`}`,
+      type: "edit",
+    });
+    setPinModalOpen(true);
+  };
+
+  const handleEditMemberConfirm = (member) => {
+    setEditForm({
+      first_name: member.first_name || member.name?.split(" ")[0] || "",
+      last_name:
+        member.last_name || member.name?.split(" ").slice(1).join(" ") || "",
+      phone_number: member.phone_number || member.phone || "",
+      gender: member.gender || "",
+      email: member.email || member.emailAddress || "",
+      date_of_birth: member.date_of_birth || member.dateOfBirth || "",
+      place_of_residence: member.place_of_residence || member.residence || "",
+      residential_address:
+        member.residential_address || member.residentialAddress || "",
+      profession: member.profession || member.occupation || "",
+      hometown: member.hometown || "",
+      relative_contact: member.relative_contact || member.emergencyPhone || "",
+      congregation: member.congregation || "",
+      position: member.position || "",
+      membership_status: member.membership_status || member.status || "",
+      confirmation: member.confirmation || member.confirmant || "",
+      baptism: member.baptism || "",
+      communicant: member.communicant || member.attends_communion || "",
+      is_executive: member.is_executive || false,
+      executive_position: member.executive_position || "",
+      executive_level: member.executive_level || "",
+    });
+    setSelectedMember(member);
+    setShowEditModal(true);
   };
 
   const handleDeleteMember = (member) => {
-    if (confirm(`Are you sure you want to delete ${member.name}?`)) {
-      // Handle delete functionality
-      console.log("Delete member:", member);
-    }
+    setPendingAction({ type: "delete", member });
+    setPinModalConfig({
+      title: "Delete Member",
+      message: `Please enter your PIN to delete ${member.name || `${member.first_name} ${member.last_name}`}`,
+      type: "delete",
+    });
+    setPinModalOpen(true);
   };
 
   // Handle checkbox selection
@@ -338,18 +470,53 @@ export default function LocalMembersPage() {
 
     const selectedNames = executives
       .filter((member) => selectedMembers.includes(member.id))
-      .map((member) => member.name)
+      .map(
+        (member) => member.name || `${member.first_name} ${member.last_name}`
+      )
       .join(", ");
 
-    if (
-      confirm(
-        `Are you sure you want to delete the selected members: ${selectedNames}?`
-      )
-    ) {
-      // Handle bulk delete functionality
-      console.log("Delete selected members:", selectedMembers);
-      setSelectedMembers([]);
+    setPendingAction({ type: "bulk_delete", memberIds: selectedMembers });
+    setPinModalConfig({
+      title: "Delete Selected Members",
+      message: `Please enter your PIN to delete ${selectedMembers.length} selected member(s)`,
+      type: "delete",
+    });
+    setPinModalOpen(true);
+  };
+
+  const handleBulkEdit = () => {
+    if (selectedMembers.length === 0) {
+      showError("Please select members to edit");
+      return;
     }
+    setBulkEditModalOpen(true);
+  };
+
+  const handleBulkEditSave = (updatedMembers) => {
+    // Update the executives array with the new data
+    const updatedExecutives = executives.map((member) => {
+      const updatedMember = updatedMembers.find((m) => m.id === member.id);
+      if (updatedMember) {
+        // Map the updated fields to the local member structure
+        return {
+          ...member,
+          status: updatedMember.membership_status || member.status,
+          position: updatedMember.executive_position || member.position,
+          communicant:
+            updatedMember.attends_communion === "true"
+              ? "Yes"
+              : updatedMember.attends_communion === "false"
+                ? "No"
+                : member.communicant,
+        };
+      }
+      return member;
+    });
+
+    // In a real app, you would update the state here
+    console.log("Updated members:", updatedMembers);
+    setSelectedMembers([]);
+    showSuccess(`${selectedMembers.length} member(s) updated successfully!`);
   };
 
   // Filter and search executives
@@ -426,7 +593,7 @@ export default function LocalMembersPage() {
     contact: "+233 24 123 4567",
   });
 
-  const [editForm, setEditForm] = useState({
+  const [editCongregationForm, setEditCongregationForm] = useState({
     name: "",
     location: "",
     established: "",
@@ -439,17 +606,121 @@ export default function LocalMembersPage() {
   }, []);
 
   const handleEditClick = () => {
-    setEditForm(congregation);
+    setEditCongregationForm(congregation);
     setShowEditModal(true);
   };
 
   const handleSaveEdit = () => {
-    setCongregation(editForm);
+    setCongregation(editCongregationForm);
     setShowEditModal(false);
   };
 
   const handleCancelEdit = () => {
     setShowEditModal(false);
+  };
+
+  const handlePinConfirm = () => {
+    if (!pendingAction) return;
+
+    switch (pendingAction.type) {
+      case "edit":
+        handleEditMemberConfirm(pendingAction.member);
+        break;
+      case "delete":
+        // Show confirmation modal for single member delete
+        setDeleteConfirmConfig({
+          type: "single",
+          itemName:
+            pendingAction.member.name ||
+            `${pendingAction.member.first_name} ${pendingAction.member.last_name}`,
+          onConfirm: () => {
+            const filteredMembers = members.filter(
+              (m) => m.id !== pendingAction.member.id
+            );
+            setMembers(filteredMembers);
+            showSuccess(
+              `${pendingAction.member.name || `${pendingAction.member.first_name} ${pendingAction.member.last_name}`} deleted successfully!`
+            );
+            setPendingAction(null);
+          },
+        });
+        setDeleteConfirmModalOpen(true);
+        break;
+      case "bulk_delete":
+        // Show confirmation modal for bulk delete
+        setDeleteConfirmConfig({
+          type: "bulk",
+          itemCount: pendingAction.memberIds.length,
+          onConfirm: () => {
+            const updatedMembers = members.filter(
+              (member) => !pendingAction.memberIds.includes(member.id)
+            );
+            setMembers(updatedMembers);
+            setSelectedMembers([]);
+            showSuccess(
+              `${pendingAction.memberIds.length} member(s) deleted successfully!`
+            );
+            setPendingAction(null);
+          },
+        });
+        setDeleteConfirmModalOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handlePinClose = () => {
+    setPinModalOpen(false);
+    setPendingAction(null);
+    setPinModalConfig({});
+  };
+
+  const handleSaveMemberEdit = () => {
+    // Update the executives array with the edited member
+    const updatedExecutives = executives.map((member) =>
+      member.id === selectedMember.id
+        ? {
+            ...member,
+            first_name: editForm.first_name,
+            last_name: editForm.last_name,
+            name: `${editForm.first_name} ${editForm.last_name}`.trim(),
+            phone_number: editForm.phone_number,
+            phone: editForm.phone_number,
+            gender: editForm.gender,
+            email: editForm.email,
+            emailAddress: editForm.email,
+            date_of_birth: editForm.date_of_birth,
+            dateOfBirth: editForm.date_of_birth,
+            place_of_residence: editForm.place_of_residence,
+            residence: editForm.place_of_residence,
+            residential_address: editForm.residential_address,
+            residentialAddress: editForm.residential_address,
+            profession: editForm.profession,
+            occupation: editForm.profession,
+            hometown: editForm.hometown,
+            relative_contact: editForm.relative_contact,
+            emergencyPhone: editForm.relative_contact,
+            congregation: editForm.congregation,
+            position: editForm.position,
+            membership_status: editForm.membership_status,
+            status: editForm.membership_status,
+            confirmation: editForm.confirmation,
+            confirmant: editForm.confirmation,
+            baptism: editForm.baptism,
+            communicant: editForm.communicant,
+            attends_communion: editForm.communicant,
+            is_executive: editForm.is_executive,
+            executive_position: editForm.executive_position,
+            executive_level: editForm.executive_level,
+          }
+        : member
+    );
+
+    // In a real app, you would update the state here
+    console.log("Updated member:", editForm);
+    setShowEditModal(false);
+    showSuccess("Member updated successfully!");
   };
 
   if (!mounted) {
@@ -461,6 +732,7 @@ export default function LocalMembersPage() {
       currentPage="Members"
       selectedMembers={selectedMembers}
       onDeleteSelected={handleDeleteSelected}
+      onBulkEdit={handleBulkEdit}
     >
       <div className="space-y-6">
         {/* Congregation Card */}
@@ -627,6 +899,42 @@ export default function LocalMembersPage() {
                 </div>
                 <div className="ml-3 lg:ml-4">
                   <i className="fas fa-water text-xl lg:text-2xl text-indigo-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Guilders */}
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-teal-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6 min-w-[200px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-teal-400/20 to-teal-600/20 dark:from-teal-400/10 dark:to-teal-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                    Active Guilders
+                  </p>
+                  <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {stats.activeGuilders}
+                  </p>
+                </div>
+                <div className="ml-3 lg:ml-4">
+                  <i className="fas fa-user-check text-xl lg:text-2xl text-teal-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+            </div>
+
+            {/* Distant Guilders */}
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-cyan-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6 min-w-[200px]">
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-cyan-600/20 dark:from-cyan-400/10 dark:to-cyan-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
+                    Distant Guilders
+                  </p>
+                  <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {stats.distantGuilders}
+                  </p>
+                </div>
+                <div className="ml-3 lg:ml-4">
+                  <i className="fas fa-user-clock text-xl lg:text-2xl text-cyan-600 group-hover:scale-110 transition-transform duration-200"></i>
                 </div>
               </div>
             </div>
@@ -1013,9 +1321,8 @@ export default function LocalMembersPage() {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700 dark:text-gray-300">
-                {startIndex + 1} to{" "}
-                {Math.min(endIndex, filteredMembers.length)} of{" "}
-                {filteredMembers.length} members
+                {startIndex + 1} to {Math.min(endIndex, filteredMembers.length)}{" "}
+                of {filteredMembers.length} members
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -1500,9 +1807,12 @@ export default function LocalMembersPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.name}
+                    value={editCongregationForm.name}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, name: e.target.value })
+                      setEditCongregationForm({
+                        ...editCongregationForm,
+                        name: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
@@ -1514,9 +1824,12 @@ export default function LocalMembersPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.location}
+                    value={editCongregationForm.location}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, location: e.target.value })
+                      setEditCongregationForm({
+                        ...editCongregationForm,
+                        location: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
@@ -1528,9 +1841,12 @@ export default function LocalMembersPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.established}
+                    value={editCongregationForm.established}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, established: e.target.value })
+                      setEditCongregationForm({
+                        ...editCongregationForm,
+                        established: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
@@ -1542,9 +1858,12 @@ export default function LocalMembersPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.pastor}
+                    value={editCongregationForm.pastor}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, pastor: e.target.value })
+                      setEditCongregationForm({
+                        ...editCongregationForm,
+                        pastor: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
@@ -1556,9 +1875,12 @@ export default function LocalMembersPage() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.contact}
+                    value={editCongregationForm.contact}
                     onChange={(e) =>
-                      setEditForm({ ...editForm, contact: e.target.value })
+                      setEditCongregationForm({
+                        ...editCongregationForm,
+                        contact: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                   />
@@ -1582,6 +1904,510 @@ export default function LocalMembersPage() {
             </div>
           </div>
         )}
+
+        {/* Edit Member Modal */}
+        {showEditModal && selectedMember && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    <i className="fas fa-edit text-blue-500 mr-2"></i>
+                    Edit Member - {selectedMember.name}
+                  </h3>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <i className="fas fa-times text-xl"></i>
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Personal Information Section */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <i className="fas fa-user text-blue-500 mr-2"></i>
+                      Personal Information
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          First Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.first_name}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              first_name: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Last Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.last_name}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              last_name: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={editForm.phone_number}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              phone_number: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0XXXXXXXXX"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Gender <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.gender}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, gender: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Gender</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={editForm.email}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, email: e.target.value })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="email@example.com"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Date of Birth
+                        </label>
+                        <input
+                          type="date"
+                          value={editForm.date_of_birth}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              date_of_birth: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Place of Residence{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.place_of_residence}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              place_of_residence: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="City/Town"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Residential Address
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.residential_address}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              residential_address: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Residential address"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Profession
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.profession}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              profession: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Student, Teacher, etc."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Hometown <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.hometown}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              hometown: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Hometown"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Relative Contact{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={editForm.relative_contact}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              relative_contact: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0XXXXXXXXX"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Church Information Section */}
+                  <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                      <i className="fas fa-church text-indigo-500 mr-2"></i>
+                      Church Information
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Congregation <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.congregation}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              congregation: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Congregation</option>
+                          <option value="Ahinsan Branch">Ahinsan Branch</option>
+                          <option value="Kokomlemle Branch">
+                            Kokomlemle Branch
+                          </option>
+                          <option value="Adabraka Branch">
+                            Adabraka Branch
+                          </option>
+                          <option value="Kaneshie Branch">
+                            Kaneshie Branch
+                          </option>
+                          <option value="Mamprobi Branch">
+                            Mamprobi Branch
+                          </option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Position
+                        </label>
+                        <input
+                          type="text"
+                          value={editForm.position}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              position: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Member, Elder, etc."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Membership Status
+                        </label>
+                        <select
+                          value={editForm.membership_status}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              membership_status: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Confirmation <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.confirmation}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              confirmation: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Confirmation Status</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Baptism <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.baptism}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              baptism: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Baptism Status</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Communicant <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={editForm.communicant}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              communicant: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Communicant Status</option>
+                          <option value="Yes">Yes</option>
+                          <option value="No">No</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Executive Information */}
+                    <div className="mt-6">
+                      <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
+                        <div className="flex items-center mb-4">
+                          <input
+                            type="checkbox"
+                            id="is_executive"
+                            checked={editForm.is_executive}
+                            onChange={(e) =>
+                              setEditForm({
+                                ...editForm,
+                                is_executive: e.target.checked,
+                              })
+                            }
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label
+                            htmlFor="is_executive"
+                            className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            Is Executive Member
+                          </label>
+                        </div>
+
+                        {editForm.is_executive && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Executive Position
+                              </label>
+                              <select
+                                value={editForm.executive_position}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    executive_position: e.target.value,
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              >
+                                <option value="">Select Position</option>
+                                <option value="president">President</option>
+                                <option value="vice_president">
+                                  Vice President
+                                </option>
+                                <option value="secretary">Secretary</option>
+                                <option value="assistant_secretary">
+                                  Assistant Secretary
+                                </option>
+                                <option value="financial_secretary">
+                                  Financial Secretary
+                                </option>
+                                <option value="treasurer">Treasurer</option>
+                                <option value="organizer">Organizer</option>
+                                <option value="evangelism">Evangelism</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Executive Level
+                              </label>
+                              <select
+                                value={editForm.executive_level}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    executive_level: e.target.value,
+                                  })
+                                }
+                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              >
+                                <option value="">Select Level</option>
+                                <option value="Local">Local</option>
+                                <option value="District">District</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    onClick={handleCancelEdit}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveMemberEdit}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <i className="fas fa-save mr-2"></i>
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Bulk Edit Modal */}
+        <BulkEditModal
+          isOpen={bulkEditModalOpen}
+          onClose={() => setBulkEditModalOpen(false)}
+          selectedMembers={selectedMembers}
+          onSave={handleBulkEditSave}
+          members={executives}
+        />
+
+        {/* PIN Modal */}
+        <PinModal
+          isOpen={pinModalOpen}
+          onClose={handlePinClose}
+          onConfirm={handlePinConfirm}
+          title={pinModalConfig.title}
+          message={pinModalConfig.message}
+          type={pinModalConfig.type}
+        />
+
+        {/* Delete Confirmation Modal */}
+        <DeleteConfirmationModal
+          isOpen={deleteConfirmModalOpen}
+          onClose={() => setDeleteConfirmModalOpen(false)}
+          onConfirm={deleteConfirmConfig.onConfirm}
+          type={deleteConfirmConfig.type}
+          itemName={deleteConfirmConfig.itemName}
+          itemCount={deleteConfirmConfig.itemCount}
+        />
+
+        {/* Toast Container */}
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
       </div>
     </LocalDashboardLayout>
   );

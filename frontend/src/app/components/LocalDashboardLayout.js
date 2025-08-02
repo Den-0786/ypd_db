@@ -1,13 +1,16 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import LocalSidebar from "./LocalSidebar";
 import ExportAnalyticsButton from "./ExportAnalyticsButton";
+import PinModal from "./PinModal";
 import { useTheme } from "./ThemeProvider";
+import { useToast, ToastContainer } from "./Toast";
 
 // Members Quick Actions Dropdown Component
 function MembersQuickActionsDropdown({
   selectedMembers = [],
   onDeleteSelected = () => {},
+  onBulkEdit = () => {},
 }) {
   const [open, setOpen] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -131,6 +134,22 @@ function MembersQuickActionsDropdown({
                 </div>
               )}
             </div>
+            <button
+              onClick={() => {
+                if (selectedMembers.length > 0) {
+                  onBulkEdit();
+                }
+              }}
+              disabled={selectedMembers.length === 0}
+              className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm transition ${
+                selectedMembers.length === 0
+                  ? "text-gray-400 dark:text-gray-600 cursor-not-allowed"
+                  : "text-yellow-700 dark:text-yellow-300 hover:bg-yellow-50 dark:hover:bg-yellow-800 focus:bg-yellow-100 dark:focus:bg-yellow-700"
+              }`}
+            >
+              <i className="fas fa-edit"></i> Bulk Edit (
+              {selectedMembers.length})
+            </button>
             <button
               onClick={() => {
                 if (selectedMembers.length > 0) {
@@ -320,8 +339,8 @@ export default function LocalDashboardLayout({
   headerAction = null,
   selectedMembers = [],
   onDeleteSelected = () => {},
+  onBulkEdit = () => {},
 }) {
-  const [theme, setTheme] = useState("light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { theme, setTheme, mounted } = useTheme();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -329,6 +348,73 @@ export default function LocalDashboardLayout({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState("profile");
   const [securityMethod, setSecurityMethod] = useState("password"); // 'password' or 'pin'
+  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalConfig, setPinModalConfig] = useState({});
+  const [pendingAction, setPendingAction] = useState(null);
+  const [securityAccessGranted, setSecurityAccessGranted] = useState(false);
+  const { toasts, showSuccess, showError, removeToast } = useToast();
+
+  // Handle security tab access
+  const handleSecurityTabClick = () => {
+    if (!securityAccessGranted) {
+      setPendingAction({ type: "security_access" });
+      setPinModalConfig({
+        title: "Security Access",
+        message: "Please enter your PIN to access security settings",
+        type: "edit",
+      });
+      setPinModalOpen(true);
+    } else {
+      setActiveSettingsTab("security");
+    }
+  };
+
+  // Handle PIN confirmation
+  const handlePinConfirm = () => {
+    if (!pendingAction) return;
+
+    switch (pendingAction.type) {
+      case "security_access":
+        setSecurityAccessGranted(true);
+        setActiveSettingsTab("security");
+        showSuccess("Security access granted!");
+        break;
+      default:
+        break;
+    }
+    setPendingAction(null);
+  };
+
+  // Handle PIN close
+  const handlePinClose = () => {
+    setPinModalOpen(false);
+    setPendingAction(null);
+    setPinModalConfig({});
+  };
+
+  // Handle settings actions with toast messages
+  const handleProfileUpdate = () => {
+    showSuccess("Profile updated successfully!");
+  };
+
+  const handlePasswordUpdate = () => {
+    showSuccess("Password settings updated successfully!");
+  };
+
+  const handlePinUpdate = () => {
+    showSuccess("PIN settings updated successfully!");
+  };
+
+  const handleNotificationUpdate = () => {
+    showSuccess("Notification preferences updated successfully!");
+  };
+
+  const handleLogout = () => {
+    showSuccess("Logged out successfully!");
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1000);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -380,7 +466,9 @@ export default function LocalDashboardLayout({
   ];
 
   return (
-    <div className={`min-h-screen ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}>
+    <div
+      className={`min-h-screen ${theme === "dark" ? "dark bg-gray-900" : "bg-gray-50"}`}
+    >
       {/* Header */}
       <header
         className={`${mounted && theme === "dark" ? "bg-gray-800" : "bg-blue-600"} shadow-lg w-full px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between fixed top-0 left-0 z-20`}
@@ -388,6 +476,7 @@ export default function LocalDashboardLayout({
         <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-6">
           <div className="relative lg:hidden">
             <button
+              data-sidebar-toggle
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-white hover:text-blue-200 transition-colors mr-2 lg:hidden focus:outline-none"
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
@@ -437,16 +526,20 @@ export default function LocalDashboardLayout({
           <MembersQuickActionsDropdown
             selectedMembers={selectedMembers}
             onDeleteSelected={onDeleteSelected}
+            onBulkEdit={onBulkEdit}
           />
         )}
       </header>
-
 
       {/* Sidebar */}
       <LocalSidebar
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         setSettingsOpen={setSettingsOpen}
+        userMenuOpen={userMenuOpen}
+        setUserMenuOpen={setUserMenuOpen}
+        notificationsOpen={notificationsOpen}
+        setNotificationsOpen={setNotificationsOpen}
       />
 
       {/* Settings Modal */}
@@ -480,7 +573,7 @@ export default function LocalDashboardLayout({
                       <i className="fas fa-user mr-2"></i>Profile
                     </button>
                     <button
-                      onClick={() => setActiveSettingsTab("security")}
+                      onClick={handleSecurityTabClick}
                       className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSettingsTab === "security" ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}`}
                     >
                       <i className="fas fa-shield-alt mr-2"></i>Security
@@ -565,7 +658,10 @@ export default function LocalDashboardLayout({
                             <option>Viewer</option>
                           </select>
                         </div>
-                        <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                        <button
+                          onClick={handleProfileUpdate}
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                        >
                           Update Profile
                         </button>
                       </div>
@@ -644,7 +740,10 @@ export default function LocalDashboardLayout({
                               Enable Two-Factor Authentication
                             </label>
                           </div>
-                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                          <button
+                            onClick={handlePasswordUpdate}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                          >
                             Update Password Settings
                           </button>
                         </div>
@@ -706,7 +805,10 @@ export default function LocalDashboardLayout({
                               Require PIN for sensitive actions
                             </label>
                           </div>
-                          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base">
+                          <button
+                            onClick={handlePinUpdate}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                          >
                             Update PIN Settings
                           </button>
                         </div>
@@ -972,6 +1074,20 @@ export default function LocalDashboardLayout({
           </div>
         </>
       )}
+
+      {/* PIN Modal */}
+      <PinModal
+        isOpen={pinModalOpen}
+        onClose={handlePinClose}
+        onConfirm={handlePinConfirm}
+        title={pinModalConfig.title}
+        message={pinModalConfig.message}
+        type={pinModalConfig.type}
+      />
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+
       {/* Main content */}
       <div
         className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}

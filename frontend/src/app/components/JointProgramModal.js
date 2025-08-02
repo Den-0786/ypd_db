@@ -1,4 +1,4 @@
-'us client'
+"us client";
 export default function JointProgramModal({
   showJointProgramModal,
   jointProgramForm,
@@ -137,6 +137,49 @@ export default function JointProgramModal({
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 placeholder="e.g., Central Convention Center"
               />
+            </div>
+
+            {/* Logged By */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Logged By
+              </label>
+              <input
+                type="text"
+                value={jointProgramForm.loggedBy}
+                onChange={(e) =>
+                  handleJointProgramInputChange("loggedBy", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g., John Doe"
+              />
+            </div>
+
+            {/* Position */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Position <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={jointProgramForm.position}
+                onChange={(e) =>
+                  handleJointProgramInputChange("position", e.target.value)
+                }
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
+              >
+                <option value="">Select Position</option>
+                <option value="President">President</option>
+                <option value="Vice President">Vice President</option>
+                <option value="Secretary">Secretary</option>
+                <option value="Assistant Secretary">Assistant Secretary</option>
+                <option value="Financial Secretary">Financial Secretary</option>
+                <option value="Treasurer">Treasurer</option>
+                <option value="Organizer">Organizer</option>
+                <option value="Evangelism Coordinator">
+                  Evangelism Coordinator
+                </option>
+              </select>
             </div>
           </div>
 

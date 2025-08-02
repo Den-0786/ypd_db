@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import JointProgramModal from "../components/JointProgramModal";
+import PinModal from "../components/PinModal";
 import React from "react";
 
 // Helper functions for week/month/year
@@ -22,6 +23,7 @@ export default function AttendancePage() {
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [jointProgramForm, setJointProgramForm] = useState({
@@ -31,11 +33,13 @@ export default function AttendancePage() {
     date: "",
     programTitle: "",
     location: "",
+    loggedBy: "",
+    position: "",
   });
   const [selectedCongregation, setSelectedCongregation] = useState("");
-  const [selectedWeek, setSelectedWeek] = useState("All");
-  const [selectedMonth, setSelectedMonth] = useState("All");
-  const [selectedYear, setSelectedYear] = useState("All");
+  const [selectedWeek, setSelectedWeek] = useState(getWeekOfMonth(new Date()));
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "short" }));
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Monthly and yearly summary table states
   const [selectedMonthlyRecords, setSelectedMonthlyRecords] = useState([]);
@@ -211,7 +215,17 @@ export default function AttendancePage() {
     setJointProgramForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleJointProgram = () => setShowJointProgramModal(true);
+  const handleJointProgram = () => {
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccess = () => {
+    setShowJointProgramModal(true);
+  };
+
+  const handleClosePinModal = () => {
+    setShowPinModal(false);
+  };
 
   const handleCloseJointProgramModal = () => {
     setShowJointProgramModal(false);
@@ -222,6 +236,8 @@ export default function AttendancePage() {
       date: "",
       programTitle: "",
       location: "",
+      loggedBy: "",
+      position: "",
     });
   };
 
@@ -817,17 +833,48 @@ export default function AttendancePage() {
         </div>
       )}
       <div className="space-y-6">
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 rounded-xl shadow-xl overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+
+          <div className="relative z-10 p-6 lg:p-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div className="mb-4 lg:mb-0">
+                <div className="flex items-center mb-2">
+                  <i className="fas fa-calendar-check text-white text-2xl lg:text-3xl mr-3"></i>
+                  <h1 className="text-xl lg:text-3xl font-bold text-white">
+                    Attendance Management
+                  </h1>
+                </div>
+                <p className="text-white/90 text-sm lg:text-base">
+                  Track Sunday attendance across congregations
+                </p>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white text-xs opacity-90">Today</div>
+                  <div className="text-white font-semibold">
+                    {new Date().toLocaleDateString()}
+                  </div>
+                </div>
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+                  <div className="text-white text-xs opacity-90">Day</div>
+                  <div className="text-blue-300 font-semibold">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Attendance Management Card */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                <i className="fas fa-calendar-check text-blue-600 mr-3"></i>
-                Attendance Management
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-2">
-                Track Sunday attendance across congregations
-              </p>
 
               {/* Joint Program Status */}
               {hasJointProgramThisWeek && (
@@ -881,12 +928,19 @@ export default function AttendancePage() {
                     {notSubmittedCongregations.length > 0 &&
                       !hasJointProgramThisWeek && (
                         <button
-                          onClick={() =>
+                          onClick={() => {
+                            // TODO: Get custom reminder message from settings
+                            const customMessage = "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!";
+                            const formattedMessage = customMessage
+                              .replace('{congregation}', 'Test Congregation')
+                              .replace('{date}', new Date().toLocaleDateString())
+                              .replace('{day}', new Date().toLocaleDateString('en-US', { weekday: 'long' }));
+                            
                             showToast(
-                              "Reminders sent to all non-submitting congregations!",
+                              `Sending custom reminder: "${formattedMessage}" to ${notSubmittedCongregations.length} congregation(s)`,
                               "success"
-                            )
-                          }
+                            );
+                          }}
                           className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-red-700 transition"
                           aria-label="Remind all non-submitting congregations"
                         >
@@ -967,7 +1021,7 @@ export default function AttendancePage() {
                 aria-label="Filter by week"
               >
                 <option value="All" className="text-gray-800 dark:text-white">
-                  All
+                  All Weeks
                 </option>
                 {allWeeks.map((week) => (
                   <option
@@ -989,7 +1043,7 @@ export default function AttendancePage() {
                 aria-label="Filter by month"
               >
                 <option value="All" className="text-gray-800 dark:text-white">
-                  All
+                  All Months
                 </option>
                 {allMonths.map((month) => (
                   <option
@@ -1013,7 +1067,7 @@ export default function AttendancePage() {
                 aria-label="Filter by year"
               >
                 <option value="All" className="text-gray-800 dark:text-white">
-                  All
+                  All Years
                 </option>
                 {allYears.map((year) => (
                   <option
@@ -1595,6 +1649,15 @@ export default function AttendancePage() {
           handleJointProgramInputChange={handleJointProgramInputChange}
           handleCloseJointProgramModal={handleCloseJointProgramModal}
           handleSubmitJointProgram={handleSubmitJointProgram}
+        />
+
+        {/* PIN Modal */}
+        <PinModal
+          isOpen={showPinModal}
+          onClose={handleClosePinModal}
+          onPinSuccess={handlePinSuccess}
+          title="Enter PIN for Joint Program"
+          description="Please enter your PIN to schedule joint program"
         />
 
         {/* View Attendance Record Modal */}

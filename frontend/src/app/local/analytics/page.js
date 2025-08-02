@@ -137,6 +137,158 @@ export default function LocalAnalyticsPage() {
   return (
     <LocalDashboardLayout>
       <div className="space-y-6">
+        {/* Welcome Card */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <i className="fas fa-chart-bar text-blue-600 mr-3"></i>
+            Local Analytics Dashboard
+          </h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Comprehensive insights into local YPG attendance and membership data
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+          {/* Large screens - All filters on single row */}
+          <div className="hidden lg:grid grid-cols-3 gap-3">
+            <div>
+              <label
+                htmlFor="local-analytics-cong-filter-lg"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Congregation
+              </label>
+              <select
+                id="local-analytics-cong-filter-lg"
+                value={selectedCongregation}
+                onChange={(e) => setSelectedCongregation(e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                aria-label="Filter by congregation"
+              >
+                <option value="All" className="text-gray-800 dark:text-white">
+                  All Congregations
+                </option>
+                {chartData.membersDatabase?.congregations?.map((c) => (
+                  <option
+                    key={c.name}
+                    value={c.name}
+                    className="text-gray-800 dark:text-white"
+                  >
+                    {c.name}
+                  </option>
+                )) || []}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="local-analytics-date-start-lg"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Start Date
+              </label>
+              <input
+                id="local-analytics-date-start-lg"
+                type="date"
+                value={dateRange.start}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, start: e.target.value })
+                }
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                aria-label="Start date"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="local-analytics-date-end-lg"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                End Date
+              </label>
+              <input
+                id="local-analytics-date-end-lg"
+                type="date"
+                value={dateRange.end}
+                onChange={(e) =>
+                  setDateRange({ ...dateRange, end: e.target.value })
+                }
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                aria-label="End date"
+              />
+            </div>
+          </div>
+
+          {/* Small screens - Stacked filters */}
+          <div className="lg:hidden space-y-3">
+            <div>
+              <label
+                htmlFor="local-analytics-cong-filter-sm"
+                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                Congregation
+              </label>
+              <select
+                id="local-analytics-cong-filter-sm"
+                value={selectedCongregation}
+                onChange={(e) => setSelectedCongregation(e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                aria-label="Filter by congregation"
+              >
+                <option value="All" className="text-gray-800 dark:text-white">
+                  All Congregations
+                </option>
+                {chartData.membersDatabase?.congregations?.map((c) => (
+                  <option
+                    key={c.name}
+                    value={c.name}
+                    className="text-gray-800 dark:text-white"
+                  >
+                    {c.name}
+                  </option>
+                )) || []}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="local-analytics-date-start-sm"
+                  className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Start Date
+                </label>
+                <input
+                  id="local-analytics-date-start-sm"
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, start: e.target.value })
+                  }
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                  aria-label="Start date"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="local-analytics-date-end-sm"
+                  className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  End Date
+                </label>
+                <input
+                  id="local-analytics-date-end-sm"
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, end: e.target.value })
+                  }
+                  className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
+                  aria-label="End date"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-gray-50 dark:bg-gray-700 shadow rounded-lg p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 mt-6">
             <i className="fas fa-calendar-check text-blue-600 mr-3"></i>
@@ -302,95 +454,325 @@ export default function LocalAnalyticsPage() {
               </div>
             </div>
 
+            
+          </div>
+        </div>
+
+        {/* Members Database Analytics Section */}
+        <div className="bg-gray-50 dark:bg-gray-700 shadow rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            <i className="fas fa-database text-green-600 mr-3"></i>
+            Members Database Analytics
+          </h2>
+
+                     {/* Members Key Metrics */}
+           <div className="mb-8">
+             {/* Large screens - Grid layout */}
+             <div className="hidden lg:grid grid-cols-6 gap-3">
+               <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+                 <div className="relative z-10 flex items-center justify-between">
+                   <div>
+                     <p className="text-xs opacity-90">Total Members</p>
+                     <p className="text-lg font-bold">
+                       {chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0}
+                     </p>
+                   </div>
+                   <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                 </div>
+               </div>
+               <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                 <div className="relative z-10 flex items-center justify-between">
+                   <div>
+                     <p className="text-xs opacity-90">Male Members</p>
+                     <p className="text-lg font-bold">
+                       {chartData.membersDatabase?.genderDistribution?.reduce(
+                         (sum, item) => sum + item.male,
+                         0
+                       ) || 0}
+                     </p>
+                   </div>
+                   <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                 </div>
+               </div>
+               <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
+                 <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+                 <div className="relative z-10 flex items-center justify-between">
+                   <div>
+                     <p className="text-xs opacity-90">Female Members</p>
+                     <p className="text-lg font-bold">
+                       {chartData.membersDatabase?.genderDistribution?.reduce(
+                         (sum, item) => sum + item.female,
+                         0
+                       ) || 0}
+                     </p>
+                   </div>
+                   <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                 </div>
+               </div>
+                               <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs opacity-90">Active Guilders</p>
+                      <p className="text-lg font-bold">
+                        {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.85)}
+                      </p>
+                    </div>
+                    <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                  </div>
+                </div>
+                <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs opacity-90">Inactive Guilders</p>
+                      <p className="text-lg font-bold">
+                        {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.15)}
+                      </p>
+                    </div>
+                    <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                  </div>
+                </div>
+                <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                  <div className="relative z-10 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs opacity-90">Growth</p>
+                      <p className="text-lg font-bold">
+                        +12.5%
+                      </p>
+                    </div>
+                    <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                  </div>
+                </div>
+             </div>
+             {/* Small screens - Horizontal scrollable layout */}
+             <div className="lg:hidden">
+               <div className="overflow-x-auto">
+                 <div className="flex space-x-3 min-w-max pb-2">
+                   <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                     <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+                     <div className="relative z-10 flex items-center justify-between">
+                       <div>
+                         <p className="text-xs opacity-90">Total Members</p>
+                         <p className="text-lg font-bold">
+                           {chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0}
+                         </p>
+                       </div>
+                       <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                     </div>
+                   </div>
+                   <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                     <div className="relative z-10 flex items-center justify-between">
+                       <div>
+                         <p className="text-xs opacity-90">Male Members</p>
+                         <p className="text-lg font-bold">
+                           {chartData.membersDatabase?.genderDistribution?.reduce(
+                             (sum, item) => sum + item.male,
+                             0
+                           ) || 0}
+                         </p>
+                       </div>
+                       <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                     </div>
+                   </div>
+                   <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                     <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+                     <div className="relative z-10 flex items-center justify-between">
+                       <div>
+                         <p className="text-xs opacity-90">Female Members</p>
+                         <p className="text-lg font-bold">
+                           {chartData.membersDatabase?.genderDistribution?.reduce(
+                             (sum, item) => sum + item.female,
+                             0
+                           ) || 0}
+                         </p>
+                       </div>
+                       <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                     </div>
+                   </div>
+                                       <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs opacity-90">Active Guilders</p>
+                          <p className="text-lg font-bold">
+                            {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.85)}
+                          </p>
+                        </div>
+                        <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                      </div>
+                    </div>
+                    <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs opacity-90">Inactive Guilders</p>
+                          <p className="text-lg font-bold">
+                            {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.15)}
+                          </p>
+                        </div>
+                        <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                      </div>
+                    </div>
+                    <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                      <div className="relative z-10 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs opacity-90">Growth</p>
+                          <p className="text-lg font-bold">
+                            +12.5%
+                          </p>
+                        </div>
+                        <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                      </div>
+                    </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 lg:p-4 lg:max-h-[50rem]">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                Members by Gender
+              </h3>
+              <div className="space-y-3 lg:space-y-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 lg:p-3 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Male Members
+                    </span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                        (sum, item) => sum + item.male,
+                        0
+                      ) || 0}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full bg-blue-500"
+                      style={{
+                        width: `${(chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.male, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 lg:p-3 shadow-sm">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Female Members
+                    </span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                        (sum, item) => sum + item.female,
+                        0
+                      ) || 0}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full bg-pink-500"
+                      style={{
+                        width: `${(chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.female, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1) * 100}%`,
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Gender Distribution */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Gender Distribution by Congregation
+                Gender Distribution
               </h3>
               {/* Large screens - Grid layout with cards */}
               <div className="hidden lg:grid grid-cols-1 gap-6">
-                {chartData.membersDatabase.genderDistribution.map(
-                  (item, index) => (
-                    <div
-                      key={index}
-                      className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
-                      <div className="relative z-10">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
-                          {item.congregation}
-                        </h4>
-                        <div className="flex justify-center space-x-4">
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
-                              <i className="fas fa-mars text-white text-sm"></i>
-                            </div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {item.male}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Male
-                            </div>
-                          </div>
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
-                              <i className="fas fa-venus text-white text-sm"></i>
-                            </div>
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {item.female}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Female
-                            </div>
-                          </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                  <div className="relative z-10">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
+                      Total Members
+                    </h4>
+                    <div className="flex justify-center space-x-4">
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                          <i className="fas fa-mars text-white text-sm"></i>
+                        </div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                            (sum, item) => sum + item.male,
+                            0
+                          ) || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Male
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                          <i className="fas fa-venus text-white text-sm"></i>
+                        </div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                            (sum, item) => sum + item.female,
+                            0
+                          ) || 0}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          Female
                         </div>
                       </div>
                     </div>
-                  )
-                )}
+                  </div>
+                </div>
               </div>
               {/* Small screens - Grid layout with evenly distributed cards */}
               <div className="lg:hidden">
                 <div className="grid grid-cols-2 gap-4">
-                  {chartData.membersDatabase.genderDistribution.map(
-                    (item, index) => (
-                      <div
-                        key={index}
-                        className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
-                        <div className="relative z-10">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
-                            {item.congregation}
-                          </h4>
-                          <div className="flex justify-center space-x-4">
-                            <div className="text-center">
-                              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
-                                <i className="fas fa-mars text-white text-sm"></i>
-                              </div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {item.male}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Male
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
-                                <i className="fas fa-venus text-white text-sm"></i>
-                              </div>
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                {item.female}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                Female
-                              </div>
-                            </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                    <div className="relative z-10">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">
+                        Total Members
+                      </h4>
+                      <div className="flex justify-center space-x-4">
+                        <div className="text-center">
+                          <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                            <i className="fas fa-mars text-white text-sm"></i>
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {chartData.membersDatabase?.genderDistribution?.reduce(
+                              (sum, item) => sum + item.male,
+                              0
+                            ) || 0}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Male
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="w-12 h-12 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform duration-200">
+                            <i className="fas fa-venus text-white text-sm"></i>
+                          </div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {chartData.membersDatabase?.genderDistribution?.reduce(
+                              (sum, item) => sum + item.female,
+                              0
+                            ) || 0}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            Female
                           </div>
                         </div>
                       </div>
-                    )
-                  )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

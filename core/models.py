@@ -147,14 +147,15 @@ class SundayAttendance(models.Model):
 
 class BirthdayMessageLog(models.Model):
     guilder = models.ForeignKey(Guilder, on_delete=models.CASCADE)
-    sent_date = models.DateField(default=timezone.now)
+    sent_date = models.DateField()
     message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ["guilder", "sent_date"]
 
     def __str__(self):
-        return f"{self.guilder} - {self.sent_date}"
+        return f"Birthday SMS to {self.guilder.first_name} on {self.sent_date}"
 
 
 class BulkProfileCart(models.Model):
@@ -208,3 +209,35 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+
+
+class SystemSettings(models.Model):
+    """System-wide settings for configurable messages and notifications"""
+    SETTING_TYPES = [
+        ("attendance_reminder", "Attendance Reminder"),
+        ("birthday_message", "Birthday Message"),
+        ("welcome_message", "Welcome Message"),
+        ("joint_program_notification", "Joint Program Notification"),
+    ]
+
+    setting_type = models.CharField(max_length=50, choices=SETTING_TYPES, unique=True)
+    title = models.CharField(max_length=200, help_text="Title for this setting")
+    message_template = models.TextField(help_text="Message template. Use {congregation}, {date}, {day} as placeholders")
+    is_active = models.BooleanField(default=True, help_text="Whether this setting is active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "System Setting"
+        verbose_name_plural = "System Settings"
+        ordering = ["setting_type"]
+
+    def __str__(self):
+        return f"{self.get_setting_type_display()} - {self.title}"
+
+    def get_formatted_message(self, **kwargs):
+        """Return the message template with placeholders replaced"""
+        message = self.message_template
+        for key, value in kwargs.items():
+            message = message.replace(f"{{{key}}}", str(value))
+        return message

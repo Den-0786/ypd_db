@@ -9,12 +9,15 @@ import MonthlyAttendanceTable from "../../components/MonthlyAttendanceTable";
 import AttendanceFilter from "../../components/AttendanceFilter";
 import LogAttendanceModal from "../../components/LogAttendanceModal";
 import JointProgramModal from "../../components/JointProgramModal";
+import PinModal from "../../components/PinModal";
 import ToastContainer from "../../components/ToastContainer";
 
 export default function LocalAttendancePage() {
   const [selectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [showLogModal, setShowLogModal] = useState(false);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'log' or 'joint'
   const [logForm, setLogForm] = useState({
     week: "",
     month: "",
@@ -33,6 +36,8 @@ export default function LocalAttendancePage() {
     date: "",
     programTitle: "",
     location: "",
+    loggedBy: "",
+    position: "",
   });
 
   const [attendanceStats, setAttendanceStats] = useState({
@@ -93,8 +98,29 @@ export default function LocalAttendancePage() {
     setJointProgramForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleLogAttendance = () => setShowLogModal(true);
-  const handleJointProgram = () => setShowJointProgramModal(true);
+  const handleLogAttendance = () => {
+    setPendingAction("log");
+    setShowPinModal(true);
+  };
+
+  const handleJointProgram = () => {
+    setPendingAction("joint");
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccess = () => {
+    if (pendingAction === "log") {
+      setShowLogModal(true);
+    } else if (pendingAction === "joint") {
+      setShowJointProgramModal(true);
+    }
+    setPendingAction(null);
+  };
+
+  const handleClosePinModal = () => {
+    setShowPinModal(false);
+    setPendingAction(null);
+  };
 
   const handleCloseLogModal = () => {
     setShowLogModal(false);
@@ -120,6 +146,8 @@ export default function LocalAttendancePage() {
       date: "",
       programTitle: "",
       location: "",
+      loggedBy: "",
+      position: "",
     });
   };
 
@@ -224,8 +252,10 @@ export default function LocalAttendancePage() {
                   </div>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
-                  <div className="text-white text-xs opacity-90">Status</div>
-                  <div className="text-green-300 font-semibold">Active</div>
+                  <div className="text-white text-xs opacity-90">Day</div>
+                  <div className="text-green-300 font-semibold">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                  </div>
                 </div>
               </div>
             </div>
@@ -236,6 +266,10 @@ export default function LocalAttendancePage() {
         <AttendanceFilter
           handleLogAttendance={handleLogAttendance}
           handleJointProgram={handleJointProgram}
+          onFilterChange={(filters) => {
+            console.log("Filter changed:", filters);
+            // Handle filter changes here if needed
+          }}
         />
         <AttendanceForDayCard selectedDate={selectedDate} />
         <WeeklyAttendanceCards currentMonthData={currentMonthData} />
@@ -256,6 +290,22 @@ export default function LocalAttendancePage() {
         handleJointProgramInputChange={handleJointProgramInputChange}
         handleCloseJointProgramModal={handleCloseJointProgramModal}
         handleSubmitJointProgram={handleSubmitJointProgram}
+      />
+
+      <PinModal
+        isOpen={showPinModal}
+        onClose={handleClosePinModal}
+        onPinSuccess={handlePinSuccess}
+        title={
+          pendingAction === "log"
+            ? "Enter PIN to Log Attendance"
+            : "Enter PIN for Joint Program"
+        }
+        description={
+          pendingAction === "log"
+            ? "Please enter your PIN to log attendance"
+            : "Please enter your PIN to schedule joint program"
+        }
       />
 
       <ToastContainer />

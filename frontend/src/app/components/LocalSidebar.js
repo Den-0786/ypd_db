@@ -2,15 +2,84 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useTheme } from "./ThemeProvider";
+import { useToast } from "./Toast";
 
 export default function LocalSidebar({
   sidebarOpen,
   setSidebarOpen,
   setSettingsOpen,
+  userMenuOpen,
+  setUserMenuOpen,
+  notificationsOpen,
+  setNotificationsOpen,
 }) {
   const { theme, setTheme, mounted } = useTheme();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { showSuccess } = useToast();
+
+  // Handle click outside to close dropdowns and sidebar
+  useEffect(() => {
+    function handleClickOutside(event) {
+      // Close user menu if clicking outside
+      if (userMenuOpen) {
+        const userMenuElement = document.getElementById("user-menu-dropdown");
+        const userMenuButton = event.target.closest("[data-user-menu-button]");
+        if (
+          userMenuElement &&
+          !userMenuElement.contains(event.target) &&
+          !userMenuButton
+        ) {
+          setUserMenuOpen(false);
+        }
+      }
+
+      // Close notifications if clicking outside
+      if (notificationsOpen) {
+        const notificationsElement = document.getElementById(
+          "notifications-dropdown"
+        );
+        const notificationsButton = event.target.closest(
+          "[data-notifications-button]"
+        );
+        if (
+          notificationsElement &&
+          !notificationsElement.contains(event.target) &&
+          !notificationsButton
+        ) {
+          setNotificationsOpen(false);
+        }
+      }
+
+      // Close sidebar if clicking outside (only on mobile/tablet)
+      if (sidebarOpen && window.innerWidth < 1024) {
+        const sidebarElement = document.querySelector("[data-sidebar]");
+        const sidebarToggleButton = event.target.closest(
+          "[data-sidebar-toggle]"
+        );
+        if (
+          sidebarElement &&
+          !sidebarElement.contains(event.target) &&
+          !sidebarToggleButton
+        ) {
+          setSidebarOpen(false);
+        }
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [
+    userMenuOpen,
+    notificationsOpen,
+    sidebarOpen,
+    setUserMenuOpen,
+    setNotificationsOpen,
+    setSidebarOpen,
+  ]);
 
   const notifications = [
     {
@@ -44,6 +113,7 @@ export default function LocalSidebar({
   ];
   return (
     <div
+      data-sidebar
       className={`fixed left-0 top-16 ${mounted && theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-lg transition-all duration-300 z-20
       ${sidebarOpen ? "w-64" : "w-16"} ${sidebarOpen ? "block" : "hidden lg:flex"} overflow-y-auto overflow-x-hidden`}
       style={{ height: "calc(100vh - 4rem)" }}
@@ -174,7 +244,10 @@ export default function LocalSidebar({
         >
           <div className="relative">
             <button
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              data-notifications-button
+              onClick={() => {
+                setNotificationsOpen(!notificationsOpen);
+              }}
               className={`w-full flex items-center space-x-3 p-2 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors relative min-w-0`}
               title="Notifications"
             >
@@ -191,8 +264,11 @@ export default function LocalSidebar({
               )}
             </button>
             {/* Notifications Dropdown */}
-            {notificationsOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 max-h-48 overflow-y-auto min-w-0">
+            {notificationsOpen && (
+              <div
+                id="notifications-dropdown"
+                className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 max-h-48 overflow-y-auto min-w-0"
+              >
                 <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                     Notifications
@@ -235,7 +311,10 @@ export default function LocalSidebar({
         >
           <div className="relative">
             <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              data-user-menu-button
+              onClick={() => {
+                setUserMenuOpen(!userMenuOpen);
+              }}
               className={`w-full flex items-center space-x-3 p-2 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
               title="Admin User"
             >
@@ -250,8 +329,11 @@ export default function LocalSidebar({
               )}
             </button>
             {/* User Menu Dropdown */}
-            {userMenuOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-0">
+            {userMenuOpen && (
+              <div
+                id="user-menu-dropdown"
+                className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-0"
+              >
                 <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     Admin User
@@ -272,7 +354,12 @@ export default function LocalSidebar({
                     <span className="truncate">Settings</span>
                   </button>
                   <button
-                    onClick={() => (window.location.href = "/")}
+                    onClick={() => {
+                      showSuccess("Logged out successfully!");
+                      setTimeout(() => {
+                        window.location.href = "/";
+                      }, 1000);
+                    }}
                     className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 min-w-0"
                   >
                     <i className="fas fa-sign-out-alt text-sm flex-shrink-0"></i>
