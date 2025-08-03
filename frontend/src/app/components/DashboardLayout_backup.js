@@ -128,7 +128,7 @@ export default function DashboardLayout({
     return () => {
       autoLogout.destroy();
     };
-  }, [showSuccess, showError]); // Keep dependencies to avoid the error
+  }, [showSuccess, showError]);
 
   // Handle security tab access
   const handleSecurityTabClick = () => {
@@ -328,7 +328,6 @@ export default function DashboardLayout({
         <div className="flex items-center space-x-2 sm:space-x-3 pl-2 sm:pl-6">
           <div className="relative lg:hidden">
             <button
-              data-sidebar-toggle
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-white hover:text-blue-200 transition-colors mr-2 lg:hidden focus:outline-none"
               aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
@@ -398,6 +397,12 @@ export default function DashboardLayout({
       {/* Main content */}
       <div
         className={`pt-16 transition-all duration-300 ${sidebarOpen ? "lg:ml-64" : "lg:ml-16"} ${mounted && theme === "dark" ? "bg-gray-900" : "bg-gray-50"} min-h-screen`}
+        onClick={() => {
+          // Close sidebar when clicking outside on mobile
+          if (sidebarOpen && window.innerWidth < 1024) {
+            setSidebarOpen(false);
+          }
+        }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">{children}</div>
       </div>
@@ -496,7 +501,7 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="text"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userName") || "Admin User" : "Admin User"}
+                            defaultValue="Admin User"
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
@@ -506,7 +511,7 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="email"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userEmail") || "admin@ypg.com" : "admin@ypg.com"}
+                            defaultValue="admin@ypg.com"
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
@@ -516,7 +521,7 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="tel"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userPhone") || "+233 20 123 4567" : "+233 20 123 4567"}
+                            defaultValue="+233 20 123 4567"
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
@@ -1326,13 +1331,8 @@ function MembersQuickActionsDropdown({
   }, []);
 
   const handleExport = (format) => {
-    if (format === "CSV") {
-      exportSelectedToCSV();
-    } else if (format === "Excel") {
-      showToast("Excel export coming soon!", "success");
-    } else if (format === "PDF") {
-      showToast("PDF export coming soon!", "success");
-    }
+    console.log(`Exporting as ${format}`);
+    // Here you would implement actual export logic
     setShowExportModal(false);
   };
 

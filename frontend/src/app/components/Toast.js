@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 export default function Toast({
   message,
@@ -92,19 +92,19 @@ export function ToastContainer({ toasts, removeToast }) {
 export function useToast() {
   const [toasts, setToasts] = useState([]);
 
-  const addToast = (message, type = "info", duration = 3000) => {
+  const addToast = useCallback((message, type = "info", duration = 3000) => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type, duration }]);
-  };
+  }, []);
 
-  const removeToast = (id) => {
+  const removeToast = useCallback((id) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  };
+  }, []);
 
-  const showSuccess = (message) => addToast(message, "success");
-  const showError = (message) => addToast(message, "error");
-  const showWarning = (message) => addToast(message, "warning");
-  const showInfo = (message) => addToast(message, "info");
+  const showSuccess = useCallback((message) => addToast(message, "success"), [addToast]);
+  const showError = useCallback((message) => addToast(message, "error"), [addToast]);
+  const showWarning = useCallback((message) => addToast(message, "warning"), [addToast]);
+  const showInfo = useCallback((message) => addToast(message, "info"), [addToast]);
 
   return {
     toasts,

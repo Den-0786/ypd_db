@@ -53,8 +53,9 @@ export default function MembersPage() {
   // Get congregation name from localStorage
   useEffect(() => {
     const storedCongregationName = localStorage.getItem('congregationName');
-    setCongregationName(storedCongregationName);
-    console.log('Congregation name set to:', storedCongregationName);
+    if (storedCongregationName) {
+      setCongregationName(storedCongregationName);
+    }
   }, []);
 
   // Force refresh mock data on component mount
@@ -469,11 +470,6 @@ export default function MembersPage() {
         );
       }
       
-      console.log('Updated members:', updatedMembers);
-      console.log('Filtered members:', filteredMembers);
-      console.log('Executives:', filteredMembers.filter(member => member.is_executive));
-      console.log('Regular members:', filteredMembers.filter(member => !member.is_executive));
-      
       // Separate executives and regular members
       const executivesList = filteredMembers.filter(member => member.is_executive);
       const regularMembers = filteredMembers.filter(member => !member.is_executive);
@@ -501,11 +497,9 @@ export default function MembersPage() {
   const getFilteredExecutives = () => {
     if (executiveView === "district") {
       const districtExecs = executives.filter(exec => exec.executive_level === "District");
-      console.log('District executives:', districtExecs);
       return districtExecs;
     } else {
       const localExecs = executives.filter(exec => exec.executive_level === "Local");
-      console.log('Local executives:', localExecs);
       return localExecs;
     }
   };
@@ -513,7 +507,6 @@ export default function MembersPage() {
   // Group local executives by congregation
   const getGroupedLocalExecutives = () => {
     const localExecutives = executives.filter(exec => exec.executive_level === "Local");
-    console.log('All local executives:', localExecutives);
     const grouped = {};
     
     localExecutives.forEach(exec => {
@@ -523,7 +516,6 @@ export default function MembersPage() {
       grouped[exec.congregation].push(exec);
     });
     
-    console.log('Grouped local executives:', grouped);
     return grouped;
   };
 

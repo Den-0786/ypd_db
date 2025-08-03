@@ -27,6 +27,8 @@ export default function BulkAddForm({
     is_executive: false,
     executive_position: "",
     executive_level: "",
+    local_executive_position: "",
+    district_executive_position: "",
     congregation: "",
     confirmation: "",
     baptism: "",
@@ -51,6 +53,8 @@ export default function BulkAddForm({
       is_executive: false,
       executive_position: "",
       executive_level: "",
+      local_executive_position: "",
+      district_executive_position: "",
       congregation: "",
       confirmation: "",
       baptism: "",
@@ -115,14 +119,35 @@ export default function BulkAddForm({
 
   const handleSubmitSingle = async () => {
     try {
-      // TODO: Submit single member to Django API
-      console.log("Submitting single member:", currentMember);
-      onSubmitSingle("Single member added successfully!", "success");
-      resetForm();
+      const response = await fetch('/api/members/add/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(currentMember),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        onSubmitSingle("Single member added successfully!", "success");
+        resetForm();
+      } else {
+        const errorData = await response.json();
+        onSubmitSingle(errorData.message || "Error adding member", "error");
+      }
     } catch (error) {
       console.error("Error submitting single member:", error);
       onSubmitSingle("Error adding member. Please try again.", "error");
     }
+  };
+
+  // Function to get CSRF token from cookies
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
   };
 
   return (

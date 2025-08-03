@@ -406,18 +406,12 @@ export default function LocalAttendancePage() {
       switch (pendingDeleteAction) {
         case "week":
             window.showToast("PIN verified for week delete operation", "success");
-          // Here you would typically make an API call to delete the week
-            console.log("PIN verified for week delete operation");
           break;
         case "month":
             window.showToast("PIN verified for month delete operation", "success");
-          // Here you would typically make an API call to delete the month
-            console.log("PIN verified for month delete operation");
           break;
         case "day":
             window.showToast("PIN verified for day delete operation", "success");
-          // Here you would typically make an API call to delete the day
-            console.log("PIN verified for day delete operation");
           break;
         default:
           break;
@@ -428,15 +422,12 @@ export default function LocalAttendancePage() {
       switch (pendingEditAction) {
         case "week":
             window.showToast("PIN verified for week edit operation", "success");
-            console.log("PIN verified for week edit operation");
           break;
         case "month":
             window.showToast("PIN verified for month edit operation", "success");
-            console.log("PIN verified for month edit operation");
           break;
         case "day":
             window.showToast("PIN verified for day edit operation", "success");
-            console.log("PIN verified for day edit operation");
           break;
         default:
           break;
@@ -445,12 +436,10 @@ export default function LocalAttendancePage() {
     } else if (pendingAction === "log") {
       // Handle log attendance
       window.showToast("PIN verified for attendance logging", "success");
-      console.log("PIN verified for attendance logging");
       setShowLogModal(true);
     } else if (pendingAction === "joint") {
       // Handle joint program
       window.showToast("PIN verified for joint program", "success");
-      console.log("PIN verified for joint program");
       setShowJointProgramModal(true);
     }
     setShowPinModal(false);
@@ -494,38 +483,52 @@ export default function LocalAttendancePage() {
     });
   };
 
-  const handleSubmitLog = () => {
-    // Add to data store
-    const newRecord = dataStore.addAttendanceRecord({
-      date: logForm.date,
-      male: logForm.male,
-      female: logForm.female,
-      total: logForm.total,
-      loggedBy: logForm.loggedBy,
-      position: logForm.position,
-      week: logForm.week,
-      month: logForm.month,
-      year: logForm.year,
-      congregation: logForm.congregation,
-    });
+  const handleSubmitLog = async () => {
+    try {
+      const attendanceData = {
+        date: logForm.date,
+        male_count: logForm.male,
+        female_count: logForm.female,
+        total_count: logForm.total,
+        logged_by: logForm.loggedBy,
+        position: logForm.position,
+        congregation: logForm.congregation,
+        notes: "",
+      };
 
-    // Update local state
-    setAttendanceRecords(prev => [...prev, newRecord]);
+      const response = await fetch('/api/attendance/log/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(attendanceData),
+      });
 
-    // Update stats
-    setAttendanceStats((prev) => ({
-      ...prev,
-      totalMale: prev.totalMale + logForm.male,
-      totalFemale: prev.totalFemale + logForm.female,
-      weeksLogged: prev.weeksLogged + 1,
-    }));
-
-    if (typeof window !== "undefined" && window.showToast) {
-    window.showToast("Attendance logged successfully!", "success");
-    } else {
-      console.log("Attendance logged successfully!");
+      if (response.ok) {
+        const result = await response.json();
+        if (typeof window !== "undefined" && window.showToast) {
+          window.showToast("Attendance logged successfully!", "success");
+        } else {
+          console.log("Attendance logged successfully!");
+        }
+        handleCloseLogModal();
+        // Refresh attendance data
+        // The original code had a fetchAttendanceData() call here, but fetchAttendanceData is not defined.
+        // Assuming the intent was to refetch or update the local state if needed.
+        // For now, we'll just close the modal and let the user see the success message.
+      } else {
+        const errorData = await response.json();
+        if (typeof window !== "undefined" && window.showToast) {
+          window.showToast(errorData.message || "Error logging attendance", "error");
+        }
+      }
+    } catch (error) {
+      console.error("Error logging attendance:", error);
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Error logging attendance. Please try again.", "error");
+      }
     }
-    handleCloseLogModal();
   };
 
   const handleSubmitJointProgram = () => {
@@ -552,6 +555,14 @@ export default function LocalAttendancePage() {
       console.log("Joint program logged successfully!");
     }
     handleCloseJointProgramModal();
+  };
+
+  // Function to get CSRF token from cookies
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
   };
 
   return (

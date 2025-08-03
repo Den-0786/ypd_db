@@ -34,8 +34,6 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
       // Fallback for backward compatibility
       if (typeof window !== "undefined" && window.showToast) {
         window.showToast("Month attendance deleted successfully!", "success");
-      } else {
-        console.log("Month attendance deleted successfully!");
       }
     }
     setShowDeleteModal(false);

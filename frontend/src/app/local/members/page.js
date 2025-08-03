@@ -534,7 +534,6 @@ export default function LocalMembersPage() {
     });
 
     // In a real app, you would update the state here
-    console.log("Updated members:", updatedMembers);
     setSelectedMembers([]);
     showSuccess(`${selectedMembers.length} member(s) updated successfully!`);
   };
@@ -748,9 +747,14 @@ export default function LocalMembersPage() {
     );
 
     // In a real app, you would update the state here
-    console.log("Updated member:", editForm);
     setShowEditModal(false);
     showSuccess("Member updated successfully!");
+
+    // Update members list
+    const updatedMembers = members.map(member =>
+      member.id === editForm.id ? { ...member, ...editForm } : member
+    );
+    setMembers(updatedMembers);
   };
 
   if (!mounted) {

@@ -16,6 +16,40 @@ export default function Sidebar({
 }) {
   const { theme, setTheme, mounted } = useTheme();
   const { showSuccess } = useToast();
+  
+  // Test toast on mount
+  useEffect(() => {
+    if (mounted) {
+      setTimeout(() => {
+        showSuccess("Sidebar loaded successfully!");
+      }, 1000);
+    }
+  }, [mounted, showSuccess]);
+  
+  // Get user information from localStorage
+  const [userInfo, setUserInfo] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          const parsedUser = JSON.parse(user);
+          // For district view, show district-specific info
+          if (parsedUser.congregationId === "district") {
+            setUserInfo({
+              username: "District Admin",
+              congregationName: "District Executive"
+            });
+          } else {
+            setUserInfo(parsedUser);
+          }
+        } catch (e) {
+          console.error('Error parsing user info:', e);
+        }
+      }
+    }
+  }, []);
 
   // Handle click outside to close dropdowns
   useEffect(() => {
@@ -49,6 +83,21 @@ export default function Sidebar({
           setNotificationsOpen(false);
         }
       }
+
+      // Close sidebar if clicking outside (only on mobile/tablet)
+      if (sidebarOpen && window.innerWidth < 1024) {
+        const sidebarElement = document.querySelector("[data-sidebar]");
+        const sidebarToggleButton = event.target.closest(
+          "[data-sidebar-toggle]"
+        );
+        if (
+          sidebarElement &&
+          !sidebarElement.contains(event.target) &&
+          !sidebarToggleButton
+        ) {
+          setSidebarOpen(false);
+        }
+      }
     }
 
     // Add event listener
@@ -58,7 +107,7 @@ export default function Sidebar({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [userMenuOpen, notificationsOpen]);
+  }, [userMenuOpen, notificationsOpen, sidebarOpen, setUserMenuOpen, setNotificationsOpen, setSidebarOpen]);
 
   // Toggle theme
   const toggleTheme = () => {
@@ -66,12 +115,15 @@ export default function Sidebar({
     setTheme(newTheme);
   };
 
+
+
   return (
     <>
       {/* Sidebar */}
       <div
+        data-sidebar
         className={`fixed left-0 top-16 ${mounted && theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-lg transition-all duration-300 z-20 
-        ${sidebarOpen ? "w-64" : "w-16"} ${sidebarOpen ? "block" : "hidden lg:flex"} overflow-y-auto overflow-x-hidden`}
+        ${sidebarOpen ? "w-64" : "w-16"} ${sidebarOpen ? "block" : "hidden lg:block"} overflow-y-auto overflow-x-hidden`}
         style={{ height: "calc(100vh - 4rem)" }}
       >
         <div className="flex flex-col min-w-0">
@@ -330,14 +382,14 @@ export default function Sidebar({
                 data-user-menu-button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className={`w-full flex items-center space-x-3 p-2 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
-                title="Admin User"
+                title={userInfo?.username || "User"}
               >
                 <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <i className="fas fa-user text-xs text-white"></i>
                 </div>
                 {sidebarOpen && (
                   <>
-                    <span className="font-medium text-sm truncate">Admin</span>
+                    <span className="font-medium text-sm truncate">{userInfo?.username || "User"}</span>
                     <i className="fas fa-chevron-down text-xs flex-shrink-0"></i>
                   </>
                 )}
@@ -350,10 +402,10 @@ export default function Sidebar({
                 >
                   <div className="p-2 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                      Admin User
+                      {userInfo?.username || "User"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      admin@ypg.com
+                      {userInfo?.congregationName || "Congregation"}
                     </p>
                   </div>
                   <div className="py-1">
@@ -369,10 +421,50 @@ export default function Sidebar({
                     </button>
                     <button
                       onClick={() => {
+                        // Clear localStorage
+                        localStorage.removeItem('authToken');
+                        sessionStorage.removeItem('authToken');
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('user');
+                        localStorage.removeItem('congregationId');
+                        localStorage.removeItem('congregationName');
+                        
+                        // Clear autoLogout timers if available
+                        if (typeof window !== "undefined" && window.autoLogout) {
+                          window.autoLogout.destroy();
+                        }
+                        
+                        // Show success message
                         showSuccess("Logged out successfully!");
+                        
+                        // Create a visible notification that stays on screen
+                        const notification = document.createElement('div');
+                        notification.innerHTML = `
+                          <div style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #10B981;
+                            color: white;
+                            padding: 16px 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                            z-index: 9999;
+                            font-weight: 500;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                          ">
+                            <i class="fas fa-check-circle"></i>
+                            Logged out successfully!
+                          </div>
+                        `;
+                        document.body.appendChild(notification);
+                        
+                        // Redirect after a short delay
                         setTimeout(() => {
                           window.location.href = "/";
-                        }, 1000);
+                        }, 2000);
                       }}
                       className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 min-w-0"
                     >

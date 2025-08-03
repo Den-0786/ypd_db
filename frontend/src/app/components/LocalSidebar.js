@@ -15,6 +15,33 @@ export default function LocalSidebar({
 }) {
   const { theme, setTheme, mounted } = useTheme();
   const { showSuccess } = useToast();
+  
+  // Test toast on mount
+  useEffect(() => {
+    if (mounted) {
+      setTimeout(() => {
+        showSuccess("LocalSidebar loaded successfully!");
+      }, 1000);
+    }
+  }, [mounted, showSuccess]);
+  
+  // Get user information from localStorage
+  const [userInfo, setUserInfo] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem('user');
+      if (user) {
+        try {
+          setUserInfo(JSON.parse(user));
+        } catch (e) {
+          console.error('Error parsing user info:', e);
+        }
+      }
+    }
+  }, []);
+
+
 
   // Handle click outside to close dropdowns and sidebar
   useEffect(() => {
@@ -112,12 +139,22 @@ export default function LocalSidebar({
     { href: "/local/bulk", icon: "fas fa-user-plus", label: "Bulk Add" },
   ];
   return (
-    <div
-      data-sidebar
-      className={`fixed left-0 top-16 ${mounted && theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-lg transition-all duration-300 z-20
-      ${sidebarOpen ? "w-64" : "w-16"} ${sidebarOpen ? "block" : "hidden lg:flex"} overflow-y-auto overflow-x-hidden`}
-      style={{ height: "calc(100vh - 4rem)" }}
-    >
+    <>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div
+        data-sidebar
+        className={`fixed left-0 top-16 ${mounted && theme === "dark" ? "bg-gray-800" : "bg-white"} shadow-lg transition-all duration-300 z-40
+        ${sidebarOpen ? "w-64" : "w-16"} ${sidebarOpen ? "block" : "hidden lg:block"} overflow-y-auto overflow-x-hidden`}
+        style={{ height: "calc(100vh - 4rem)" }}
+      >
       <div className="flex flex-col min-w-0">
         {/* Sidebar Header */}
         <div
@@ -316,32 +353,32 @@ export default function LocalSidebar({
                 setUserMenuOpen(!userMenuOpen);
               }}
               className={`w-full flex items-center space-x-3 p-2 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
-              title="Admin User"
+              title={userInfo?.username || "User"}
             >
               <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <i className="fas fa-user text-xs text-white"></i>
               </div>
               {sidebarOpen && (
                 <>
-                  <span className="font-medium text-sm truncate">Admin</span>
+                  <span className="font-medium text-sm truncate">{userInfo?.username || "User"}</span>
                   <i className="fas fa-chevron-down text-xs flex-shrink-0"></i>
                 </>
               )}
             </button>
             {/* User Menu Dropdown */}
-            {userMenuOpen && (
-              <div
-                id="user-menu-dropdown"
-                className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-0"
-              >
-                <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    Admin User
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    admin@ypg.com
-                  </p>
-                </div>
+                         {userMenuOpen && (
+               <div
+                 id="user-menu-dropdown"
+                 className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 min-w-0"
+               >
+                 <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                     {userInfo?.username || "User"}
+                   </p>
+                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                     {userInfo?.congregationName || "Congregation"}
+                   </p>
+                 </div>
                 <div className="py-1">
                   <button
                     onClick={() => {
@@ -353,18 +390,58 @@ export default function LocalSidebar({
                     <i className="fas fa-cog text-sm flex-shrink-0"></i>
                     <span className="truncate">Settings</span>
                   </button>
-                  <button
-                    onClick={() => {
-                      showSuccess("Logged out successfully!");
-                      setTimeout(() => {
-                        window.location.href = "/";
-                      }, 1000);
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 min-w-0"
-                  >
-                    <i className="fas fa-sign-out-alt text-sm flex-shrink-0"></i>
-                    <span className="truncate">Logout</span>
-                  </button>
+                                     <button
+                                           onClick={() => {
+                        // Clear localStorage
+                        localStorage.removeItem('authToken');
+                        sessionStorage.removeItem('authToken');
+                        localStorage.removeItem('user');
+                        sessionStorage.removeItem('user');
+                        localStorage.removeItem('congregationId');
+                        localStorage.removeItem('congregationName');
+                        
+                        // Clear autoLogout timers if available
+                        if (typeof window !== "undefined" && window.autoLogout) {
+                          window.autoLogout.destroy();
+                        }
+                        
+                        // Show success message
+                        showSuccess("Logged out successfully!");
+                        
+                        // Create a visible notification that stays on screen
+                        const notification = document.createElement('div');
+                        notification.innerHTML = `
+                          <div style="
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            background: #10B981;
+                            color: white;
+                            padding: 16px 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                            z-index: 9999;
+                            font-weight: 500;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                          ">
+                            <i class="fas fa-check-circle"></i>
+                            Logged out successfully!
+                          </div>
+                        `;
+                        document.body.appendChild(notification);
+                        
+                        // Redirect after a short delay
+                        setTimeout(() => {
+                          window.location.href = "/";
+                        }, 2000);
+                      }}
+                     className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 min-w-0"
+                   >
+                     <i className="fas fa-sign-out-alt text-sm flex-shrink-0"></i>
+                     <span className="truncate">Logout</span>
+                   </button>
                 </div>
               </div>
             )}
@@ -372,5 +449,6 @@ export default function LocalSidebar({
         </div>
       </div>
     </div>
+    </>
   );
 }

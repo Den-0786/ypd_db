@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 export default function ChurchInfoSection({
   currentMember,
   setCurrentMember,
@@ -23,13 +25,26 @@ export default function ChurchInfoSection({
   const getExecutivePositionDisplay = (position) => {
     const positionMap = {
       president: "President",
+      presidents_rep: "President's Rep",
       vice_president: "Vice President",
       secretary: "Secretary",
       assistant_secretary: "Assistant Secretary",
       financial_secretary: "Financial Secretary",
       treasurer: "Treasurer",
       organizer: "Organizer",
+      evangelism_coordinator: "Evangelism Coordinator",
+      youth_leader: "Youth Leader",
+      choir_master: "Choir Master",
+      usher: "Usher",
+      protocol: "Protocol",
+      security: "Security",
+      maintenance: "Maintenance",
+      welfare: "Welfare",
+      education: "Education",
       evangelism: "Evangelism",
+      children_ministry: "Children Ministry",
+      women_fellowship: "Women Fellowship",
+      men_fellowship: "Men Fellowship",
     };
     return positionMap[position] || position;
   };
@@ -60,34 +75,64 @@ export default function ChurchInfoSection({
               Select Congregation
             </option>
             <option
-              value="Ahinsan Branch"
+              value="Emmanuel Congregation Ahinsan"
               className="text-light-text dark:text-dark-text"
             >
-              Ahinsan Branch
+              Emmanuel Congregation Ahinsan
             </option>
             <option
-              value="Kokomlemle Branch"
+              value="Peniel Congregation Esreso No1"
               className="text-light-text dark:text-dark-text"
             >
-              Kokomlemle Branch
+              Peniel Congregation Esreso No1
             </option>
             <option
-              value="Adabraka Branch"
+              value="Mizpah Congregation Odagya No1"
               className="text-light-text dark:text-dark-text"
             >
-              Adabraka Branch
+              Mizpah Congregation Odagya No1
             </option>
             <option
-              value="Kaneshie Branch"
+              value="Christ Congregation Ahinsan Estate"
               className="text-light-text dark:text-dark-text"
             >
-              Kaneshie Branch
+              Christ Congregation Ahinsan Estate
             </option>
             <option
-              value="Mamprobi Branch"
+              value="Ebenezer Congregation Dompoase Aprabo"
               className="text-light-text dark:text-dark-text"
             >
-              Mamprobi Branch
+              Ebenezer Congregation Dompoase Aprabo
+            </option>
+            <option
+              value="Favour Congregation Esreso No2"
+              className="text-light-text dark:text-dark-text"
+            >
+              Favour Congregation Esreso No2
+            </option>
+            <option
+              value="Liberty Congregation Esreso High Tension"
+              className="text-light-text dark:text-dark-text"
+            >
+              Liberty Congregation Esreso High Tension
+            </option>
+            <option
+              value="Odagya No2"
+              className="text-light-text dark:text-dark-text"
+            >
+              Odagya No2
+            </option>
+            <option
+              value="NOM"
+              className="text-light-text dark:text-dark-text"
+            >
+              NOM
+            </option>
+            <option
+              value="Kokobriko"
+              className="text-light-text dark:text-dark-text"
+            >
+              Kokobriko
             </option>
           </select>
         </div>
@@ -99,7 +144,10 @@ export default function ChurchInfoSection({
           <input
             type="text"
             value={currentMember.position}
-            onChange={(e) => handleInputChange("position", e.target.value)}
+            onChange={(e) => setCurrentMember({
+              ...currentMember,
+              position: e.target.value
+            })}
             className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
             placeholder="Member, Elder, etc."
           />
@@ -227,6 +275,13 @@ export default function ChurchInfoSection({
                   setCurrentMember({
                     ...currentMember,
                     is_executive: e.target.checked,
+                    // Reset executive fields when unchecking
+                    executive_level: e.target.checked ? currentMember.executive_level : "",
+                    executive_position: e.target.checked ? currentMember.executive_position : "",
+                    local_executive_position: e.target.checked ? currentMember.local_executive_position : "",
+                    district_executive_position: e.target.checked ? currentMember.district_executive_position : "",
+                    // Clear position field when unchecking executive
+                    position: e.target.checked ? currentMember.position : "",
                   })
                 }
                 className="h-4 w-4 text-light-accent focus:ring-light-accent border-light-border rounded"
@@ -240,12 +295,174 @@ export default function ChurchInfoSection({
             </div>
 
             {currentMember.is_executive && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:gap-4">
+              <div className="space-y-4">
+                {/* Executive Level Selection */}
                 <div>
                   <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                    Executive Position
+                    Executive Level <span className="text-red-500 font-bold">*</span>
                   </label>
                   <select
+                    value={currentMember.executive_level}
+                    onChange={(e) => {
+                      const level = e.target.value;
+                      let newPosition = "";
+                      
+                      // Set position based on level and existing positions
+                      if (level === "local" && currentMember.local_executive_position) {
+                        newPosition = getExecutivePositionDisplay(currentMember.local_executive_position);
+                      } else if (level === "district" && currentMember.district_executive_position) {
+                        newPosition = getExecutivePositionDisplay(currentMember.district_executive_position);
+                      } else if (level === "both") {
+                        // For both, prefer local position if available, otherwise district
+                        if (currentMember.local_executive_position) {
+                          newPosition = getExecutivePositionDisplay(currentMember.local_executive_position);
+                        } else if (currentMember.district_executive_position) {
+                          newPosition = getExecutivePositionDisplay(currentMember.district_executive_position);
+                        }
+                      }
+                      
+                      setCurrentMember({
+                        ...currentMember,
+                        executive_level: level,
+                        // Reset positions when level changes
+                        executive_position: "",
+                        local_executive_position: "",
+                        district_executive_position: "",
+                        // Update position field
+                        position: newPosition,
+                      });
+                    }}
+                    className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                    required
+                  >
+                    <option value="" className="text-light-text dark:text-dark-text">
+                      Select Executive Level
+                    </option>
+                    <option value="local" className="text-light-text dark:text-dark-text">
+                      Local Executive
+                    </option>
+                    <option value="district" className="text-light-text dark:text-dark-text">
+                      District Executive
+                    </option>
+                    <option value="both" className="text-light-text dark:text-dark-text">
+                      Both Local & District Executive
+                    </option>
+                  </select>
+                </div>
+
+                {/* Local Executive Position */}
+                {(currentMember.executive_level === "local" || currentMember.executive_level === "both") && (
+                  <div>
+                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                      Local Executive Position
+                      {currentMember.executive_level === "local" && <span className="text-red-500 font-bold">*</span>}
+                    </label>
+                    <select
+                      value={currentMember.local_executive_position}
+                      onChange={(e) => {
+                        const position = e.target.value;
+                        const positionDisplay = getExecutivePositionDisplay(position);
+                        setCurrentMember({
+                          ...currentMember,
+                          local_executive_position: position,
+                          executive_position: currentMember.executive_level === "local" ? position : currentMember.executive_position,
+                          position: positionDisplay, // Direct update to position field
+                        });
+                      }}
+                      className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                      required={currentMember.executive_level === "local"}
+                    >
+                      <option value="" className="text-light-text dark:text-dark-text">
+                        Select Local Position
+                      </option>
+                      <option value="president" className="text-light-text dark:text-dark-text">
+                        President
+                      </option>
+                      <option value="vice_president" className="text-light-text dark:text-dark-text">
+                        Vice President
+                      </option>
+                      <option value="secretary" className="text-light-text dark:text-dark-text">
+                        Secretary
+                      </option>
+                      <option value="assistant_secretary" className="text-light-text dark:text-dark-text">
+                        Assistant Secretary
+                      </option>
+                      <option value="financial_secretary" className="text-light-text dark:text-dark-text">
+                        Financial Secretary
+                      </option>
+                      <option value="treasurer" className="text-light-text dark:text-dark-text">
+                        Treasurer
+                      </option>
+                      <option value="organizer" className="text-light-text dark:text-dark-text">
+                        Organizer
+                      </option>
+                      <option value="evangelism_coordinator" className="text-light-text dark:text-dark-text">
+                        Evangelism Coordinator
+                      </option>
+                    </select>
+                  </div>
+                )}
+
+                {/* District Executive Position */}
+                {(currentMember.executive_level === "district" || currentMember.executive_level === "both") && (
+                  <div>
+                    <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                      District Executive Position
+                      {currentMember.executive_level === "district" && <span className="text-red-500 font-bold">*</span>}
+                    </label>
+                    <select
+                      value={currentMember.district_executive_position}
+                      onChange={(e) => {
+                        const position = e.target.value;
+                        const positionDisplay = getExecutivePositionDisplay(position);
+                        setCurrentMember({
+                          ...currentMember,
+                          district_executive_position: position,
+                          executive_position: currentMember.executive_level === "district" ? position : currentMember.executive_position,
+                          position: positionDisplay, // Direct update to position field
+                        });
+                      }}
+                      className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                      required={currentMember.executive_level === "district"}
+                    >
+                      <option value="" className="text-light-text dark:text-dark-text">
+                        Select District Position
+                      </option>
+                      <option value="president" className="text-light-text dark:text-dark-text">
+                        President
+                      </option>
+                      <option value="presidents_rep" className="text-light-text dark:text-dark-text">
+                        President&apos;s Rep
+                      </option>
+                      <option value="secretary" className="text-light-text dark:text-dark-text">
+                        Secretary
+                      </option>
+                      <option value="assistant_secretary" className="text-light-text dark:text-dark-text">
+                        Assistant Secretary
+                      </option>
+                      <option value="financial_secretary" className="text-light-text dark:text-dark-text">
+                        Financial Secretary
+                      </option>
+                      <option value="treasurer" className="text-light-text dark:text-dark-text">
+                        Treasurer
+                      </option>
+                      <option value="organizer" className="text-light-text dark:text-dark-text">
+                        Organizer
+                      </option>
+                      <option value="evangelism_coordinator" className="text-light-text dark:text-dark-text">
+                        Evangelism Coordinator
+                      </option>
+                    </select>
+                  </div>
+                )}
+
+                {/* Legacy Executive Position (for backward compatibility) */}
+                <div>
+                  <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+                    Primary Executive Position
+                  </label>
+                  <input
+                    type="text"
                     value={currentMember.executive_position}
                     onChange={(e) =>
                       setCurrentMember({
@@ -254,97 +471,12 @@ export default function ChurchInfoSection({
                       })
                     }
                     className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                  >
-                    <option
-                      value=""
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Select Position
-                    </option>
-                    <option
-                      value="president"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      President
-                    </option>
-                    <option
-                      value="vice_president"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Vice President
-                    </option>
-                    <option
-                      value="secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Secretary
-                    </option>
-                    <option
-                      value="assistant_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Assistant Secretary
-                    </option>
-                    <option
-                      value="financial_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Financial Secretary
-                    </option>
-                    <option
-                      value="treasurer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Treasurer
-                    </option>
-                    <option
-                      value="organizer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Organizer
-                    </option>
-                    <option
-                      value="evangelism"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Evangelism
-                    </option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                    Executive Level
-                  </label>
-                  <select
-                    value={currentMember.executive_level}
-                    onChange={(e) =>
-                      setCurrentMember({
-                        ...currentMember,
-                        executive_level: e.target.value,
-                      })
-                    }
-                    className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                  >
-                    <option
-                      value=""
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Select Level
-                    </option>
-                    <option
-                      value="Local"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Local
-                    </option>
-                    <option
-                      value="District"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      District
-                    </option>
-                  </select>
+                    placeholder="Primary position (auto-filled based on level selection)"
+                    readOnly
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    This field is automatically set based on your level selection
+                  </p>
                 </div>
               </div>
             )}

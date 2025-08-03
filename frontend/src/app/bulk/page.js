@@ -35,6 +35,8 @@ export default function BulkRegistrationPage() {
     is_executive: false,
     executive_position: "",
     executive_level: "",
+    local_executive_position: "",
+    district_executive_position: "",
     congregation: "",
     confirmation: "",
     baptism: "",
@@ -112,6 +114,8 @@ export default function BulkRegistrationPage() {
         is_executive: false,
         executive_position: "",
         executive_level: "",
+        local_executive_position: "",
+        district_executive_position: "",
         congregation: "",
         confirmation: "",
         baptism: "",
@@ -127,32 +131,47 @@ export default function BulkRegistrationPage() {
 
   const handleSubmitSingle = async () => {
     try {
-      // TODO: Submit single member to Django API
-      console.log("Submitting single member:", currentMember);
-      showToast("Single member added successfully!", "success");
-      setCurrentMember({
-        first_name: "",
-        last_name: "",
-        phone_number: "",
-        gender: "",
-        email: "",
-        date_of_birth: "",
-        place_of_residence: "",
-        residential_address: "",
-        profession: "",
-        hometown: "",
-        relative_contact: "",
-        membership_status: "Active",
-        position: "",
-        is_executive: false,
-        executive_position: "",
-        executive_level: "",
-        congregation: "",
-        confirmation: "",
-        baptism: "",
-        communicant: "",
+      const response = await fetch('/api/members/add/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify(currentMember),
       });
-      setCurrentSection("personal");
+
+      if (response.ok) {
+        const result = await response.json();
+        showToast("Single member added successfully!", "success");
+        setCurrentMember({
+          first_name: "",
+          last_name: "",
+          phone_number: "",
+          gender: "",
+          email: "",
+          date_of_birth: "",
+          place_of_residence: "",
+          residential_address: "",
+          profession: "",
+          hometown: "",
+          relative_contact: "",
+          membership_status: "Active",
+          position: "",
+          is_executive: false,
+          executive_position: "",
+          executive_level: "",
+          local_executive_position: "",
+          district_executive_position: "",
+          congregation: "",
+          confirmation: "",
+          baptism: "",
+          communicant: "",
+        });
+        setCurrentSection("personal");
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.message || "Error adding member", "error");
+      }
     } catch (error) {
       console.error("Error submitting single member:", error);
       showToast("Error adding member. Please try again.", "error");
@@ -190,6 +209,14 @@ export default function BulkRegistrationPage() {
     return positionMap[position] || position;
   };
 
+  // Function to get CSRF token from cookies
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return '';
+  };
+
   const handleSubmit = async () => {
     if (members.length === 0) {
       showToast("Please add at least one member before submitting", "error");
@@ -197,10 +224,23 @@ export default function BulkRegistrationPage() {
     }
 
     try {
-      // TODO: Submit to Django API
-      console.log("Submitting members:", members);
-      showToast("Members submitted successfully!", "success");
-      setMembers([]);
+      const response = await fetch('/api/members/add/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({ members: members }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        showToast("Members submitted successfully!", "success");
+        setMembers([]);
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.message || "Error submitting members", "error");
+      }
     } catch (error) {
       console.error("Error submitting members:", error);
       showToast("Error submitting members. Please try again.", "error");

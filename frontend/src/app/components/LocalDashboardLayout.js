@@ -37,8 +37,13 @@ function MembersQuickActionsDropdown({
   }, [showExportModal]);
 
   const handleExport = (format) => {
-    console.log(`Exporting as ${format}`);
-    // Here you would implement actual export logic
+    if (format === "CSV") {
+      exportSelectedToCSV();
+    } else if (format === "Excel") {
+      showToast("Excel export coming soon!", "success");
+    } else if (format === "PDF") {
+      showToast("PDF export coming soon!", "success");
+    }
     setShowExportModal(false);
   };
 

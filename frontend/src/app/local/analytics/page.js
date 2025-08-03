@@ -369,88 +369,181 @@ export default function LocalAnalyticsPage() {
 
           <div className="space-y-4">
             {/* Navigation Cards to Separate Trend Components */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Weekly Trends Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Weekly Trends
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Detailed weekly attendance analysis
-                    </p>
+            <div>
+              {/* Large screens - Grid layout */}
+              <div className="hidden md:grid grid-cols-3 gap-6">
+                {/* Weekly Trends Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Weekly Trends
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Detailed weekly attendance analysis
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                      <i className="fas fa-calendar-week text-white"></i>
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
-                    <i className="fas fa-calendar-week text-white"></i>
-                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    View comprehensive weekly attendance trends with bar charts
+                    and line graphs
+                  </p>
+                  <a
+                    href="/local/weeklytrends"
+                    className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    View Weekly Trends
+                    <i className="fas fa-arrow-right ml-2"></i>
+                  </a>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  View comprehensive weekly attendance trends with bar charts
-                  and line graphs
-                </p>
-                <a
-                  href="/local/weeklytrends"
-                  className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                >
-                  View Weekly Trends
-                  <i className="fas fa-arrow-right ml-2"></i>
-                </a>
-              </div>
 
-              {/* Monthly Trends Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Monthly Trends
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Monthly attendance patterns
-                    </p>
+                {/* Monthly Trends Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Monthly Trends
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Monthly attendance patterns
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <i className="fas fa-calendar-alt text-white"></i>
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
-                    <i className="fas fa-calendar-alt text-white"></i>
-                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Explore monthly attendance trends with detailed analytics and
+                    visualizations
+                  </p>
+                  <a
+                    href="/local/monthlytrends"
+                    className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    View Monthly Trends
+                    <i className="fas fa-arrow-right ml-2"></i>
+                  </a>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  Explore monthly attendance trends with detailed analytics and
-                  visualizations
-                </p>
-                <a
-                  href="/local/monthlytrends"
-                  className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                >
-                  View Monthly Trends
-                  <i className="fas fa-arrow-right ml-2"></i>
-                </a>
-              </div>
 
-              {/* Yearly Trends Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Yearly Trends
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Long-term attendance analysis
-                    </p>
+                {/* Yearly Trends Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Yearly Trends
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        Long-term attendance analysis
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <i className="fas fa-chart-line text-white"></i>
+                    </div>
                   </div>
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                    <i className="fas fa-chart-line text-white"></i>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Analyze yearly attendance patterns and long-term growth trends
+                  </p>
+                  <a
+                    href="/local/yearlytreds"
+                    className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                  >
+                    View Yearly Trends
+                    <i className="fas fa-arrow-right ml-2"></i>
+                  </a>
+                </div>
+              </div>
+              {/* Small screens - Horizontal scrollable layout */}
+              <div className="md:hidden">
+                <div className="overflow-x-auto">
+                  <div className="flex space-x-4 min-w-max pb-2">
+                    {/* Weekly Trends Card */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 flex-shrink-0 w-80">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Weekly Trends
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Detailed weekly attendance analysis
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                          <i className="fas fa-calendar-week text-white"></i>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                        View comprehensive weekly attendance trends with bar
+                        charts and line graphs
+                      </p>
+                      <a
+                        href="/local/weeklytrends"
+                        className="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                      >
+                        View Weekly Trends
+                        <i className="fas fa-arrow-right ml-2"></i>
+                      </a>
+                    </div>
+
+                    {/* Monthly Trends Card */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 flex-shrink-0 w-80">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Monthly Trends
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Monthly attendance patterns
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                          <i className="fas fa-calendar-alt text-white"></i>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                        Explore monthly attendance trends with detailed
+                        analytics and visualizations
+                      </p>
+                      <a
+                        href="/local/monthlytrends"
+                        className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                      >
+                        View Monthly Trends
+                        <i className="fas fa-arrow-right ml-2"></i>
+                      </a>
+                    </div>
+
+                    {/* Yearly Trends Card */}
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 flex-shrink-0 w-80">
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            Yearly Trends
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-300">
+                            Long-term attendance analysis
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                          <i className="fas fa-chart-line text-white"></i>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                        Analyze yearly attendance patterns and long-term growth
+                        trends
+                      </p>
+                      <a
+                        href="/local/yearlytreds"
+                        className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+                      >
+                        View Yearly Trends
+                        <i className="fas fa-arrow-right ml-2"></i>
+                      </a>
+                    </div>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                  Analyze yearly attendance patterns and long-term growth trends
-                </p>
-                <a
-                  href="/local/yearlytreds"
-                  className="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-                >
-                  View Yearly Trends
-                  <i className="fas fa-arrow-right ml-2"></i>
-                </a>
               </div>
             </div>
 

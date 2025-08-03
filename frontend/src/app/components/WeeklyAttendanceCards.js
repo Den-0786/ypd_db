@@ -34,8 +34,6 @@ export default function WeeklyAttendanceCards({ currentMonthData, onDeleteWeek, 
       // Fallback for backward compatibility
       if (typeof window !== "undefined" && window.showToast) {
         window.showToast("Week attendance deleted successfully!", "success");
-      } else {
-        console.log("Week attendance deleted successfully!");
       }
     }
     setShowDeleteModal(false);
