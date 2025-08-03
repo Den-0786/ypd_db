@@ -3,6 +3,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import ToastContainer from "./components/ToastContainer";
+import dataStore from "./utils/dataStore";
 
 export default function HomePage() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -12,29 +14,198 @@ export default function HomePage() {
   });
   const [countingNumbers, setCountingNumbers] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(null);
+  const [realTimeData, setRealTimeData] = useState({
+    totalMembers: 0,
+    activeMembers: 0,
+    totalMale: 0,
+    totalFemale: 0,
+    totalCongregations: 0,
+    sundayAttendance: 0,
+    weeklyQuiz: 0,
+    leaderboardTop: [],
+    growthRate: 0,
+    averageAttendance: 0,
+    executiveMembers: 0,
+    thisWeekAttendance: 0,
+    thisMonthAttendance: 0,
+    totalEvents: 0,
+    volunteerHours: 0,
+    bibleStudyGroups: 0,
+    communityOutreach: 0,
+    prayerRequests: 0,
+    digitalEngagement: 0,
+    leadershipTraining: 0,
+    worshipTeams: 0,
+    missionTrips: 0,
+    smallGroups: 0,
+    discipleship: 0,
+    innovationScore: "A+"
+  });
 
-  // Card data for rotation
-  const cardSets = [
-    // Set 1
+  // Navigation items with descriptions
+  const navigationItems = [
+    {
+      id: "dashboard",
+      name: "Dashboard",
+      icon: "fas fa-tachometer-alt",
+      description: "Access comprehensive overview of YPG activities, statistics, and key metrics. View district-wide data and performance indicators.",
+      loginRequired: true
+    },
+    {
+      id: "members",
+      name: "Members",
+      icon: "fas fa-users",
+      description: "Manage member database, view profiles, add new members, and track membership status across all congregations.",
+      loginRequired: true
+    },
+    {
+      id: "attendance",
+      name: "Attendance",
+      icon: "fas fa-calendar-check",
+      description: "Log and track Sunday service attendance, view trends, and generate attendance reports for all congregations.",
+      loginRequired: true
+    },
+    {
+      id: "analytics",
+      name: "Analytics",
+      icon: "fas fa-chart-bar",
+      description: "Access detailed analytics, charts, and insights about member growth, attendance patterns, and performance metrics.",
+      loginRequired: true
+    },
+    {
+      id: "bulk",
+      name: "Bulk Add",
+      icon: "fas fa-user-plus",
+      description: "Add multiple members at once, import data from spreadsheets, and manage bulk operations efficiently.",
+      loginRequired: true
+    }
+  ];
+
+  // Fetch real-time data from dataStore
+  const fetchRealTimeData = () => {
+    const members = dataStore.getMembers();
+    const attendanceRecords = dataStore.getAttendanceRecords();
+    const analytics = dataStore.getAnalyticsData();
+    const leaderboard = dataStore.getLeaderboardData('weekly');
+
+    // Calculate statistics
+    const totalMembers = members.length;
+    const activeMembers = members.filter(m => m.status !== 'Inactive').length;
+    const totalMale = members.filter(m => m.gender === 'Male').length;
+    const totalFemale = members.filter(m => m.gender === 'Female').length;
+    const executiveMembers = members.filter(m => m.is_executive).length;
+    
+    // Get unique congregations
+    const congregations = [...new Set(members.map(m => m.congregation))];
+    const totalCongregations = congregations.length;
+
+    // Calculate attendance statistics
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    const currentWeek = Math.ceil((currentDate.getDate() + new Date(currentYear, currentMonth, 1).getDay()) / 7);
+
+    // This week's attendance
+    const thisWeekRecords = attendanceRecords.filter(r => {
+      const recordDate = new Date(r.date);
+      const recordWeek = Math.ceil((recordDate.getDate() + new Date(recordDate.getFullYear(), recordDate.getMonth(), 1).getDay()) / 7);
+      return recordDate.getFullYear() === currentYear && 
+             recordDate.getMonth() === currentMonth && 
+             recordWeek === currentWeek;
+    });
+    const thisWeekAttendance = thisWeekRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+
+    // This month's attendance
+    const thisMonthRecords = attendanceRecords.filter(r => {
+      const recordDate = new Date(r.date);
+      return recordDate.getFullYear() === currentYear && 
+             recordDate.getMonth() === currentMonth;
+    });
+    const thisMonthAttendance = thisMonthRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+
+    // Average attendance
+    const averageAttendance = attendanceRecords.length > 0 
+      ? attendanceRecords.reduce((sum, r) => sum + (r.total || 0), 0) / attendanceRecords.length 
+      : 0;
+
+    // Growth rate calculation
+    const recentRecords = attendanceRecords
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 2);
+    
+    let growthRate = 0;
+    if (recentRecords.length >= 2) {
+      const recent = recentRecords[0].total || 0;
+      const previous = recentRecords[1].total || 0;
+      growthRate = previous > 0 ? ((recent - previous) / previous) * 100 : 0;
+    }
+
+    // Mock data for additional metrics (these would come from actual data in a real system)
+    const weeklyQuiz = Math.floor(Math.random() * 50) + 20; // Mock quiz participation
+    const totalEvents = Math.floor(Math.random() * 15) + 5; // Mock events
+    const volunteerHours = Math.floor(Math.random() * 1000) + 1500; // Mock volunteer hours
+    const bibleStudyGroups = Math.floor(Math.random() * 10) + 15; // Mock bible study groups
+    const communityOutreach = Math.floor(Math.random() * 100) + 100; // Mock outreach
+    const prayerRequests = Math.floor(Math.random() * 50) + 30; // Mock prayer requests
+    const digitalEngagement = Math.floor(Math.random() * 20) + 80; // Mock digital engagement
+    const leadershipTraining = Math.floor(Math.random() * 20) + 25; // Mock training sessions
+    const worshipTeams = Math.floor(Math.random() * 5) + 5; // Mock worship teams
+    const missionTrips = Math.floor(Math.random() * 3) + 2; // Mock mission trips
+    const smallGroups = Math.floor(Math.random() * 10) + 12; // Mock small groups
+    const discipleship = Math.floor(Math.random() * 30) + 50; // Mock discipleship
+
+    setRealTimeData({
+      totalMembers,
+      activeMembers,
+      totalMale,
+      totalFemale,
+      totalCongregations,
+      sundayAttendance: Math.round(averageAttendance),
+      weeklyQuiz,
+      leaderboardTop: leaderboard.slice(0, 3),
+      growthRate: Math.round(growthRate),
+      averageAttendance: Math.round(averageAttendance),
+      executiveMembers,
+      thisWeekAttendance,
+      thisMonthAttendance,
+      totalEvents,
+      volunteerHours,
+      bibleStudyGroups,
+      communityOutreach,
+      prayerRequests,
+      digitalEngagement,
+      leadershipTraining,
+      worshipTeams,
+      missionTrips,
+      smallGroups,
+      discipleship,
+      innovationScore: "A+"
+    });
+  };
+
+  // Card data for rotation - now using real-time data
+  const getCardSets = () => [
+    // Set 1 - Core Statistics
     {
       left: [
         {
           title: "Total Members",
-          value: 1247,
+          value: realTimeData.totalMembers,
           subtitle: "Active YPG Members",
           icon: "fas fa-users",
           color: "from-blue-500 to-blue-600",
         },
         {
           title: "Sunday Attendance",
-          value: 89,
+          value: realTimeData.sundayAttendance,
           subtitle: "Average Weekly",
           icon: "fas fa-church",
           color: "from-green-500 to-green-600",
         },
         {
           title: "Congregations",
-          value: 12,
+          value: realTimeData.totalCongregations,
           subtitle: "Active Branches",
           icon: "fas fa-building",
           color: "from-purple-500 to-purple-600",
@@ -43,121 +214,121 @@ export default function HomePage() {
       right: [
         {
           title: "Executive Members",
-          value: 45,
+          value: realTimeData.executiveMembers,
           subtitle: "Leadership Team",
           icon: "fas fa-star",
           color: "from-yellow-500 to-yellow-600",
         },
         {
-          title: "Events This Month",
-          value: 8,
-          subtitle: "Activities Planned",
-          icon: "fas fa-calendar",
+          title: "This Week Attendance",
+          value: realTimeData.thisWeekAttendance,
+          subtitle: "Current Week",
+          icon: "fas fa-calendar-week",
           color: "from-red-500 to-red-600",
         },
         {
           title: "Growth Rate",
-          value: 12,
-          subtitle: "Monthly Increase",
+          value: realTimeData.growthRate,
+          subtitle: "Monthly Increase %",
           icon: "fas fa-chart-line",
           color: "from-teal-500 to-teal-600",
         },
       ],
     },
-    // Set 2
+    // Set 2 - Gender & Activity Statistics
     {
       left: [
         {
-          title: "Youth Programs",
-          value: 15,
-          subtitle: "Active Initiatives",
-          icon: "fas fa-lightbulb",
+          title: "Male Members",
+          value: realTimeData.totalMale,
+          subtitle: "Total Male Count",
+          icon: "fas fa-male",
           color: "from-indigo-500 to-indigo-600",
         },
         {
-          title: "Volunteer Hours",
-          value: 2340,
-          subtitle: "This Quarter",
-          icon: "fas fa-clock",
-          color: "from-orange-500 to-orange-600",
+          title: "Female Members",
+          value: realTimeData.totalFemale,
+          subtitle: "Total Female Count",
+          icon: "fas fa-female",
+          color: "from-pink-500 to-pink-600",
         },
         {
-          title: "Bible Study Groups",
-          value: 23,
-          subtitle: "Weekly Sessions",
-          icon: "fas fa-book-open",
-          color: "from-pink-500 to-pink-600",
+          title: "Active Members",
+          value: realTimeData.activeMembers,
+          subtitle: "Currently Active",
+          icon: "fas fa-user-check",
+          color: "from-emerald-500 to-emerald-600",
         },
       ],
       right: [
         {
-          title: "Community Outreach",
-          value: 156,
-          subtitle: "People Reached",
-          icon: "fas fa-hands-helping",
+          title: "This Month Attendance",
+          value: realTimeData.thisMonthAttendance,
+          subtitle: "Monthly Total",
+          icon: "fas fa-calendar-alt",
           color: "from-cyan-500 to-cyan-600",
         },
         {
-          title: "Prayer Requests",
-          value: 89,
-          subtitle: "This Week",
-          icon: "fas fa-pray",
-          color: "from-emerald-500 to-emerald-600",
+          title: "Weekly Quiz",
+          value: realTimeData.weeklyQuiz,
+          subtitle: "Participants",
+          icon: "fas fa-question-circle",
+          color: "from-orange-500 to-orange-600",
         },
         {
-          title: "Digital Engagement",
-          value: 94,
-          subtitle: "Online Activity",
-          icon: "fas fa-mobile-alt",
+          title: "Events This Month",
+          value: realTimeData.totalEvents,
+          subtitle: "Activities Planned",
+          icon: "fas fa-calendar",
           color: "from-violet-500 to-violet-600",
         },
       ],
     },
-    // Set 3
+    // Set 3 - Programs & Activities
     {
       left: [
         {
-          title: "Leadership Training",
-          value: 32,
-          subtitle: "Sessions Completed",
-          icon: "fas fa-graduation-cap",
+          title: "Bible Study Groups",
+          value: realTimeData.bibleStudyGroups,
+          subtitle: "Weekly Sessions",
+          icon: "fas fa-book-open",
           color: "from-rose-500 to-rose-600",
         },
         {
-          title: "Worship Teams",
-          value: 7,
-          subtitle: "Active Groups",
-          icon: "fas fa-music",
+          title: "Volunteer Hours",
+          value: realTimeData.volunteerHours,
+          subtitle: "This Quarter",
+          icon: "fas fa-clock",
           color: "from-lime-500 to-lime-600",
         },
         {
-          title: "Mission Trips",
-          value: 4,
-          subtitle: "This Year",
-          icon: "fas fa-plane",
+          title: "Community Outreach",
+          value: realTimeData.communityOutreach,
+          subtitle: "People Reached",
+          icon: "fas fa-hands-helping",
           color: "from-amber-500 to-amber-600",
         },
       ],
       right: [
         {
-          title: "Small Groups",
-          value: 18,
-          subtitle: "Weekly Meetings",
-          icon: "fas fa-users-cog",
+          title: "Prayer Requests",
+          value: realTimeData.prayerRequests,
+          subtitle: "This Week",
+          icon: "fas fa-pray",
           color: "from-sky-500 to-sky-600",
         },
         {
-          title: "Discipleship",
-          value: 67,
-          subtitle: "Active Mentees",
-          icon: "fas fa-heart",
+          title: "Digital Engagement",
+          value: realTimeData.digitalEngagement,
+          subtitle: "Online Activity %",
+          icon: "fas fa-mobile-alt",
           color: "from-fuchsia-500 to-fuchsia-600",
         },
         {
-          title: "Innovation Score",
-          value: "A+",
-          subtitle: "Digital Excellence",
-          icon: "fas fa-rocket",
+          title: "Leadership Training",
+          value: realTimeData.leadershipTraining,
+          subtitle: "Sessions Completed",
+          icon: "fas fa-graduation-cap",
           color: "from-slate-500 to-slate-600",
         },
       ],
@@ -175,16 +346,26 @@ export default function HomePage() {
   // Auto-rotate cards every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentCardIndex((prev) => (prev + 1) % cardSets.length);
+      setCurrentCardIndex((prev) => (prev + 1) % getCardSets().length);
       rotateCardPositions();
     }, 10000);
 
     return () => clearInterval(interval);
+  }, [realTimeData]);
+
+  // Fetch real-time data on component mount and set up periodic updates
+  useEffect(() => {
+    fetchRealTimeData();
+    
+    // Update data every 30 seconds
+    const dataInterval = setInterval(fetchRealTimeData, 30000);
+    
+    return () => clearInterval(dataInterval);
   }, []);
 
   // Number counting animation
   useEffect(() => {
-    const currentCards = cardSets[currentCardIndex];
+    const currentCards = getCardSets()[currentCardIndex];
     const allCards = [...currentCards.left, ...currentCards.right];
 
     allCards.forEach((card, index) => {
@@ -208,9 +389,9 @@ export default function HomePage() {
         }, duration / steps);
       }
     });
-  }, [currentCardIndex]);
+  }, [currentCardIndex, realTimeData]);
 
-  const currentCards = cardSets[currentCardIndex];
+  const currentCards = getCardSets()[currentCardIndex];
 
   // Get display value for a card
   const getDisplayValue = (card, index) => {
@@ -223,6 +404,29 @@ export default function HomePage() {
   const formatNumber = (num) => {
     if (typeof num === "string") return num;
     return num.toLocaleString();
+  };
+
+  // Handle navigation item click
+  const handleNavItemClick = (item) => {
+    if (item.loginRequired) {
+      // Show toast message instead of alert
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast(`Please log in to access ${item.name}`, "info", 4000);
+      }
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
+    }
+  };
+
+  // Handle tooltip toggle for mobile
+  const handleTooltipToggle = (itemId) => {
+    if (showTooltip === itemId) {
+      setShowTooltip(null);
+    } else {
+      setShowTooltip(itemId);
+    }
   };
 
   return (
@@ -270,29 +474,33 @@ export default function HomePage() {
               <span className="sm:hidden">Login</span>
             </button>
             <nav className="hidden sm:flex space-x-2 sm:space-x-3 pr-2 sm:pr-6">
-              <Link
-                href="/dashboard"
-                className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center hover:bg-blue-800 transition-colors"
-              >
-                <i className="fas fa-tachometer-alt mr-1"></i>
-                <span className="hidden lg:inline">Dashboard</span>
-              </Link>
-              <span className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center cursor-default">
-                <i className="fas fa-users mr-1"></i>
-                <span className="hidden lg:inline">Members</span>
-              </span>
-              <span className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center cursor-default">
-                <i className="fas fa-calendar-check mr-1"></i>
-                <span className="hidden lg:inline">Attendance</span>
-              </span>
-              <span className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center cursor-default">
-                <i className="fas fa-chart-bar mr-1"></i>
-                <span className="hidden lg:inline">Analytics</span>
-              </span>
-              <span className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center cursor-default">
-                <i className="fas fa-user-plus mr-1"></i>
-                <span className="hidden lg:inline">Bulk Add</span>
-              </span>
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  className="px-2 sm:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm font-medium bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center hover:bg-blue-800 transition-colors relative group"
+                  onClick={() => handleNavItemClick(item)}
+                  onMouseEnter={() => setShowTooltip(item.id)}
+                  onMouseLeave={() => setShowTooltip(null)}
+                >
+                  <i className={`${item.icon} mr-1`}></i>
+                  <span className="hidden lg:inline">{item.name}</span>
+                  
+                  {/* Tooltip */}
+                  {showTooltip === item.id && (
+                    <div className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
+                      item.id === 'bulk' ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
+                    }`}>
+                      <div className="font-semibold mb-2 text-base">{item.name}</div>
+                      <div className="text-gray-300 mb-2 leading-relaxed">{item.description}</div>
+                      <div className="text-blue-300 text-sm">Click to login and access</div>
+                      {/* Arrow */}
+                      <div className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
+                        item.id === 'bulk' ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
+                      }`}></div>
+                    </div>
+                  )}
+                </button>
+              ))}
             </nav>
             {/* Mobile menu button */}
             <button
@@ -317,24 +525,42 @@ export default function HomePage() {
             {/* Mobile menu itself */}
             <div className="sm:hidden fixed left-0 right-0 top-[56px] z-20 bg-blue-700 shadow-lg border-t border-blue-600">
               <nav className="flex flex-col py-2 space-y-2">
-                <Link
-                  href="/dashboard"
-                  className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 hover:bg-blue-800 transition-colors"
-                >
-                  <i className="fas fa-tachometer-alt mr-3"></i>Dashboard
-                </Link>
-                <span className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 cursor-default">
-                  <i className="fas fa-users mr-3"></i>Members
-                </span>
-                <span className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 cursor-default">
-                  <i className="fas fa-calendar-check mr-3"></i>Attendance
-                </span>
-                <span className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 cursor-default">
-                  <i className="fas fa-chart-bar mr-3"></i>Analytics
-                </span>
-                <span className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 cursor-default">
-                  <i className="fas fa-user-plus mr-3"></i>Bulk Add
-                </span>
+                {navigationItems.map((item) => (
+                  <button
+                    key={item.id}
+                    className="mx-2 rounded-md bg-blue-700 text-white shadow-md border-b-2 border-white flex items-center font-medium px-4 py-3 hover:bg-blue-800 transition-colors relative"
+                    onClick={() => {
+                      if (window.innerWidth < 640) {
+                        // On mobile, toggle tooltip first
+                        handleTooltipToggle(item.id);
+                      } else {
+                        // On desktop, go directly to login
+                        handleNavItemClick(item);
+                      }
+                    }}
+                    onTouchStart={() => setShowTooltip(item.id)}
+                    onTouchEnd={() => setTimeout(() => setShowTooltip(null), 3000)}
+                    onMouseEnter={() => setShowTooltip(item.id)}
+                    onMouseLeave={() => setShowTooltip(null)}
+                  >
+                    <i className={`${item.icon} mr-3`}></i>{item.name}
+                    
+                    {/* Mobile Tooltip */}
+                    {showTooltip === item.id && (
+                      <div className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
+                        item.id === 'bulk' ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
+                      }`}>
+                        <div className="font-semibold mb-2 text-base">{item.name}</div>
+                        <div className="text-gray-300 mb-2 leading-relaxed">{item.description}</div>
+                        <div className="text-blue-300 text-sm">Tap to login and access</div>
+                        {/* Arrow */}
+                        <div className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
+                          item.id === 'bulk' ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
+                        }`}></div>
+                      </div>
+                    )}
+                  </button>
+                ))}
               </nav>
             </div>
           </>
@@ -352,8 +578,8 @@ export default function HomePage() {
         </div>
 
         <main className="flex-1 flex flex-col items-center justify-start p-0 w-full mt-0">
-          <div className="w-full max-w-6xl flex flex-col items-center h-full">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full max-w-4xl mx-auto items-center justify-items-center flex-1 mt-0 overflow-hidden">
+          <div className="w-full max-w-7xl flex flex-col items-center h-full">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-7xl mx-auto items-center justify-items-center flex-1 mt-0 overflow-hidden px-4">
               {/* Left column cards with position rotation */}
               {cardPositions.left.map((positionIndex, displayIndex) => {
                 const card = currentCards.left[positionIndex];
@@ -361,7 +587,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={`left-${positionIndex}-${displayIndex}`}
-                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-2 sm:p-3 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[150px] sm:min-w-[180px] lg:min-w-[220px] min-h-[80px] sm:min-h-[100px] lg:min-h-[140px] max-w-[250px] sm:max-w-[280px] lg:max-w-[320px] max-h-[120px] sm:max-h-[140px] lg:max-h-[180px]"
+                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]"
                     style={{
                       animationDelay: `${displayIndex * 0.1}s`,
                       animation: "fadeInUp 0.6s ease-out forwards",
@@ -400,7 +626,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={`right-${positionIndex}-${displayIndex}`}
-                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-2 sm:p-3 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[150px] sm:min-w-[180px] lg:min-w-[220px] min-h-[80px] sm:min-h-[100px] lg:min-h-[140px] max-w-[250px] sm:max-w-[280px] lg:max-w-[320px] max-h-[120px] sm:max-h-[140px] lg:max-h-[180px]"
+                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]"
                     style={{
                       animationDelay: `${(displayIndex + 3) * 0.1}s`,
                       animation: "fadeInUp 0.6s ease-out forwards",
@@ -436,7 +662,7 @@ export default function HomePage() {
             {/* Card rotation indicator */}
             <div className="text-center mt-4">
               <div className="flex justify-center space-x-2">
-                {cardSets.map((_, index) => (
+                {getCardSets().map((_, index) => (
                   <div
                     key={index}
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
@@ -472,6 +698,9 @@ export default function HomePage() {
           }
         }
       `}</style>
+      
+      {/* Toast Container */}
+      <ToastContainer />
     </div>
   );
 }

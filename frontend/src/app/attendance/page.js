@@ -5,6 +5,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import JointProgramModal from "../components/JointProgramModal";
 import PinModal from "../components/PinModal";
 import React from "react";
+import dataStore from "../utils/dataStore";
 
 // Helper functions for week/month/year
 const getWeekOfMonth = (date) => {
@@ -24,6 +25,7 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState(null); // 'bulk', 'monthly', 'yearly', 'single'
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [jointProgramForm, setJointProgramForm] = useState({
@@ -83,6 +85,13 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendanceRecords();
+    
+    // Force regenerate mockup data if no records exist
+    const records = dataStore.getAttendanceRecords();
+    if (records.length === 0) {
+      dataStore.regenerateMockupData();
+      fetchAttendanceRecords();
+    }
   }, []);
 
   // Click outside handlers for dropdowns
@@ -99,113 +108,27 @@ export default function AttendancePage() {
 
   const fetchAttendanceRecords = async () => {
     try {
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth();
-
-      const firstWeekDate = new Date(currentYear, currentMonth, 5);
-      const secondWeekDate = new Date(currentYear, currentMonth, 12);
-
-      const prevMonth1 = new Date(currentYear, currentMonth - 1, 5);
-      const prevMonth2 = new Date(currentYear, currentMonth - 1, 12);
-      const prevMonth3 = new Date(currentYear, currentMonth - 2, 5);
-      const prevMonth4 = new Date(currentYear, currentMonth - 2, 12);
-
-      const mockRecords = [
-        {
-          id: 1,
-          congregation: { name: "Emmanuel Congregation Ahinsan" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 25,
-          female_count: 30,
-          total_count: 55,
-          loggedBy: "John Doe",
-          position: "President",
-        },
-        {
-          id: 2,
-          congregation: { name: "Peniel Congregation Esreso No1" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 18,
-          female_count: 22,
-          total_count: 40,
-          loggedBy: "Sarah Johnson",
-          position: "Secretary",
-        },
-        {
-          id: 3,
-          congregation: { name: "Mizpah Congregation Odagya No1" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 15,
-          female_count: 20,
-          total_count: 35,
-          loggedBy: "Michael Wilson",
-          position: "Vice President",
-        },
-        {
-          id: 4,
-          congregation: { name: "Christ Congregation Ahinsan Estate" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 12,
-          female_count: 18,
-          total_count: 30,
-          loggedBy: "David Brown",
-          position: "Treasurer",
-        },
-        {
-          id: 5,
-          congregation: { name: "Ebenezer Congregation Dompoase Aprabo" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 10,
-          female_count: 14,
-          total_count: 24,
-        },
-        {
-          id: 6,
-          congregation: { name: "Favour Congregation Esreso No2" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 8,
-          female_count: 12,
-          total_count: 20,
-        },
-        {
-          id: 7,
-          congregation: { name: "Liberty Congregation Esreso High Tension" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 7,
-          female_count: 9,
-          total_count: 16,
-        },
-        {
-          id: 8,
-          congregation: { name: "Odagya No2" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 6,
-          female_count: 8,
-          total_count: 14,
-        },
-        {
-          id: 9,
-          congregation: { name: "NOM" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 5,
-          female_count: 7,
-          total_count: 12,
-        },
-        {
-          id: 10,
-          congregation: { name: "Kokobriko" },
-          date: firstWeekDate.toISOString().split("T")[0],
-          male_count: 4,
-          female_count: 6,
-          total_count: 10,
-        },
-        // Second week of current month
-      ];
-      setAttendanceRecords(mockRecords);
+      setLoading(true);
+      
+      // Get records from data store
+      const records = dataStore.getAttendanceRecords();
+      
+      // Transform records to match expected format
+      const transformedRecords = records.map(record => ({
+        id: record.id,
+        congregation: { name: record.congregation },
+        date: record.date,
+        male_count: record.male || 0,
+        female_count: record.female || 0,
+        total_count: record.total || 0,
+        loggedBy: record.loggedBy || "Unknown",
+        position: record.position || "Member",
+      }));
+      
+      setAttendanceRecords(transformedRecords);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching attendance records:", error);
-    } finally {
       setLoading(false);
     }
   };
@@ -220,11 +143,45 @@ export default function AttendancePage() {
   };
 
   const handlePinSuccess = () => {
-    setShowJointProgramModal(true);
+    if (pendingDeleteAction) {
+      // Handle different delete actions
+      switch (pendingDeleteAction) {
+        case "bulk":
+          handlePinSuccessForBulkDelete();
+          break;
+        case "monthly":
+          if (selectedRecords.length === 1) {
+            // Single monthly record deletion
+            showToast("Monthly record deleted successfully!", "success");
+          } else {
+            handlePinSuccessForMonthlyDelete();
+          }
+          break;
+        case "yearly":
+          if (selectedRecords.length === 1) {
+            // Single yearly record deletion
+            showToast("Yearly record deleted successfully!", "success");
+          } else {
+            handlePinSuccessForYearlyDelete();
+          }
+          break;
+        case "single":
+          handlePinSuccessForSingleDelete();
+          break;
+        default:
+          break;
+      }
+      setPendingDeleteAction(null);
+      setSelectedRecords([]);
+    } else {
+      // Original joint program logic
+      setShowJointProgramModal(true);
+    }
   };
 
   const handleClosePinModal = () => {
     setShowPinModal(false);
+    setPendingDeleteAction(null);
   };
 
   const handleCloseJointProgramModal = () => {
@@ -315,20 +272,19 @@ export default function AttendancePage() {
       showToast("Please select records to delete", "error");
       return;
     }
-    openConfirmDialog(
-      `Are you sure you want to delete ${selectedRecords.length} attendance record(s)?`,
-      () => {
-        // Remove selected records from the state
-        const updatedRecords = attendanceRecords.filter(
-          (record) => !selectedRecords.includes(record.id)
-        );
-        setAttendanceRecords(updatedRecords);
-        setSelectedRecords([]);
-        setSelectAll(false);
-        showToast("Selected records deleted successfully!", "success");
-        closeConfirmDialog();
-      }
+    setPendingDeleteAction("bulk");
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccessForBulkDelete = () => {
+    // Remove selected records from the state
+    const updatedRecords = attendanceRecords.filter(
+      (record) => !selectedRecords.includes(record.id)
     );
+    setAttendanceRecords(updatedRecords);
+    setSelectedRecords([]);
+    setSelectAll(false);
+    showToast("Selected records deleted successfully!", "success");
   };
 
   const handleBulkExport = () => {
@@ -439,16 +395,15 @@ export default function AttendancePage() {
       showToast("Please select records to delete", "error");
       return;
     }
-    openConfirmDialog(
-      `Are you sure you want to delete ${selectedMonthlyRecords.length} monthly record(s)?`,
-      () => {
-        // Here you would typically make an API call to delete the records
-        showToast("Monthly records deleted successfully!", "success");
-        setSelectedMonthlyRecords([]);
-        setSelectAllMonthly(false);
-        closeConfirmDialog();
-      }
-    );
+    setPendingDeleteAction("monthly");
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccessForMonthlyDelete = () => {
+    // Here you would typically make an API call to delete the records
+    showToast("Monthly records deleted successfully!", "success");
+    setSelectedMonthlyRecords([]);
+    setSelectAllMonthly(false);
   };
 
   const handleDeleteYearlyRecords = () => {
@@ -456,16 +411,25 @@ export default function AttendancePage() {
       showToast("Please select records to delete", "error");
       return;
     }
-    openConfirmDialog(
-      `Are you sure you want to delete ${selectedYearlyRecords.length} yearly record(s)?`,
-      () => {
-        // Here you would typically make an API call to delete the records
-        showToast("Yearly records deleted successfully!", "success");
-        setSelectedYearlyRecords([]);
-        setSelectAllYearly(false);
-        closeConfirmDialog();
-      }
+    setPendingDeleteAction("yearly");
+    setShowPinModal(true);
+  };
+
+  const handlePinSuccessForYearlyDelete = () => {
+    // Here you would typically make an API call to delete the records
+    showToast("Yearly records deleted successfully!", "success");
+    setSelectedYearlyRecords([]);
+    setSelectAllYearly(false);
+  };
+
+  const handlePinSuccessForSingleDelete = () => {
+    // Remove the record from the state
+    const updatedRecords = attendanceRecords.filter(
+      (r) => r.id !== selectedRecords[0]
     );
+    setAttendanceRecords(updatedRecords);
+    setSelectedRecords([]);
+    showToast("Attendance record deleted successfully!", "success");
   };
 
   // Export CSV (bulk)
@@ -589,23 +553,30 @@ export default function AttendancePage() {
   // Current date for calculations
   const currentDate = new Date();
 
-  // Current month and year calculations
-  const currentMonthNum = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
+  // Find the most recent month and year with data, or use current date
+  let targetMonthNum = currentDate.getMonth();
+  let targetYear = currentDate.getFullYear();
+  
+  if (attendanceRecords.length > 0) {
+    const latestRecord = attendanceRecords.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    const latestDate = new Date(latestRecord.date);
+    targetMonthNum = latestDate.getMonth();
+    targetYear = latestDate.getFullYear();
+  }
 
-  // Filter records for current month only
+  // Filter records for the target month and year (most recent with data)
   const currentMonthRecords = attendanceRecords.filter((r) => {
     const recordDate = new Date(r.date);
     return (
-      recordDate.getMonth() === currentMonthNum &&
-      recordDate.getFullYear() === currentYear
+      recordDate.getMonth() === targetMonthNum &&
+      recordDate.getFullYear() === targetYear
     );
   });
 
-  // Filter records for current year only
+  // Filter records for the target year (most recent with data)
   const currentYearRecords = attendanceRecords.filter((r) => {
     const recordDate = new Date(r.date);
-    return recordDate.getFullYear() === currentYear;
+    return recordDate.getFullYear() === targetYear;
   });
 
   // Calculate current month totals
@@ -637,7 +608,7 @@ export default function AttendancePage() {
   );
 
   // Progress for week/month/year
-  const currentMonth = currentDate.toLocaleString("default", {
+  const currentMonth = new Date(targetYear, targetMonthNum).toLocaleString("default", {
     month: "short",
   });
   const currentWeek = getWeekOfMonth(currentDate);
@@ -645,8 +616,8 @@ export default function AttendancePage() {
     selectedMonth === "All"
       ? ""
       : `${selectedWeek !== "All" ? selectedWeek : currentWeek}/${4}`;
-  const monthProgress = `${selectedMonth !== "All" ? allMonths.indexOf(selectedMonth) + 1 : currentDate.getMonth() + 1}/12`;
-  const yearProgress = `${selectedYear !== "All" ? allYears.indexOf(Number(selectedYear)) + 1 : allYears.indexOf(currentYear) + 1}/${allYears.length}`;
+  const monthProgress = `${selectedMonth !== "All" ? allMonths.indexOf(selectedMonth) + 1 : targetMonthNum + 1}/12`;
+  const yearProgress = `${selectedYear !== "All" ? allYears.indexOf(Number(selectedYear)) + 1 : allYears.indexOf(targetYear) + 1}/${allYears.length}`;
 
   // All congregation names
   const allCongNames = [
@@ -757,7 +728,7 @@ export default function AttendancePage() {
             disabled={selectedRecords.length === 0}
             className={`w-full flex items-center gap-2 px-4 py-2 text-xs sm:text-sm text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-800 focus:bg-red-100 dark:focus:bg-red-700 transition ${selectedRecords.length === 0 ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <i className="fas fa-trash"></i> Delete Selected
+            <i className="fas fa-trash"></i> Delete Weekly Selected
           </button>
 
           <div className="border-t border-gray-200 dark:border-gray-700 my-2"></div>
@@ -868,6 +839,26 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Temporary Mockup Data Button */}
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-yellow-800 dark:text-yellow-200 font-semibold">Mockup Data</h3>
+              <p className="text-yellow-600 dark:text-yellow-300 text-sm">Click to regenerate sample data for all congregations</p>
+            </div>
+            <button
+              onClick={() => {
+                dataStore.regenerateMockupData();
+                fetchAttendanceRecords();
+                showToast("Mockup data regenerated!", "success");
+              }}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+            >
+              Regenerate Data
+            </button>
           </div>
         </div>
 
@@ -1212,18 +1203,7 @@ export default function AttendancePage() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   Current Week Records
                 </h3>
-                {selectedRecords.length > 0 && (
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleBulkDelete}
-                      className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 transition duration-200 text-sm"
-                      title="Delete selected records"
-                    >
-                      <i className="fas fa-trash mr-1"></i>
-                      Delete ({selectedRecords.length})
-                    </button>
-                  </div>
-                )}
+
               </div>
             </div>
 
@@ -1324,22 +1304,9 @@ export default function AttendancePage() {
                                 className="text-red-600 hover:text-red-900 transition-colors duration-200"
                                 title="Delete attendance record"
                                 onClick={() => {
-                                  openConfirmDialog(
-                                    "Are you sure you want to delete this attendance record?",
-                                    () => {
-                                      // Remove the record from the state
-                                      const updatedRecords =
-                                        attendanceRecords.filter(
-                                          (r) => r.id !== record.id
-                                        );
-                                      setAttendanceRecords(updatedRecords);
-                                      showToast(
-                                        "Attendance record deleted successfully!",
-                                        "success"
-                                      );
-                                      closeConfirmDialog();
-                                    }
-                                  );
+                                  setPendingDeleteAction("single");
+                                  setSelectedRecords([record.id]);
+                                  setShowPinModal(true);
                                 }}
                               >
                                 <i className="fas fa-trash"></i>
@@ -1374,7 +1341,7 @@ export default function AttendancePage() {
                 </div>
                 <div className="text-gray-900 dark:text-white text-2xl font-bold">
                   {new Date().toLocaleString("default", { month: "long" })}{" "}
-                  {currentYear}
+                  {targetYear}
                 </div>
               </div>
             </div>
@@ -1474,17 +1441,9 @@ export default function AttendancePage() {
                                 className="text-red-600 hover:text-red-900 transition-colors duration-200"
                                 title="Delete monthly record"
                                 onClick={() => {
-                                  openConfirmDialog(
-                                    "Are you sure you want to delete this monthly record?",
-                                    () => {
-                                      // Here you would typically make an API call to delete the records
-                                      showToast(
-                                        "Monthly record deleted successfully!",
-                                        "success"
-                                      );
-                                      closeConfirmDialog();
-                                    }
-                                  );
+                                  setPendingDeleteAction("monthly");
+                                  setSelectedRecords([congName]);
+                                  setShowPinModal(true);
                                 }}
                               >
                                 <i className="fas fa-trash"></i>
@@ -1517,7 +1476,7 @@ export default function AttendancePage() {
                   Current Year Summary
                 </div>
                 <div className="text-gray-900 dark:text-white text-2xl font-bold">
-                  {currentYear} - All Months
+                  {targetYear} - All Months
                 </div>
               </div>
             </div>
@@ -1615,17 +1574,9 @@ export default function AttendancePage() {
                                 className="text-red-600 hover:text-red-900 transition-colors duration-200"
                                 title="Delete yearly record"
                                 onClick={() => {
-                                  openConfirmDialog(
-                                    "Are you sure you want to delete this yearly record?",
-                                    () => {
-                                      // Here you would typically make an API call to delete the records
-                                      showToast(
-                                        "Yearly record deleted successfully!",
-                                        "success"
-                                      );
-                                      closeConfirmDialog();
-                                    }
-                                  );
+                                  setPendingDeleteAction("yearly");
+                                  setSelectedRecords([congName]);
+                                  setShowPinModal(true);
                                 }}
                               >
                                 <i className="fas fa-trash"></i>
@@ -1656,8 +1607,17 @@ export default function AttendancePage() {
           isOpen={showPinModal}
           onClose={handleClosePinModal}
           onPinSuccess={handlePinSuccess}
-          title="Enter PIN for Joint Program"
-          description="Please enter your PIN to schedule joint program"
+          title={
+            pendingDeleteAction
+              ? "Enter PIN for Delete Operation"
+              : "Enter PIN for Joint Program"
+          }
+          description={
+            pendingDeleteAction
+              ? "Please enter your PIN to confirm the delete operation"
+              : "Please enter your PIN to schedule joint program"
+          }
+          type={pendingDeleteAction ? "delete" : "edit"}
         />
 
         {/* View Attendance Record Modal */}
@@ -1795,7 +1755,7 @@ export default function AttendancePage() {
                           {new Date().toLocaleString("default", {
                             month: "long",
                           })}{" "}
-                          {currentYear}
+                          {targetYear}
                         </span>
                       </div>
                       <div>
@@ -1873,7 +1833,7 @@ export default function AttendancePage() {
                           Period:
                         </span>
                         <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                          {currentYear} - All Months
+                          {targetYear} - All Months
                         </span>
                       </div>
                       <div>

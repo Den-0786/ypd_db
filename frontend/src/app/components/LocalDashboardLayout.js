@@ -418,6 +418,18 @@ export default function LocalDashboardLayout({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // Set up global toast function for autoLogout utility
+      window.showToast = (message, type = "success", duration = 3000) => {
+        if (type === "success") {
+          showSuccess(message);
+        } else if (type === "error") {
+          showError(message);
+        } else {
+          // For info type, use success but with different styling
+          showSuccess(message);
+        }
+      };
+
       const handleResize = () => {
         if (window.innerWidth >= 1024) {
           setSidebarOpen(true);
@@ -435,7 +447,7 @@ export default function LocalDashboardLayout({
       window.addEventListener("resize", handleResize);
       return () => window.removeEventListener("resize", handleResize);
     }
-  }, []);
+  }, [showSuccess, showError]);
 
   // Sample notifications
   const notifications = [

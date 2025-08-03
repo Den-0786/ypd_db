@@ -1,14 +1,95 @@
 "use client";
+import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import dataStore from "../../utils/dataStore";
 
 export default function LocalDashboardPage() {
-  // Example statistics - replace with real data fetching later
-    const stats = {
-        totalMembers: 1247,
-        thisWeeksAttendance: 892,
-        newMembersThisMonth: 23,
-        numberOfExecutives: 9,
-    };
+  const [mounted, setMounted] = useState(false);
+  const [congregationId, setCongregationId] = useState(null);
+  const [congregationName, setCongregationName] = useState(null);
+  
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    thisWeeksAttendance: 0,
+    newMembersThisMonth: 0,
+    numberOfExecutives: 0,
+  });
+
+  // Handle client-side mounting and data loading
+  useEffect(() => {
+    setMounted(true);
+    
+    // Load congregation data from localStorage
+    const storedCongregationId = localStorage.getItem('congregationId');
+    const storedCongregationName = localStorage.getItem('congregationName');
+    
+    setCongregationId(storedCongregationId);
+    setCongregationName(storedCongregationName);
+    
+    // Show welcome message when dashboard loads
+    if (storedCongregationName && typeof window !== "undefined" && window.showToast) {
+      setTimeout(() => {
+        window.showToast(`Welcome to ${storedCongregationName}!`, "success", 3000);
+      }, 1000);
+    }
+  }, []);
+
+  // Calculate congregation-specific statistics
+  useEffect(() => {
+    if (congregationName && mounted) {
+      const members = dataStore.getMembers().filter(member => 
+        member.congregation === congregationName
+      );
+      const attendance = dataStore.getAttendanceRecords().filter(record => 
+        record.congregation === congregationName
+      );
+
+      // Calculate this week's attendance
+      const currentDate = new Date();
+      const currentWeek = Math.ceil((currentDate.getDate() + new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay()) / 7);
+      const thisWeekAttendance = attendance.filter(r => {
+        const recordDate = new Date(r.date);
+        const recordWeek = Math.ceil((recordDate.getDate() + new Date(recordDate.getFullYear(), recordDate.getMonth(), 1).getDay()) / 7);
+        return recordDate.getFullYear() === currentDate.getFullYear() && 
+               recordDate.getMonth() === currentDate.getMonth() && 
+               recordWeek === currentWeek;
+      }).reduce((sum, r) => sum + (r.total || 0), 0);
+
+      setStats({
+        totalMembers: members.length,
+        thisWeeksAttendance: thisWeekAttendance,
+        newMembersThisMonth: members.filter(m => {
+          const joinDate = new Date(m.dateJoined || '2024-01-01');
+          return joinDate.getMonth() === currentDate.getMonth() && 
+                 joinDate.getFullYear() === currentDate.getFullYear();
+        }).length,
+        numberOfExecutives: members.filter(m => m.is_executive).length,
+      });
+    }
+  }, [congregationName, mounted]);
+
+  // Show loading state while mounting
+  if (!mounted) {
+    return (
+      <LocalDashboardLayout currentPage="Dashboard">
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
+                  <i className="fas fa-church text-blue-200"></i>
+                  Loading Dashboard...
+                </h2>
+                <p className="text-blue-100 text-lg mb-4">
+                  Please wait while we load your congregation data...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </LocalDashboardLayout>
+    );
+  }
 
     return (
         <LocalDashboardLayout currentPage="Dashboard">
@@ -19,12 +100,13 @@ export default function LocalDashboardPage() {
                 <div>
                 <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
                     <i className="fas fa-church text-blue-200"></i>
-                    You Are Welcome
+                    {congregationName ? `${congregationName} Dashboard` : "You Are Welcome"}
                 </h2>
                 <p className="text-blue-100 text-lg mb-4">
-                    Grace and leadership go hand in hand. You&apos;re logged in as an
-                    Admin.You can View, manage and check the trends of the
-                    guild, 
+                    {congregationName 
+                      ? `Welcome to your congregation's management center. View and manage your congregation's data.`
+                      : "Grace and leadership go hand in hand. You're logged in as an Admin. You can View, manage and check the trends of the guild."
+                    }
                 </p>
                 <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1">

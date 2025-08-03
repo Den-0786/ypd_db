@@ -1,7 +1,9 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import ToastContainer from "../components/ToastContainer";
+import autoLogout from "../utils/autoLogout";
 
 export default function DashboardPage() {
   const [activeQuiz, setActiveQuiz] = useState(null);
@@ -25,6 +27,25 @@ export default function DashboardPage() {
     message: "",
     type: "success",
   });
+
+  // Initialize auto-logout when component mounts
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (token) {
+      autoLogout.updateLoginStatus(true);
+    } else {
+      // If not logged in, redirect to login
+      window.location.href = "/login";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      autoLogout.destroy();
+    };
+  }, []);
+
+
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -157,6 +178,8 @@ export default function DashboardPage() {
   const getTotalParticipants = () => {
     return quizSubmissions.length;
   };
+
+
 
   return (
     <DashboardLayout currentPage="Dashboard">
@@ -816,6 +839,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      
+      {/* Toast Container */}
+      <ToastContainer />
     </DashboardLayout>
   );
 }

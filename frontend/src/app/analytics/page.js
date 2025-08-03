@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
+import dataStore from "../utils/dataStore";
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -79,130 +80,113 @@ export default function AnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      const mockData = {
-        sundayAttendance: {
-          totalAttendance: 3456,
-          averageAttendance: 81.7,
-          congregationsCount: 3,
-          growth: 12.5,
-          weeklyTrend: [
-            { date: "2024-01-07", male: 125, female: 150, total: 275 },
-            { date: "2024-01-14", male: 128, female: 152, total: 280 },
-            { date: "2024-01-21", male: 122, female: 155, total: 277 },
-            { date: "2024-01-28", male: 130, female: 158, total: 288 },
-            { date: "2024-02-04", male: 126, female: 154, total: 280 },
-            { date: "2024-02-11", male: 129, female: 157, total: 286 },
-            { date: "2024-02-18", male: 124, female: 153, total: 277 },
-            { date: "2024-02-25", male: 131, female: 159, total: 290 },
-          ],
-          monthlyTrend: [
-            { month: "Jan", male: 505, female: 635, total: 1140 },
-            { month: "Feb", male: 510, female: 643, total: 1153 },
-            { month: "Mar", male: 498, female: 628, total: 1126 },
-            { month: "Apr", male: 515, female: 645, total: 1160 },
-            { month: "May", male: 508, female: 638, total: 1146 },
-            { month: "Jun", male: 512, female: 642, total: 1154 },
-            { month: "Jul", male: 518, female: 648, total: 1166 },
-            { month: "Aug", male: 525, female: 655, total: 1180 },
-            { month: "Sep", male: 532, female: 662, total: 1194 },
-            { month: "Oct", male: 540, female: 670, total: 1210 },
-            { month: "Nov", male: 545, female: 675, total: 1220 },
-            { month: "Dec", male: 550, female: 680, total: 1230 },
-          ],
-          yearlyTrend: [
-            { year: "2019", male: 6000, female: 7200, total: 13200 },
-            { year: "2020", male: 6300, female: 7500, total: 13800 },
-            { year: "2021", male: 6600, female: 7800, total: 14400 },
-            { year: "2022", male: 6900, female: 8100, total: 15000 },
-            { year: "2023", male: 7200, female: 8400, total: 15600 },
-            { year: "2024", male: 7500, female: 8700, total: 16200 },
-          ],
-        },
-        membersDatabase: {
-          totalMembers: 127,
-          congregations: [
-            {
-              name: "Emmanuel Congregation Ahinsan",
-              count: 45,
-              color: "#3B82F6",
-            },
-            {
-              name: "Peniel Congregation Esreso No1",
-              count: 32,
-              color: "#10B981",
-            },
-            {
-              name: "Mizpah Congregation Odagya No1",
-              count: 28,
-              color: "#F59E0B",
-            },
-            {
-              name: "Christ Congregation Ahinsan Estate",
-              count: 22,
-              color: "#EF4444",
-            },
-            {
-              name: "Ebenezer Congregation Dompoase Aprabo",
-              count: 18,
-              color: "#8B5CF6",
-            },
-            {
-              name: "Favour Congregation Esreso No2",
-              count: 15,
-              color: "#06B6D4",
-            },
-            {
-              name: "Liberty Congregation Esreso High Tension",
-              count: 12,
-              color: "#F97316",
-            },
-            { name: "Odagya No2", count: 10, color: "#EC4899" },
-            { name: "NOM", count: 8, color: "#84CC16" },
-            { name: "Kokobriko", count: 6, color: "#6B7280" },
-          ],
-          genderDistribution: [
-            {
-              congregation: "Emmanuel Congregation Ahinsan",
-              male: 20,
-              female: 25,
-            },
-            {
-              congregation: "Peniel Congregation Esreso No1",
-              male: 15,
-              female: 17,
-            },
-            {
-              congregation: "Mizpah Congregation Odagya No1",
-              male: 12,
-              female: 16,
-            },
-            {
-              congregation: "Christ Congregation Ahinsan Estate",
-              male: 10,
-              female: 12,
-            },
-            {
-              congregation: "Ebenezer Congregation Dompoase Aprabo",
-              male: 8,
-              female: 10,
-            },
-            {
-              congregation: "Favour Congregation Esreso No2",
-              male: 7,
-              female: 8,
-            },
-            {
-              congregation: "Liberty Congregation Esreso High Tension",
-              male: 6,
-              female: 6,
-            },
-            { congregation: "Odagya No2", male: 5, female: 5 },
-            { congregation: "NOM", male: 4, female: 4 },
-            { congregation: "Kokobriko", male: 3, female: 3 },
-          ],
-        },
-      };
-      setChartData(mockData);
+      setLoading(true);
+      
+      // Get analytics data from data store
+      const analyticsData = dataStore.getAnalyticsData();
+      
+      if (analyticsData && Object.keys(analyticsData).length > 0) {
+        setChartData(analyticsData);
+      } else {
+        // Fallback to mock data if no real data exists
+        const mockData = {
+          sundayAttendance: {
+            totalAttendance: 3456,
+            averageAttendance: 81.7,
+            congregationsCount: 3,
+            growth: 12.5,
+            weeklyTrend: [
+              { date: "2024-01-07", male: 125, female: 150, total: 275 },
+              { date: "2024-01-14", male: 128, female: 152, total: 280 },
+              { date: "2024-01-21", male: 122, female: 155, total: 277 },
+              { date: "2024-01-28", male: 130, female: 158, total: 288 },
+              { date: "2024-02-04", male: 126, female: 154, total: 280 },
+              { date: "2024-02-11", male: 129, female: 157, total: 286 },
+              { date: "2024-02-18", male: 124, female: 153, total: 277 },
+              { date: "2024-02-25", male: 131, female: 159, total: 290 },
+            ],
+            monthlyTrend: [
+              { month: "Jan", male: 505, female: 635, total: 1140 },
+              { month: "Feb", male: 510, female: 643, total: 1153 },
+              { month: "Mar", male: 498, female: 628, total: 1126 },
+              { month: "Apr", male: 515, female: 645, total: 1160 },
+              { month: "May", male: 508, female: 638, total: 1146 },
+              { month: "Jun", male: 512, female: 642, total: 1154 },
+              { month: "Jul", male: 518, female: 648, total: 1166 },
+              { month: "Aug", male: 525, female: 655, total: 1180 },
+              { month: "Sep", male: 532, female: 662, total: 1194 },
+              { month: "Oct", male: 540, female: 670, total: 1210 },
+              { month: "Nov", male: 545, female: 675, total: 1220 },
+              { month: "Dec", male: 550, female: 680, total: 1230 },
+            ],
+            yearlyTrend: [
+              { year: "2019", male: 6000, female: 7200, total: 13200 },
+              { year: "2020", male: 6300, female: 7500, total: 13800 },
+              { year: "2021", male: 6600, female: 7800, total: 14400 },
+              { year: "2022", male: 6900, female: 8100, total: 15000 },
+              { year: "2023", male: 7200, female: 8400, total: 15600 },
+              { year: "2024", male: 7500, female: 8700, total: 16200 },
+            ],
+          },
+          membersDatabase: {
+            totalMembers: 127,
+            congregations: [
+              {
+                name: "Emmanuel Congregation Ahinsan",
+                count: 45,
+                color: "#3B82F6",
+              },
+              {
+                name: "Peniel Congregation Esreso No1",
+                count: 32,
+                color: "#10B981",
+              },
+              {
+                name: "Mizpah Congregation Odagya No1",
+                count: 28,
+                color: "#F59E0B",
+              },
+              {
+                name: "Christ Congregation Ahinsan Estate",
+                count: 22,
+                color: "#EF4444",
+              },
+              {
+                name: "Ebenezer Congregation Dompoase Aprabo",
+                count: 18,
+                color: "#8B5CF6",
+              },
+              {
+                name: "Favour Congregation Esreso No2",
+                count: 15,
+                color: "#06B6D4",
+              },
+              {
+                name: "Liberty Congregation Esreso High Tension",
+                count: 12,
+                color: "#F97316",
+              },
+              { name: "Odagya No2", count: 10, color: "#EC4899" },
+              { name: "NOM", count: 8, color: "#84CC16" },
+              { name: "Kokobriko", count: 6, color: "#F472B6" },
+            ],
+            genderDistribution: [
+              { congregation: "Emmanuel Congregation Ahinsan", male: 22, female: 23 },
+              { congregation: "Peniel Congregation Esreso No1", male: 16, female: 16 },
+              { congregation: "Mizpah Congregation Odagya No1", male: 14, female: 14 },
+              { congregation: "Christ Congregation Ahinsan Estate", male: 11, female: 11 },
+              { congregation: "Ebenezer Congregation Dompoase Aprabo", male: 9, female: 9 },
+              { congregation: "Favour Congregation Esreso No2", male: 8, female: 7 },
+              { congregation: "Liberty Congregation Esreso High Tension", male: 6, female: 6 },
+              { congregation: "Odagya No2", male: 5, female: 5 },
+              { congregation: "NOM", male: 4, female: 4 },
+              { congregation: "Kokobriko", male: 3, female: 3 },
+            ],
+          },
+        };
+        setChartData(mockData);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error("Error fetching analytics data:", error);

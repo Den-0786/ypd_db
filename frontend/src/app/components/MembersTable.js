@@ -3,12 +3,15 @@
 export default function MembersTable({
   members,
   selectedMembers,
-  handleSelectMember,
-  handleViewDetails,
-  handleEditMember,
-  handleDeleteMember,
-  getInitials,
-  getInitialsColor,
+  onView,
+  onEdit,
+  onDelete,
+  onSelect,
+  searchTerm,
+  onSearchChange,
+  currentPage,
+  onPageChange,
+  membersPerPage,
   handleSelectAll,
 }) {
   return (
@@ -50,7 +53,7 @@ export default function MembersTable({
                 scope="col"
                 className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
-                Position
+                Congregation
               </th>
               <th
                 scope="col"
@@ -84,14 +87,20 @@ export default function MembersTable({
                       <input
                         type="checkbox"
                         checked={selectedMembers.includes(member.id)}
-                        onChange={() => handleSelectMember(member.id)}
+                        onChange={() => {
+                          if (selectedMembers.includes(member.id)) {
+                            onSelect(selectedMembers.filter(id => id !== member.id));
+                          } else {
+                            onSelect([...selectedMembers, member.id]);
+                          }
+                        }}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
                       />
                       <div
-                        className={`flex-shrink-0 h-10 w-10 rounded-full ${getInitialsColor(member.name)} flex items-center justify-center mr-3`}
+                        className={`flex-shrink-0 h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center mr-3`}
                       >
                         <span className="text-sm font-medium text-white">
-                          {getInitials(member.name)}
+                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </span>
                       </div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -103,7 +112,7 @@ export default function MembersTable({
                     {member.phone}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    {member.position}
+                    {member.congregation}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {member.gender}
@@ -121,21 +130,21 @@ export default function MembersTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
-                      onClick={() => handleViewDetails(member)}
+                      onClick={() => onView(member)}
                       className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                       title="View Details"
                     >
                       <i className="fas fa-eye mr-1"></i>View
                     </button>
                     <button
-                      onClick={() => handleEditMember(member)}
+                      onClick={() => onEdit(member)}
                       className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-3"
                       title="Edit Member"
                     >
                       <i className="fas fa-edit mr-1"></i>Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteMember(member)}
+                      onClick={() => onDelete(member)}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       title="Delete Member"
                     >

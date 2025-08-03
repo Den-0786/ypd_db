@@ -44,7 +44,7 @@ class ErrorBoundary extends Component {
                 Something went wrong
               </h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                We're sorry, but something unexpected happened. Please try
+                We&apos;re sorry, but something unexpected happened. Please try
                 refreshing the page.
               </p>
               <div className="mt-6">

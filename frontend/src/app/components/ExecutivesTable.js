@@ -2,24 +2,19 @@
 
 export default function ExecutivesTable({
   executives,
-  filteredExecutives,
   selectedMembers,
-  handleSelectAll,
-  handleSelectMember,
-  handleViewDetails,
-  handleEditMember,
-  handleDeleteMember,
-  getInitials,
-  getInitialsColor,
+  onView,
+  onEdit,
+  onDelete,
+  onSelect,
+  searchTerm,
+  onSearchChange,
+  currentPage,
+  onPageChange,
+  membersPerPage,
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          <i className="fas fa-users text-blue-500 mr-2"></i>
-          Congregation Executives
-        </h3>
-      </div>
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
@@ -35,7 +30,13 @@ export default function ExecutivesTable({
                       selectedMembers.length === executives.length &&
                       executives.length > 0
                     }
-                    onChange={handleSelectAll}
+                    onChange={() => {
+                      if (selectedMembers.length === executives.length) {
+                        onSelect([]);
+                      } else {
+                        onSelect(executives.map(member => member.id));
+                      }
+                    }}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-2"
                   />
                   Name
@@ -52,6 +53,12 @@ export default function ExecutivesTable({
                 className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
                 Position
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Congregation
               </th>
               <th
                 scope="col"
@@ -74,8 +81,8 @@ export default function ExecutivesTable({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredExecutives.length > 0 ? (
-              filteredExecutives.map((member) => (
+            {executives && executives.length > 0 ? (
+              executives.map((member) => (
                 <tr
                   key={member.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -85,14 +92,20 @@ export default function ExecutivesTable({
                       <input
                         type="checkbox"
                         checked={selectedMembers.includes(member.id)}
-                        onChange={() => handleSelectMember(member.id)}
+                        onChange={() => {
+                          if (selectedMembers.includes(member.id)) {
+                            onSelect(selectedMembers.filter(id => id !== member.id));
+                          } else {
+                            onSelect([...selectedMembers, member.id]);
+                          }
+                        }}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mr-3"
                       />
                       <div
-                        className={`flex-shrink-0 h-10 w-10 rounded-full ${getInitialsColor(member.name)} flex items-center justify-center mr-3`}
+                        className={`flex-shrink-0 h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center mr-3`}
                       >
                         <span className="text-sm font-medium text-white">
-                          {getInitials(member.name)}
+                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                         </span>
                       </div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -105,6 +118,9 @@ export default function ExecutivesTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {member.position}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {member.congregation}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {member.gender}
@@ -122,21 +138,21 @@ export default function ExecutivesTable({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
-                      onClick={() => handleViewDetails(member)}
+                      onClick={() => onView(member)}
                       className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
                       title="View Details"
                     >
                       <i className="fas fa-eye mr-1"></i>View
                     </button>
                     <button
-                      onClick={() => handleEditMember(member)}
+                      onClick={() => onEdit(member)}
                       className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-3"
                       title="Edit Member"
                     >
                       <i className="fas fa-edit mr-1"></i>Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteMember(member)}
+                      onClick={() => onDelete(member)}
                       className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                       title="Delete Member"
                     >
@@ -147,7 +163,7 @@ export default function ExecutivesTable({
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="px-6 py-12 text-center">
+                <td colSpan="7" className="px-6 py-12 text-center">
                   <div className="flex flex-col items-center">
                     <i className="fas fa-search text-gray-400 text-4xl mb-4"></i>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

@@ -5,6 +5,7 @@ import ExportAnalyticsButton from "./ExportAnalyticsButton";
 import PinModal from "./PinModal";
 import { useTheme } from "./ThemeProvider";
 import { useToast, ToastContainer } from "./Toast";
+import autoLogout from "../utils/autoLogout";
 
 export default function DashboardLayout({
   children,
@@ -100,6 +101,35 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Initialize auto-logout
+  useEffect(() => {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (token) {
+      autoLogout.updateLoginStatus(true);
+      // Make autoLogout available globally
+      if (typeof window !== "undefined") {
+        window.autoLogout = autoLogout;
+        // Set up global toast function for autoLogout utility
+        window.showToast = (message, type = "success", duration = 3000) => {
+          if (type === "success") {
+            showSuccess(message);
+          } else if (type === "error") {
+            showError(message);
+          } else {
+            // For info type, use success but with different styling
+            showSuccess(message);
+          }
+        };
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      autoLogout.destroy();
+    };
+  }, [showSuccess, showError]);
+
   // Handle security tab access
   const handleSecurityTabClick = () => {
     if (!securityAccessGranted) {
@@ -156,10 +186,21 @@ export default function DashboardLayout({
   };
 
   const handleLogout = () => {
-    showSuccess("Logged out successfully!");
-    setTimeout(() => {
-      window.location.href = "/";
-    }, 1000);
+    // Use auto-logout utility for consistent logout behavior
+    if (typeof window !== "undefined" && window.autoLogout) {
+      window.autoLogout.manualLogout();
+    } else {
+      // Fallback if auto-logout is not available
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
+      
+      showSuccess("Logged out successfully!");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1000);
+    }
   };
 
   const handleReminderSettingChange = (settingType, field, value) => {

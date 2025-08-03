@@ -5,8 +5,12 @@ import BulkEditModal from "../../components/BulkEditModal";
 import PinModal from "../../components/PinModal";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 import { useToast, ToastContainer } from "../../components/Toast";
+import dataStore from "../../utils/dataStore";
 
 export default function LocalMembersPage() {
+  // Get congregation info from localStorage
+  const congregationId = typeof window !== "undefined" ? localStorage.getItem('congregationId') : null;
+  const congregationName = typeof window !== "undefined" ? localStorage.getItem('congregationName') : null;
   const [mounted, setMounted] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
@@ -28,7 +32,7 @@ export default function LocalMembersPage() {
     profession: "",
     hometown: "",
     relative_contact: "",
-    congregation: "",
+    congregation: congregationName || "",
     position: "",
     membership_status: "",
     confirmation: "",
@@ -38,6 +42,19 @@ export default function LocalMembersPage() {
     executive_position: "",
     executive_level: "",
   });
+
+  // Filter data by congregation
+  useEffect(() => {
+    if (congregationName) {
+      // Filter members by congregation
+      const allMembers = dataStore.getMembers();
+      const congregationMembers = allMembers.filter(member => 
+        member.congregation === congregationName
+      );
+      // Update the members data to show only congregation-specific data
+      // This will be used in the existing members display logic
+    }
+  }, [congregationName]);
 
   // Mock data for statistics
   const stats = {
@@ -466,7 +483,10 @@ export default function LocalMembersPage() {
   };
 
   const handleDeleteSelected = () => {
-    if (selectedMembers.length === 0) return;
+    if (selectedMembers.length === 0) {
+      showError("Please select members to delete");
+      return;
+    }
 
     const selectedNames = executives
       .filter((member) => selectedMembers.includes(member.id))
@@ -586,7 +606,7 @@ export default function LocalMembersPage() {
 
   // Mock congregation data
   const [congregation, setCongregation] = useState({
-    name: "Emmanuel Congregation Ahinsan",
+    name: congregationName || "Emmanuel Congregation Ahinsan",
     location: "Ahinsan, Kumasi",
     established: "1995",
     pastor: "Rev. John Mensah",
@@ -604,6 +624,16 @@ export default function LocalMembersPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Update congregation name when it changes
+  useEffect(() => {
+    if (congregationName) {
+      setCongregation(prev => ({
+        ...prev,
+        name: congregationName
+      }));
+    }
+  }, [congregationName]);
 
   const handleEditClick = () => {
     setEditCongregationForm(congregation);
@@ -1629,7 +1659,7 @@ export default function LocalMembersPage() {
                                 Congregation:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                Emmanuel Congregation Ahinsan
+                                {congregationName || "Emmanuel Congregation Ahinsan"}
                               </p>
                             </div>
                           </div>

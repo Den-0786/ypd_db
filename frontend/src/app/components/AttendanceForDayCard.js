@@ -1,12 +1,30 @@
 "use client";
-export default function AttendanceForDayCard({ selectedDate }) {
+export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          <i className="fas fa-calendar-day text-green-500 mr-2"></i>
-          Attendance for {new Date(selectedDate).toLocaleDateString()}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <i className="fas fa-calendar-day text-green-500 mr-2"></i>
+            Attendance for {new Date(selectedDate).toLocaleDateString()}
+          </h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={onEdit}
+              className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs transition-colors"
+              title="Edit Attendance"
+            >
+              <i className="fas fa-edit"></i>
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors"
+              title="Delete Attendance"
+            >
+              <i className="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
       </div>
       <div className="p-6">
         <div className="overflow-x-auto">

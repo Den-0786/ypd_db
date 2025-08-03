@@ -1,7 +1,16 @@
 "use client";
 import { useState } from "react";
 
-export default function PinModal({ isOpen, onClose, onConfirm, title, message, type = "edit" }) {
+export default function PinModal({ 
+  isOpen, 
+  onClose, 
+  onConfirm, 
+  onPinSuccess, 
+  title, 
+  message, 
+  description,
+  type = "edit" 
+}) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -19,7 +28,12 @@ export default function PinModal({ isOpen, onClose, onConfirm, title, message, t
 
     if (pin === CORRECT_PIN) {
       setIsLoading(false);
-      onConfirm();
+      // Support both onConfirm and onPinSuccess for backward compatibility
+      if (onPinSuccess) {
+        onPinSuccess();
+      } else if (onConfirm) {
+        onConfirm();
+      }
       handleClose();
     } else {
       setError("Incorrect PIN. Please try again.");
@@ -51,7 +65,7 @@ export default function PinModal({ isOpen, onClose, onConfirm, title, message, t
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-              <i className={`fas ${type === "edit" ? "fa-edit" : "fa-trash"} text-red-500 mr-2`}></i>
+              <i className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-lock"} text-red-500 mr-2`}></i>
               {title}
             </h3>
             <button
@@ -63,7 +77,7 @@ export default function PinModal({ isOpen, onClose, onConfirm, title, message, t
           </div>
 
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            {message}
+            {description || message}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,8 +131,8 @@ export default function PinModal({ isOpen, onClose, onConfirm, title, message, t
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <i className={`fas ${type === "edit" ? "fa-edit" : "fa-trash"} mr-2`}></i>
-                    {type === "edit" ? "Edit" : "Delete"}
+                    <i className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-check"} mr-2`}></i>
+                    {type === "edit" ? "Edit" : type === "delete" ? "Delete" : "Confirm"}
                   </span>
                 )}
               </button>
