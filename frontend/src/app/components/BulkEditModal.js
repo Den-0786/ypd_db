@@ -26,7 +26,9 @@ export default function BulkEditModal({
 
   const handleSave = () => {
     if (Object.values(editData).every((value) => value === "")) {
-      alert("Please select at least one field to update");
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Please select at least one field to update", "error");
+      }
       return;
     }
 

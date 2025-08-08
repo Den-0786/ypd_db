@@ -8,27 +8,43 @@ export default function ExportAnalyticsButton({
 }) {
   const [loading, setLoading] = useState(false);
 
-  async function handleExport() {
-    setLoading(true);
+  const handleExport = async () => {
     try {
-      const { saveAs } = await import("file-saver");
-      // Example: Export weekly trend as CSV
-      const headers = ["Date", "Male", "Female", "Total"];
-      const rows = (filtered?.sundayAttendance?.weeklyTrend || []).map((w) => [
-        w.date,
-        w.male,
-        w.female,
-        w.total,
-      ]);
-      const csvContent = [headers, ...rows].map((e) => e.join(",")).join("\n");
-      const blob = new Blob([csvContent], { type: "text/csv" });
-      saveAs(blob, "analytics-weekly.csv");
-    } catch (err) {
-      alert("Failed to export analytics. Please try again.");
-    } finally {
-      setLoading(false);
+      const response = await fetch("/api/analytics/export", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ format }),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `analytics-${format}-${new Date().toISOString().split("T")[0]}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        if (typeof window !== "undefined" && window.showToast) {
+          window.showToast(
+            "Failed to export analytics. Please try again.",
+            "error"
+          );
+        }
+      }
+    } catch (error) {
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast(
+          "Failed to export analytics. Please try again.",
+          "error"
+        );
+      }
     }
-  }
+  };
 
   return (
     <button

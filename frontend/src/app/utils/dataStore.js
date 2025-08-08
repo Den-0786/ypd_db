@@ -1,17 +1,26 @@
 // Centralized data store for managing data flow between local and district pages
 class DataStore {
   constructor() {
-    this.attendanceRecords = this.loadFromStorage('attendanceRecords') || [];
-    this.membersData = this.loadFromStorage('membersData') || [];
-    this.analyticsData = this.loadFromStorage('analyticsData') || {};
-    this.leaderboardData = this.loadFromStorage('leaderboardData') || {};
-    
-    // Initialize with sample data if empty
-    this.initializeSampleData();
+    // Check if we're in the browser environment
+    this.isClient = typeof window !== "undefined";
+
+    this.attendanceRecords = this.loadFromStorage("attendanceRecords") || [];
+    this.membersData = this.loadFromStorage("membersData") || [];
+    this.analyticsData = this.loadFromStorage("analyticsData") || {};
+    this.leaderboardData = this.loadFromStorage("leaderboardData") || {};
+
+    // Initialize with sample data if empty (only in browser)
+    if (this.isClient) {
+      this.initializeSampleData();
+    }
   }
 
   // Storage utilities
   loadFromStorage(key) {
+    if (!this.isClient) {
+      return null;
+    }
+
     try {
       const data = localStorage.getItem(key);
       return data ? JSON.parse(data) : null;
@@ -22,6 +31,10 @@ class DataStore {
   }
 
   saveToStorage(key, data) {
+    if (!this.isClient) {
+      return;
+    }
+
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
@@ -34,10 +47,10 @@ class DataStore {
     const newRecord = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
-      ...record
+      ...record,
     };
     this.attendanceRecords.push(newRecord);
-    this.saveToStorage('attendanceRecords', this.attendanceRecords);
+    this.saveToStorage("attendanceRecords", this.attendanceRecords);
     this.updateAnalytics();
     this.updateLeaderboard();
     return newRecord;
@@ -45,27 +58,27 @@ class DataStore {
 
   getAttendanceRecords(filters = {}) {
     let records = [...this.attendanceRecords];
-    
+
     if (filters.congregation) {
-      records = records.filter(r => r.congregation === filters.congregation);
+      records = records.filter((r) => r.congregation === filters.congregation);
     }
-    
+
     if (filters.date) {
-      records = records.filter(r => r.date === filters.date);
+      records = records.filter((r) => r.date === filters.date);
     }
-    
+
     if (filters.week) {
-      records = records.filter(r => r.week === filters.week);
+      records = records.filter((r) => r.week === filters.week);
     }
-    
+
     if (filters.month) {
-      records = records.filter(r => r.month === filters.month);
+      records = records.filter((r) => r.month === filters.month);
     }
-    
+
     if (filters.year) {
-      records = records.filter(r => r.year === filters.year);
+      records = records.filter((r) => r.year === filters.year);
     }
-    
+
     return records;
   }
 
@@ -74,44 +87,44 @@ class DataStore {
     const newMember = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
-      ...member
+      ...member,
     };
     this.membersData.push(newMember);
-    this.saveToStorage('membersData', this.membersData);
+    this.saveToStorage("membersData", this.membersData);
     this.updateAnalytics();
     return newMember;
   }
 
   updateMember(memberId, updates) {
-    const index = this.membersData.findIndex(m => m.id === memberId);
+    const index = this.membersData.findIndex((m) => m.id === memberId);
     if (index !== -1) {
       this.membersData[index] = { ...this.membersData[index], ...updates };
-      this.saveToStorage('membersData', this.membersData);
+      this.saveToStorage("membersData", this.membersData);
       this.updateAnalytics();
     }
   }
 
   deleteMember(memberId) {
-    this.membersData = this.membersData.filter(m => m.id !== memberId);
-    this.saveToStorage('membersData', this.membersData);
+    this.membersData = this.membersData.filter((m) => m.id !== memberId);
+    this.saveToStorage("membersData", this.membersData);
     this.updateAnalytics();
   }
 
   getMembers(filters = {}) {
     let members = [...this.membersData];
-    
+
     if (filters.congregation) {
-      members = members.filter(m => m.congregation === filters.congregation);
+      members = members.filter((m) => m.congregation === filters.congregation);
     }
-    
+
     if (filters.gender) {
-      members = members.filter(m => m.gender === filters.gender);
+      members = members.filter((m) => m.gender === filters.gender);
     }
-    
+
     if (filters.isExecutive !== undefined) {
-      members = members.filter(m => m.is_executive === filters.isExecutive);
+      members = members.filter((m) => m.is_executive === filters.isExecutive);
     }
-    
+
     return members;
   }
 
@@ -120,11 +133,11 @@ class DataStore {
     const analytics = {
       sundayAttendance: this.calculateAttendanceAnalytics(),
       membersDatabase: this.calculateMembersAnalytics(),
-      leaderboard: this.calculateLeaderboardData()
+      leaderboard: this.calculateLeaderboardData(),
     };
-    
+
     this.analyticsData = analytics;
-    this.saveToStorage('analyticsData', this.analyticsData);
+    this.saveToStorage("analyticsData", this.analyticsData);
   }
 
   calculateAttendanceAnalytics() {
@@ -134,25 +147,31 @@ class DataStore {
     const currentMonth = currentDate.getMonth();
 
     // Filter current year records
-    const yearRecords = records.filter(r => {
+    const yearRecords = records.filter((r) => {
       const recordDate = new Date(r.date);
       return recordDate.getFullYear() === currentYear;
     });
 
     // Calculate totals
-    const totalAttendance = yearRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+    const totalAttendance = yearRecords.reduce(
+      (sum, r) => sum + (r.total || 0),
+      0
+    );
     const totalMale = yearRecords.reduce((sum, r) => sum + (r.male || 0), 0);
-    const totalFemale = yearRecords.reduce((sum, r) => sum + (r.female || 0), 0);
+    const totalFemale = yearRecords.reduce(
+      (sum, r) => sum + (r.female || 0),
+      0
+    );
 
     // Group by congregation
     const congregations = {};
-    yearRecords.forEach(record => {
+    yearRecords.forEach((record) => {
       if (!congregations[record.congregation]) {
         congregations[record.congregation] = {
           total: 0,
           male: 0,
           female: 0,
-          records: []
+          records: [],
         };
       }
       congregations[record.congregation].total += record.total || 0;
@@ -165,88 +184,100 @@ class DataStore {
     const weeklyTrend = yearRecords
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(-8) // Last 8 weeks
-      .map(record => ({
+      .map((record) => ({
         date: record.date,
         male: record.male || 0,
         female: record.female || 0,
         total: record.total || 0,
-        congregation: record.congregation
+        congregation: record.congregation,
       }));
 
     // Monthly trends
     const monthlyTrend = [];
     for (let month = 0; month < 12; month++) {
-      const monthRecords = yearRecords.filter(r => {
+      const monthRecords = yearRecords.filter((r) => {
         const recordDate = new Date(r.date);
         return recordDate.getMonth() === month;
       });
-      
-      const monthTotal = monthRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+
+      const monthTotal = monthRecords.reduce(
+        (sum, r) => sum + (r.total || 0),
+        0
+      );
       const monthMale = monthRecords.reduce((sum, r) => sum + (r.male || 0), 0);
-      const monthFemale = monthRecords.reduce((sum, r) => sum + (r.female || 0), 0);
-      
+      const monthFemale = monthRecords.reduce(
+        (sum, r) => sum + (r.female || 0),
+        0
+      );
+
       monthlyTrend.push({
-        month: new Date(currentYear, month).toLocaleString('default', { month: 'short' }),
+        month: new Date(currentYear, month).toLocaleString("default", {
+          month: "short",
+        }),
         male: monthMale,
         female: monthFemale,
-        total: monthTotal
+        total: monthTotal,
       });
     }
 
     return {
       totalAttendance,
-      averageAttendance: yearRecords.length > 0 ? totalAttendance / yearRecords.length : 0,
+      averageAttendance:
+        yearRecords.length > 0 ? totalAttendance / yearRecords.length : 0,
       congregationsCount: Object.keys(congregations).length,
       growth: this.calculateGrowth(yearRecords),
       weeklyTrend,
       monthlyTrend,
-      yearlyTrend: [{
-        year: currentYear.toString(),
-        male: totalMale,
-        female: totalFemale,
-        total: totalAttendance
-      }]
+      yearlyTrend: [
+        {
+          year: currentYear.toString(),
+          male: totalMale,
+          female: totalFemale,
+          total: totalAttendance,
+        },
+      ],
     };
   }
 
   calculateMembersAnalytics() {
     const members = this.membersData;
-    
+
     // Group by congregation
     const congregations = {};
-    members.forEach(member => {
+    members.forEach((member) => {
       if (!congregations[member.congregation]) {
         congregations[member.congregation] = {
           count: 0,
           male: 0,
           female: 0,
-          executives: 0
+          executives: 0,
         };
       }
       congregations[member.congregation].count++;
-      if (member.gender === 'Male') congregations[member.congregation].male++;
-      if (member.gender === 'Female') congregations[member.congregation].female++;
+      if (member.gender === "Male") congregations[member.congregation].male++;
+      if (member.gender === "Female")
+        congregations[member.congregation].female++;
       if (member.is_executive) congregations[member.congregation].executives++;
     });
 
     // Gender distribution
     const genderDistribution = [];
-    Object.keys(congregations).forEach(congregation => {
+    Object.keys(congregations).forEach((congregation) => {
       genderDistribution.push({
         congregation,
         male: congregations[congregation].male,
-        female: congregations[congregation].female
+        female: congregations[congregation].female,
       });
     });
 
     return {
       totalMembers: members.length,
-      congregations: Object.keys(congregations).map(name => ({
+      congregations: Object.keys(congregations).map((name) => ({
         name,
         count: congregations[name].count,
-        color: this.getCongregationColor(name)
+        color: this.getCongregationColor(name),
       })),
-      genderDistribution
+      genderDistribution,
     };
   }
 
@@ -258,19 +289,23 @@ class DataStore {
     const currentWeek = this.getWeekOfMonth(currentDate);
 
     // Weekly leaderboard
-    const weeklyRecords = records.filter(r => {
+    const weeklyRecords = records.filter((r) => {
       const recordDate = new Date(r.date);
       const recordWeek = this.getWeekOfMonth(recordDate);
-      return recordDate.getFullYear() === currentYear && 
-             recordDate.getMonth() === currentMonth && 
-             recordWeek === currentWeek;
+      return (
+        recordDate.getFullYear() === currentYear &&
+        recordDate.getMonth() === currentMonth &&
+        recordWeek === currentWeek
+      );
     });
 
     // Monthly leaderboard
-    const monthlyRecords = records.filter(r => {
+    const monthlyRecords = records.filter((r) => {
       const recordDate = new Date(r.date);
-      return recordDate.getFullYear() === currentYear && 
-             recordDate.getMonth() === currentMonth;
+      return (
+        recordDate.getFullYear() === currentYear &&
+        recordDate.getMonth() === currentMonth
+      );
     });
 
     // Group by congregation and calculate totals
@@ -279,19 +314,19 @@ class DataStore {
 
     return {
       weekly: weeklyLeaderboard,
-      monthly: monthlyLeaderboard
+      monthly: monthlyLeaderboard,
     };
   }
 
   calculateLeaderboard(records) {
     const congregations = {};
-    
-    records.forEach(record => {
+
+    records.forEach((record) => {
       if (!congregations[record.congregation]) {
         congregations[record.congregation] = {
           male_count: 0,
           female_count: 0,
-          total_count: 0
+          total_count: 0,
         };
       }
       congregations[record.congregation].male_count += record.male || 0;
@@ -301,32 +336,34 @@ class DataStore {
 
     // Sort by total count and add ranks
     return Object.keys(congregations)
-      .map(congregation => ({
+      .map((congregation) => ({
         congregation,
-        ...congregations[congregation]
+        ...congregations[congregation],
       }))
       .sort((a, b) => b.total_count - a.total_count)
       .slice(0, 3)
       .map((item, index) => ({
         ...item,
-        rank: index + 1
+        rank: index + 1,
       }));
   }
 
   calculateGrowth(records) {
     if (records.length < 2) return 0;
-    
-    const sortedRecords = records.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    const sortedRecords = records.sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
     const recent = sortedRecords.slice(-1)[0];
     const previous = sortedRecords.slice(-2)[0];
-    
+
     if (!recent || !previous) return 0;
-    
+
     const recentTotal = recent.total || 0;
     const previousTotal = previous.total || 0;
-    
+
     if (previousTotal === 0) return 0;
-    
+
     return ((recentTotal - previousTotal) / previousTotal) * 100;
   }
 
@@ -338,8 +375,14 @@ class DataStore {
 
   getCongregationColor(congregationName) {
     const colors = [
-      "#3B82F6", "#10B981", "#F59E0B", "#EF4444", 
-      "#8B5CF6", "#06B6D4", "#F97316", "#EC4899"
+      "#3B82F6",
+      "#10B981",
+      "#F59E0B",
+      "#EF4444",
+      "#8B5CF6",
+      "#06B6D4",
+      "#F97316",
+      "#EC4899",
     ];
     const index = congregationName.length % colors.length;
     return colors[index];
@@ -351,8 +394,31 @@ class DataStore {
   }
 
   // Get leaderboard data
-  getLeaderboardData(type = 'weekly') {
+  getLeaderboardData(type = "weekly") {
     return this.analyticsData.leaderboard?.[type] || [];
+  }
+
+  // Fetch real data from API for home page
+  async fetchHomeStats() {
+    if (!this.isClient) {
+      return null;
+    }
+
+    try {
+      // Use the Django backend URL - adjust the port if needed
+      const response = await fetch("http://localhost:8000/api/home-stats/");
+      const data = await response.json();
+
+      if (data.success) {
+        return data.data;
+      } else {
+        console.error("Failed to fetch home stats:", data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching home stats:", error);
+      return null;
+    }
   }
 
   // Initialize sample data for demonstration
@@ -369,7 +435,7 @@ class DataStore {
           status: "Active",
           phone: "0201234567",
           email: "john.doe@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 2,
@@ -380,7 +446,7 @@ class DataStore {
           status: "Active",
           phone: "0202345678",
           email: "jane.smith@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 3,
@@ -391,7 +457,7 @@ class DataStore {
           status: "Active",
           phone: "0203456789",
           email: "mike.johnson@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 4,
@@ -402,7 +468,7 @@ class DataStore {
           status: "Active",
           phone: "0204567890",
           email: "sarah.wilson@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 5,
@@ -413,7 +479,7 @@ class DataStore {
           status: "Active",
           phone: "0205678901",
           email: "david.brown@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 6,
@@ -424,7 +490,7 @@ class DataStore {
           status: "Active",
           phone: "0206789012",
           email: "mary.johnson@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 7,
@@ -435,7 +501,7 @@ class DataStore {
           status: "Active",
           phone: "0207890123",
           email: "james.wilson@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 8,
@@ -446,7 +512,7 @@ class DataStore {
           status: "Active",
           phone: "0208901234",
           email: "sarah.davis@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 9,
@@ -457,7 +523,7 @@ class DataStore {
           status: "Active",
           phone: "0209012345",
           email: "robert.miller@example.com",
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         },
         {
           id: 10,
@@ -468,12 +534,12 @@ class DataStore {
           status: "Active",
           phone: "0200123456",
           email: "lisa.garcia@example.com",
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       ];
-      
+
       this.membersData = sampleMembers;
-      this.saveToStorage('membersData', this.membersData);
+      this.saveToStorage("membersData", this.membersData);
     }
 
     // Initialize sample attendance records if empty
@@ -481,7 +547,7 @@ class DataStore {
       const currentDate = new Date();
       const congregations = [
         "Emmanuel Congregation Ahinsan",
-        "Peniel Congregation Esreso No1", 
+        "Peniel Congregation Esreso No1",
         "Mizpah Congregation Odagya No1",
         "Christ Congregation Ahinsan Estate",
         "Ebenezer Congregation Dompoase Aprabo",
@@ -489,106 +555,130 @@ class DataStore {
         "Liberty Congregation Esreso High Tension",
         "Odagya No2",
         "NOM",
-        "Kokobriko"
+        "Kokobriko",
       ];
-      
+
       const sampleAttendance = [];
       let recordId = 1;
-      
-             // Generate data for each congregation for the current month (4 weeks)
-       congregations.forEach((congregation, index) => {
-         for (let week = 1; week <= 4; week++) {
-           const maleCount = 30 + Math.floor(Math.random() * 20) + (index * 2); // Vary by congregation
-           const femaleCount = 25 + Math.floor(Math.random() * 15) + (index * 2);
-           const total = maleCount + femaleCount;
-           
-           // Calculate current Sunday and past Sundays
-           const today = new Date();
-           const day = today.getDay();
-           const diff = today.getDate() - day + (day === 0 ? 0 : 7);
-           const currentSunday = new Date(today.setDate(diff));
-           
-           // Generate dates for past weeks including current Sunday
-           const recordDate = new Date(currentSunday);
-           recordDate.setDate(currentSunday.getDate() - ((week - 1) * 7));
-           
-           sampleAttendance.push({
-             id: recordId++,
-             date: recordDate.toISOString().split('T')[0],
-             congregation: congregation,
-             male: maleCount,
-             female: femaleCount,
-             total: total,
-             week: week,
-             month: currentDate.toLocaleString("default", { month: "long" }),
-          year: currentDate.getFullYear(),
-          timestamp: new Date().toISOString()
-           });
-         }
-        
-                 // Generate data for previous month (4 weeks)
-         for (let week = 1; week <= 4; week++) {
-           const maleCount = 28 + Math.floor(Math.random() * 18) + (index * 2);
-           const femaleCount = 23 + Math.floor(Math.random() * 14) + (index * 2);
-           const total = maleCount + femaleCount;
-           
-           // Calculate Sundays for previous month
-           const prevMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-           const prevMonthDay = prevMonthDate.getDay();
-           const prevMonthDiff = prevMonthDate.getDate() - prevMonthDay + (prevMonthDay === 0 ? 0 : 7);
-           const prevMonthSunday = new Date(prevMonthDate.setDate(prevMonthDiff));
-           
-           // Generate dates for previous month weeks
-           const recordDate = new Date(prevMonthSunday);
-           recordDate.setDate(prevMonthSunday.getDate() - ((week - 1) * 7));
-           
-           sampleAttendance.push({
-             id: recordId++,
-             date: recordDate.toISOString().split('T')[0],
-             congregation: congregation,
-             male: maleCount,
-             female: femaleCount,
-             total: total,
-             week: week,
-             month: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1).toLocaleString("default", { month: "long" }),
-          year: currentDate.getFullYear(),
-          timestamp: new Date().toISOString()
-           });
-         }
-        
-                 // Generate data for 2 months ago (4 weeks)
-         for (let week = 1; week <= 4; week++) {
-           const maleCount = 26 + Math.floor(Math.random() * 16) + (index * 2);
-           const femaleCount = 21 + Math.floor(Math.random() * 13) + (index * 2);
-           const total = maleCount + femaleCount;
-           
-           // Calculate Sundays for 2 months ago
-           const twoMonthsAgoDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
-           const twoMonthsAgoDay = twoMonthsAgoDate.getDay();
-           const twoMonthsAgoDiff = twoMonthsAgoDate.getDate() - twoMonthsAgoDay + (twoMonthsAgoDay === 0 ? 0 : 7);
-           const twoMonthsAgoSunday = new Date(twoMonthsAgoDate.setDate(twoMonthsAgoDiff));
-           
-           // Generate dates for 2 months ago weeks
-           const recordDate = new Date(twoMonthsAgoSunday);
-           recordDate.setDate(twoMonthsAgoSunday.getDate() - ((week - 1) * 7));
-           
-           sampleAttendance.push({
-             id: recordId++,
-             date: recordDate.toISOString().split('T')[0],
-             congregation: congregation,
-             male: maleCount,
-             female: femaleCount,
-             total: total,
-             week: week,
-             month: new Date(currentDate.getFullYear(), currentDate.getMonth() - 2).toLocaleString("default", { month: "long" }),
-          year: currentDate.getFullYear(),
-          timestamp: new Date().toISOString()
-           });
-         }
+
+      // Generate data for each congregation for the current month (4 weeks)
+      congregations.forEach((congregation, index) => {
+        for (let week = 1; week <= 4; week++) {
+          const maleCount = 30 + Math.floor(Math.random() * 20) + index * 2; // Vary by congregation
+          const femaleCount = 25 + Math.floor(Math.random() * 15) + index * 2;
+          const total = maleCount + femaleCount;
+
+          // Calculate current Sunday and past Sundays
+          const today = new Date();
+          const day = today.getDay();
+          const diff = today.getDate() - day + (day === 0 ? 0 : 7);
+          const currentSunday = new Date(today.setDate(diff));
+
+          // Generate dates for past weeks including current Sunday
+          const recordDate = new Date(currentSunday);
+          recordDate.setDate(currentSunday.getDate() - (week - 1) * 7);
+
+          sampleAttendance.push({
+            id: recordId++,
+            date: recordDate.toISOString().split("T")[0],
+            congregation: congregation,
+            male: maleCount,
+            female: femaleCount,
+            total: total,
+            week: week,
+            month: currentDate.toLocaleString("default", { month: "long" }),
+            year: currentDate.getFullYear(),
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Generate data for previous month (4 weeks)
+        for (let week = 1; week <= 4; week++) {
+          const maleCount = 28 + Math.floor(Math.random() * 18) + index * 2;
+          const femaleCount = 23 + Math.floor(Math.random() * 14) + index * 2;
+          const total = maleCount + femaleCount;
+
+          // Calculate Sundays for previous month
+          const prevMonthDate = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth() - 1,
+            1
+          );
+          const prevMonthDay = prevMonthDate.getDay();
+          const prevMonthDiff =
+            prevMonthDate.getDate() -
+            prevMonthDay +
+            (prevMonthDay === 0 ? 0 : 7);
+          const prevMonthSunday = new Date(
+            prevMonthDate.setDate(prevMonthDiff)
+          );
+
+          // Generate dates for previous month weeks
+          const recordDate = new Date(prevMonthSunday);
+          recordDate.setDate(prevMonthSunday.getDate() - (week - 1) * 7);
+
+          sampleAttendance.push({
+            id: recordId++,
+            date: recordDate.toISOString().split("T")[0],
+            congregation: congregation,
+            male: maleCount,
+            female: femaleCount,
+            total: total,
+            week: week,
+            month: new Date(
+              currentDate.getFullYear(),
+              currentDate.getMonth() - 1
+            ).toLocaleString("default", { month: "long" }),
+            year: currentDate.getFullYear(),
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        // Generate data for 2 months ago (4 weeks)
+        for (let week = 1; week <= 4; week++) {
+          const maleCount = 26 + Math.floor(Math.random() * 16) + index * 2;
+          const femaleCount = 21 + Math.floor(Math.random() * 13) + index * 2;
+          const total = maleCount + femaleCount;
+
+          // Calculate Sundays for 2 months ago
+          const twoMonthsAgoDate = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth() - 2,
+            1
+          );
+          const twoMonthsAgoDay = twoMonthsAgoDate.getDay();
+          const twoMonthsAgoDiff =
+            twoMonthsAgoDate.getDate() -
+            twoMonthsAgoDay +
+            (twoMonthsAgoDay === 0 ? 0 : 7);
+          const twoMonthsAgoSunday = new Date(
+            twoMonthsAgoDate.setDate(twoMonthsAgoDiff)
+          );
+
+          // Generate dates for 2 months ago weeks
+          const recordDate = new Date(twoMonthsAgoSunday);
+          recordDate.setDate(twoMonthsAgoSunday.getDate() - (week - 1) * 7);
+
+          sampleAttendance.push({
+            id: recordId++,
+            date: recordDate.toISOString().split("T")[0],
+            congregation: congregation,
+            male: maleCount,
+            female: femaleCount,
+            total: total,
+            week: week,
+            month: new Date(
+              currentDate.getFullYear(),
+              currentDate.getMonth() - 2
+            ).toLocaleString("default", { month: "long" }),
+            year: currentDate.getFullYear(),
+            timestamp: new Date().toISOString(),
+          });
+        }
       });
-      
+
       this.attendanceRecords = sampleAttendance;
-      this.saveToStorage('attendanceRecords', this.attendanceRecords);
+      this.saveToStorage("attendanceRecords", this.attendanceRecords);
     }
 
     // Update analytics with sample data
@@ -615,7 +705,37 @@ class DataStore {
   }
 }
 
-// Create singleton instance
-const dataStore = new DataStore();
+// Create singleton instance with lazy initialization
+let dataStoreInstance = null;
 
-export default dataStore; 
+const getDataStore = () => {
+  if (typeof window === "undefined") {
+    // Return a mock instance for SSR
+    return {
+      attendanceRecords: [],
+      membersData: [],
+      analyticsData: {},
+      leaderboardData: {},
+      getMembers: () => [],
+      getAttendanceRecords: () => [],
+      getAnalyticsData: () => ({}),
+      getLeaderboardData: () => ({}),
+      addAttendanceRecord: () => {},
+      addMember: () => {},
+      updateMember: () => {},
+      deleteMember: () => {},
+      updateAnalytics: () => {},
+      clearAllData: () => {},
+      regenerateMockupData: () => {},
+    };
+  }
+
+  if (!dataStoreInstance) {
+    dataStoreInstance = new DataStore();
+  }
+
+  return dataStoreInstance;
+};
+
+// Export a function that returns the dataStore instance
+export default getDataStore;

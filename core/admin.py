@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (BirthdayMessageLog, BulkProfileCart, Congregation,
-                     Guilder, Role, SundayAttendance, Notification, SystemSettings)
+                     Guilder, Role, SundayAttendance, Notification, SystemSettings, Quiz, QuizSubmission)
 
 
 @admin.register(Congregation)
@@ -104,3 +104,65 @@ class SystemSettingsAdmin(admin.ModelAdmin):
         updated = queryset.update(is_active=False)
         self.message_user(request, f"Successfully deactivated {updated} setting(s).")
     deactivate_selected.short_description = "Deactivate selected settings"
+
+
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ("title", "created_by", "is_active", "start_time", "end_time", "created_at")
+    list_filter = ("is_active", "created_at", "start_time", "end_time")
+    search_fields = ("title", "question", "created_by__username")
+    readonly_fields = ("created_at", "updated_at")
+    
+    fieldsets = (
+        ("Basic Information", {
+            "fields": ("title", "description", "is_active"),
+        }),
+        ("Question & Options", {
+            "fields": ("question", "option_a", "option_b", "option_c", "option_d", "correct_answer"),
+        }),
+        ("Timing", {
+            "fields": ("start_time", "end_time"),
+        }),
+        ("Access Control", {
+            "fields": ("password", "created_by"),
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ("created_by",)
+        return self.readonly_fields
+    
+    def save_model(self, request, obj, form, change):
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(QuizSubmission)
+class QuizSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("name", "quiz", "phone_number", "congregation", "selected_answer", "is_correct", "submitted_at")
+    list_filter = ("is_correct", "submitted_at", "quiz", "congregation")
+    search_fields = ("name", "phone_number", "congregation", "quiz__title")
+    readonly_fields = ("submitted_at",)
+    
+    fieldsets = (
+        ("Submission Details", {
+            "fields": ("quiz", "name", "phone_number", "congregation"),
+        }),
+        ("Answer", {
+            "fields": ("selected_answer", "is_correct"),
+        }),
+        ("Timestamps", {
+            "fields": ("submitted_at",),
+            "classes": ("collapse",)
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        # Disable manual addition of submissions - they should only be created via API
+        return False

@@ -5,7 +5,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import JointProgramModal from "../components/JointProgramModal";
 import PinModal from "../components/PinModal";
 import React from "react";
-import dataStore from "../utils/dataStore";
+import getDataStore from "../utils/dataStore";
 
 // Helper functions for week/month/year
 const getWeekOfMonth = (date) => {
@@ -40,7 +40,9 @@ export default function AttendancePage() {
   });
   const [selectedCongregation, setSelectedCongregation] = useState("");
   const [selectedWeek, setSelectedWeek] = useState(getWeekOfMonth(new Date()));
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString("default", { month: "short" }));
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().toLocaleString("default", { month: "short" })
+  );
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Monthly and yearly summary table states
@@ -85,8 +87,9 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendanceRecords();
-    
+
     // Force regenerate mockup data if no records exist
+    const dataStore = getDataStore();
     const records = dataStore.getAttendanceRecords();
     if (records.length === 0) {
       dataStore.regenerateMockupData();
@@ -109,12 +112,13 @@ export default function AttendancePage() {
   const fetchAttendanceRecords = async () => {
     try {
       setLoading(true);
-      
+
       // Get records from data store
+      const dataStore = getDataStore();
       const records = dataStore.getAttendanceRecords();
-      
+
       // Transform records to match expected format
-      const transformedRecords = records.map(record => ({
+      const transformedRecords = records.map((record) => ({
         id: record.id,
         congregation: { name: record.congregation },
         date: record.date,
@@ -124,7 +128,7 @@ export default function AttendancePage() {
         loggedBy: record.loggedBy || "Unknown",
         position: record.position || "Member",
       }));
-      
+
       setAttendanceRecords(transformedRecords);
       setLoading(false);
     } catch (error) {
@@ -556,9 +560,11 @@ export default function AttendancePage() {
   // Find the most recent month and year with data, or use current date
   let targetMonthNum = currentDate.getMonth();
   let targetYear = currentDate.getFullYear();
-  
+
   if (attendanceRecords.length > 0) {
-    const latestRecord = attendanceRecords.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+    const latestRecord = attendanceRecords.sort(
+      (a, b) => new Date(b.date) - new Date(a.date)
+    )[0];
     const latestDate = new Date(latestRecord.date);
     targetMonthNum = latestDate.getMonth();
     targetYear = latestDate.getFullYear();
@@ -608,9 +614,12 @@ export default function AttendancePage() {
   );
 
   // Progress for week/month/year
-  const currentMonth = new Date(targetYear, targetMonthNum).toLocaleString("default", {
-    month: "short",
-  });
+  const currentMonth = new Date(targetYear, targetMonthNum).toLocaleString(
+    "default",
+    {
+      month: "short",
+    }
+  );
   const currentWeek = getWeekOfMonth(currentDate);
   const weekProgress =
     selectedMonth === "All"
@@ -834,7 +843,9 @@ export default function AttendancePage() {
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
                   <div className="text-white text-xs opacity-90">Day</div>
                   <div className="text-blue-300 font-semibold">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
                   </div>
                 </div>
               </div>
@@ -846,11 +857,16 @@ export default function AttendancePage() {
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-yellow-800 dark:text-yellow-200 font-semibold">Mockup Data</h3>
-              <p className="text-yellow-600 dark:text-yellow-300 text-sm">Click to regenerate sample data for all congregations</p>
+              <h3 className="text-yellow-800 dark:text-yellow-200 font-semibold">
+                Mockup Data
+              </h3>
+              <p className="text-yellow-600 dark:text-yellow-300 text-sm">
+                Click to regenerate sample data for all congregations
+              </p>
             </div>
             <button
               onClick={() => {
+                const dataStore = getDataStore();
                 dataStore.regenerateMockupData();
                 fetchAttendanceRecords();
                 showToast("Mockup data regenerated!", "success");
@@ -866,7 +882,6 @@ export default function AttendancePage() {
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center flex-col sm:flex-row gap-4">
             <div>
-
               {/* Joint Program Status */}
               {hasJointProgramThisWeek && (
                 <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
@@ -921,12 +936,21 @@ export default function AttendancePage() {
                         <button
                           onClick={() => {
                             // TODO: Get custom reminder message from settings
-                            const customMessage = "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!";
+                            const customMessage =
+                              "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!";
                             const formattedMessage = customMessage
-                              .replace('{congregation}', 'Test Congregation')
-                              .replace('{date}', new Date().toLocaleDateString())
-                              .replace('{day}', new Date().toLocaleDateString('en-US', { weekday: 'long' }));
-                            
+                              .replace("{congregation}", "Test Congregation")
+                              .replace(
+                                "{date}",
+                                new Date().toLocaleDateString()
+                              )
+                              .replace(
+                                "{day}",
+                                new Date().toLocaleDateString("en-US", {
+                                  weekday: "long",
+                                })
+                              );
+
                             showToast(
                               `Sending custom reminder: "${formattedMessage}" to ${notSubmittedCongregations.length} congregation(s)`,
                               "success"
@@ -1203,7 +1227,6 @@ export default function AttendancePage() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                   Current Week Records
                 </h3>
-
               </div>
             </div>
 

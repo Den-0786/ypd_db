@@ -385,8 +385,8 @@ export default function ChurchInfoSection({
                         Secretary
                       </option>
                       <option value="assistant_secretary" className="text-light-text dark:text-dark-text">
-                        Assistant Secretary
-                      </option>
+                      Assistant Secretary
+                    </option>
                       <option value="financial_secretary" className="text-light-text dark:text-dark-text">
                         Financial Secretary
                       </option>
@@ -441,19 +441,19 @@ export default function ChurchInfoSection({
                         Assistant Secretary
                       </option>
                       <option value="financial_secretary" className="text-light-text dark:text-dark-text">
-                        Financial Secretary
-                      </option>
+                      Financial Secretary
+                    </option>
                       <option value="treasurer" className="text-light-text dark:text-dark-text">
-                        Treasurer
-                      </option>
+                      Treasurer
+                    </option>
                       <option value="organizer" className="text-light-text dark:text-dark-text">
-                        Organizer
-                      </option>
+                      Organizer
+                    </option>
                       <option value="evangelism_coordinator" className="text-light-text dark:text-dark-text">
                         Evangelism Coordinator
-                      </option>
-                    </select>
-                  </div>
+                    </option>
+                  </select>
+                </div>
                 )}
 
                 {/* Legacy Executive Position (for backward compatibility) */}

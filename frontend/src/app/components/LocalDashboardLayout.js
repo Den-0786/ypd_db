@@ -211,7 +211,6 @@ function AttendanceQuickActionsDropdown() {
   }, [showExportModal]);
 
   const handleExport = (format) => {
-    console.log(`Exporting attendance as ${format}`);
     if (typeof window !== "undefined" && window.showToast) {
       window.showToast(
         `Attendance data exported as ${format.toUpperCase()}`,

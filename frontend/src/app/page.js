@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ToastContainer from "./components/ToastContainer";
-import dataStore from "./utils/dataStore";
+import getDataStore from "./utils/dataStore";
 
 export default function HomePage() {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
@@ -40,7 +40,7 @@ export default function HomePage() {
     missionTrips: 0,
     smallGroups: 0,
     discipleship: 0,
-    innovationScore: "A+"
+    innovationScore: "A+",
   });
 
   // Navigation items with descriptions
@@ -49,139 +49,240 @@ export default function HomePage() {
       id: "dashboard",
       name: "Dashboard",
       icon: "fas fa-tachometer-alt",
-      description: "Access comprehensive overview of YPG activities, statistics, and key metrics. View district-wide data and performance indicators.",
-      loginRequired: true
+      description:
+        "Access comprehensive overview of YPG activities, statistics, and key metrics. View district-wide data and performance indicators.",
+      loginRequired: true,
     },
     {
       id: "members",
       name: "Members",
       icon: "fas fa-users",
-      description: "Manage member database, view profiles, add new members, and track membership status across all congregations.",
-      loginRequired: true
+      description:
+        "Manage member database, view profiles, add new members, and track membership status across all congregations.",
+      loginRequired: true,
     },
     {
       id: "attendance",
       name: "Attendance",
       icon: "fas fa-calendar-check",
-      description: "Log and track Sunday service attendance, view trends, and generate attendance reports for all congregations.",
-      loginRequired: true
+      description:
+        "Log and track Sunday service attendance, view trends, and generate attendance reports for all congregations.",
+      loginRequired: true,
     },
     {
       id: "analytics",
       name: "Analytics",
       icon: "fas fa-chart-bar",
-      description: "Access detailed analytics, charts, and insights about member growth, attendance patterns, and performance metrics.",
-      loginRequired: true
+      description:
+        "Access detailed analytics, charts, and insights about member growth, attendance patterns, and performance metrics.",
+      loginRequired: true,
     },
     {
       id: "bulk",
       name: "Bulk Add",
       icon: "fas fa-user-plus",
-      description: "Add multiple members at once, import data from spreadsheets, and manage bulk operations efficiently.",
-      loginRequired: true
-    }
+      description:
+        "Add multiple members at once, import data from spreadsheets, and manage bulk operations efficiently.",
+      loginRequired: true,
+    },
   ];
 
-  // Fetch real-time data from dataStore
-  const fetchRealTimeData = () => {
-    const members = dataStore.getMembers();
-    const attendanceRecords = dataStore.getAttendanceRecords();
-    const analytics = dataStore.getAnalyticsData();
-    const leaderboard = dataStore.getLeaderboardData('weekly');
+  // Fetch real-time data from API and dataStore
+  const fetchRealTimeData = async () => {
+    const dataStore = getDataStore();
 
-    // Calculate statistics
-    const totalMembers = members.length;
-    const activeMembers = members.filter(m => m.status !== 'Inactive').length;
-    const totalMale = members.filter(m => m.gender === 'Male').length;
-    const totalFemale = members.filter(m => m.gender === 'Female').length;
-    const executiveMembers = members.filter(m => m.is_executive).length;
-    
-    // Get unique congregations
-    const congregations = [...new Set(members.map(m => m.congregation))];
-    const totalCongregations = congregations.length;
+    try {
+      // Try to fetch real data from API first
+      const apiData = await dataStore.fetchHomeStats();
 
-    // Calculate attendance statistics
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth();
-    const currentWeek = Math.ceil((currentDate.getDate() + new Date(currentYear, currentMonth, 1).getDay()) / 7);
+      if (apiData) {
+        // Use real data from API
+        setRealTimeData({
+          totalMembers: apiData.totalMembers || 0,
+          activeMembers: apiData.activeMembers || 0,
+          totalMale: apiData.totalMale || 0,
+          totalFemale: apiData.totalFemale || 0,
+          totalCongregations: apiData.totalCongregations || 0,
+          sundayAttendance: apiData.sundayAttendance || 0,
+          weeklyQuiz: apiData.weeklyQuiz || 35,
+          leaderboardTop: apiData.leaderboardTop || [],
+          growthRate: apiData.growthRate || 0,
+          averageAttendance: apiData.sundayAttendance || 0,
+          executiveMembers: apiData.executiveMembers || 0,
+          thisWeekAttendance: apiData.thisWeekAttendance || 0,
+          thisMonthAttendance: apiData.thisMonthAttendance || 0,
+          totalEvents: apiData.totalEvents || 12,
+          volunteerHours: apiData.volunteerHours || 1850,
+          bibleStudyGroups: apiData.bibleStudyGroups || 18,
+          communityOutreach: apiData.communityOutreach || 150,
+          prayerRequests: apiData.prayerRequests || 45,
+          digitalEngagement: apiData.digitalEngagement || 85,
+          leadershipTraining: apiData.leadershipTraining || 28,
+          worshipTeams: apiData.worshipTeams || 8,
+          missionTrips: apiData.missionTrips || 3,
+          smallGroups: apiData.smallGroups || 15,
+          discipleship: apiData.discipleship || 65,
+          innovationScore: apiData.innovationScore || "A+",
+        });
+      } else {
+        // Fallback to local dataStore if API fails
+        const members = dataStore.getMembers();
+        const attendanceRecords = dataStore.getAttendanceRecords();
+        const analytics = dataStore.getAnalyticsData();
+        const leaderboard = dataStore.getLeaderboardData("weekly");
 
-    // This week's attendance
-    const thisWeekRecords = attendanceRecords.filter(r => {
-      const recordDate = new Date(r.date);
-      const recordWeek = Math.ceil((recordDate.getDate() + new Date(recordDate.getFullYear(), recordDate.getMonth(), 1).getDay()) / 7);
-      return recordDate.getFullYear() === currentYear && 
-             recordDate.getMonth() === currentMonth && 
-             recordWeek === currentWeek;
-    });
-    const thisWeekAttendance = thisWeekRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+        // Calculate statistics from local data
+        const totalMembers = members.length;
+        const activeMembers = members.filter(
+          (m) => m.status !== "Inactive"
+        ).length;
+        const totalMale = members.filter((m) => m.gender === "Male").length;
+        const totalFemale = members.filter((m) => m.gender === "Female").length;
+        const executiveMembers = members.filter((m) => m.is_executive).length;
 
-    // This month's attendance
-    const thisMonthRecords = attendanceRecords.filter(r => {
-      const recordDate = new Date(r.date);
-      return recordDate.getFullYear() === currentYear && 
-             recordDate.getMonth() === currentMonth;
-    });
-    const thisMonthAttendance = thisMonthRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+        // Get unique congregations
+        const congregations = [...new Set(members.map((m) => m.congregation))];
+        const totalCongregations = congregations.length;
 
-    // Average attendance
-    const averageAttendance = attendanceRecords.length > 0 
-      ? attendanceRecords.reduce((sum, r) => sum + (r.total || 0), 0) / attendanceRecords.length 
-      : 0;
+        // Calculate attendance statistics
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        const currentWeek = Math.ceil(
+          (currentDate.getDate() +
+            new Date(currentYear, currentMonth, 1).getDay()) /
+            7
+        );
 
-    // Growth rate calculation
-    const recentRecords = attendanceRecords
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 2);
-    
-    let growthRate = 0;
-    if (recentRecords.length >= 2) {
-      const recent = recentRecords[0].total || 0;
-      const previous = recentRecords[1].total || 0;
-      growthRate = previous > 0 ? ((recent - previous) / previous) * 100 : 0;
+        // This week's attendance
+        const thisWeekRecords = attendanceRecords.filter((r) => {
+          const recordDate = new Date(r.date);
+          const recordWeek = Math.ceil(
+            (recordDate.getDate() +
+              new Date(
+                recordDate.getFullYear(),
+                recordDate.getMonth(),
+                1
+              ).getDay()) /
+              7
+          );
+          return (
+            recordDate.getFullYear() === currentYear &&
+            recordDate.getMonth() === currentMonth &&
+            recordWeek === currentWeek
+          );
+        });
+        const thisWeekAttendance = thisWeekRecords.reduce(
+          (sum, r) => sum + (r.total || 0),
+          0
+        );
+
+        // This month's attendance
+        const thisMonthRecords = attendanceRecords.filter((r) => {
+          const recordDate = new Date(r.date);
+          return (
+            recordDate.getFullYear() === currentYear &&
+            recordDate.getMonth() === currentMonth
+          );
+        });
+        const thisMonthAttendance = thisMonthRecords.reduce(
+          (sum, r) => sum + (r.total || 0),
+          0
+        );
+
+        // Average attendance
+        const averageAttendance =
+          attendanceRecords.length > 0
+            ? attendanceRecords.reduce((sum, r) => sum + (r.total || 0), 0) /
+              attendanceRecords.length
+            : 0;
+
+        // Growth rate calculation
+        const recentRecords = attendanceRecords
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 2);
+
+        let growthRate = 0;
+        if (recentRecords.length >= 2) {
+          const recent = recentRecords[0].total || 0;
+          const previous = recentRecords[1].total || 0;
+          growthRate =
+            previous > 0 ? ((recent - previous) / previous) * 100 : 0;
+        }
+
+        // Mock data for additional metrics (hybrid approach)
+        const weeklyQuiz = Math.floor(Math.random() * 50) + 20;
+        const totalEvents = Math.floor(Math.random() * 15) + 5;
+        const volunteerHours = Math.floor(Math.random() * 1000) + 1500;
+        const bibleStudyGroups = Math.floor(Math.random() * 10) + 15;
+        const communityOutreach = Math.floor(Math.random() * 100) + 100;
+        const prayerRequests = Math.floor(Math.random() * 50) + 30;
+        const digitalEngagement = Math.floor(Math.random() * 20) + 80;
+        const leadershipTraining = Math.floor(Math.random() * 20) + 25;
+        const worshipTeams = Math.floor(Math.random() * 5) + 5;
+        const missionTrips = Math.floor(Math.random() * 3) + 2;
+        const smallGroups = Math.floor(Math.random() * 10) + 12;
+        const discipleship = Math.floor(Math.random() * 30) + 50;
+
+        setRealTimeData({
+          totalMembers,
+          activeMembers,
+          totalMale,
+          totalFemale,
+          totalCongregations,
+          sundayAttendance: Math.round(averageAttendance),
+          weeklyQuiz,
+          leaderboardTop: leaderboard.slice(0, 3),
+          growthRate: Math.round(growthRate),
+          averageAttendance: Math.round(averageAttendance),
+          executiveMembers,
+          thisWeekAttendance,
+          thisMonthAttendance,
+          totalEvents,
+          volunteerHours,
+          bibleStudyGroups,
+          communityOutreach,
+          prayerRequests,
+          digitalEngagement,
+          leadershipTraining,
+          worshipTeams,
+          missionTrips,
+          smallGroups,
+          discipleship,
+          innovationScore: "A+",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching real-time data:", error);
+      // Fallback to mock data if everything fails
+      setRealTimeData({
+        totalMembers: 0,
+        activeMembers: 0,
+        totalMale: 0,
+        totalFemale: 0,
+        totalCongregations: 0,
+        sundayAttendance: 0,
+        weeklyQuiz: 35,
+        leaderboardTop: [],
+        growthRate: 0,
+        averageAttendance: 0,
+        executiveMembers: 0,
+        thisWeekAttendance: 0,
+        thisMonthAttendance: 0,
+        totalEvents: 12,
+        volunteerHours: 1850,
+        bibleStudyGroups: 18,
+        communityOutreach: 150,
+        prayerRequests: 45,
+        digitalEngagement: 85,
+        leadershipTraining: 28,
+        worshipTeams: 8,
+        missionTrips: 3,
+        smallGroups: 15,
+        discipleship: 65,
+        innovationScore: "A+",
+      });
     }
-
-    // Mock data for additional metrics (these would come from actual data in a real system)
-    const weeklyQuiz = Math.floor(Math.random() * 50) + 20; // Mock quiz participation
-    const totalEvents = Math.floor(Math.random() * 15) + 5; // Mock events
-    const volunteerHours = Math.floor(Math.random() * 1000) + 1500; // Mock volunteer hours
-    const bibleStudyGroups = Math.floor(Math.random() * 10) + 15; // Mock bible study groups
-    const communityOutreach = Math.floor(Math.random() * 100) + 100; // Mock outreach
-    const prayerRequests = Math.floor(Math.random() * 50) + 30; // Mock prayer requests
-    const digitalEngagement = Math.floor(Math.random() * 20) + 80; // Mock digital engagement
-    const leadershipTraining = Math.floor(Math.random() * 20) + 25; // Mock training sessions
-    const worshipTeams = Math.floor(Math.random() * 5) + 5; // Mock worship teams
-    const missionTrips = Math.floor(Math.random() * 3) + 2; // Mock mission trips
-    const smallGroups = Math.floor(Math.random() * 10) + 12; // Mock small groups
-    const discipleship = Math.floor(Math.random() * 30) + 50; // Mock discipleship
-
-    setRealTimeData({
-      totalMembers,
-      activeMembers,
-      totalMale,
-      totalFemale,
-      totalCongregations,
-      sundayAttendance: Math.round(averageAttendance),
-      weeklyQuiz,
-      leaderboardTop: leaderboard.slice(0, 3),
-      growthRate: Math.round(growthRate),
-      averageAttendance: Math.round(averageAttendance),
-      executiveMembers,
-      thisWeekAttendance,
-      thisMonthAttendance,
-      totalEvents,
-      volunteerHours,
-      bibleStudyGroups,
-      communityOutreach,
-      prayerRequests,
-      digitalEngagement,
-      leadershipTraining,
-      worshipTeams,
-      missionTrips,
-      smallGroups,
-      discipleship,
-      innovationScore: "A+"
-    });
   };
 
   // Card data for rotation - now using real-time data
@@ -355,11 +456,17 @@ export default function HomePage() {
 
   // Fetch real-time data on component mount and set up periodic updates
   useEffect(() => {
-    fetchRealTimeData();
-    
+    const loadData = async () => {
+      await fetchRealTimeData();
+    };
+
+    loadData();
+
     // Update data every 30 seconds
-    const dataInterval = setInterval(fetchRealTimeData, 30000);
-    
+    const dataInterval = setInterval(async () => {
+      await fetchRealTimeData();
+    }, 30000);
+
     return () => clearInterval(dataInterval);
   }, []);
 
@@ -484,19 +591,33 @@ export default function HomePage() {
                 >
                   <i className={`${item.icon} mr-1`}></i>
                   <span className="hidden lg:inline">{item.name}</span>
-                  
+
                   {/* Tooltip */}
                   {showTooltip === item.id && (
-                    <div className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
-                      item.id === 'bulk' ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
-                    }`}>
-                      <div className="font-semibold mb-2 text-base">{item.name}</div>
-                      <div className="text-gray-300 mb-2 leading-relaxed">{item.description}</div>
-                      <div className="text-blue-300 text-sm">Click to login and access</div>
+                    <div
+                      className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
+                        item.id === "bulk"
+                          ? "right-0"
+                          : "left-1/2 transform -translate-x-1/2"
+                      }`}
+                    >
+                      <div className="font-semibold mb-2 text-base">
+                        {item.name}
+                      </div>
+                      <div className="text-gray-300 mb-2 leading-relaxed">
+                        {item.description}
+                      </div>
+                      <div className="text-blue-300 text-sm">
+                        Click to login and access
+                      </div>
                       {/* Arrow */}
-                      <div className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
-                        item.id === 'bulk' ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
-                      }`}></div>
+                      <div
+                        className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
+                          item.id === "bulk"
+                            ? "right-4"
+                            : "left-1/2 transform -translate-x-1/2"
+                        }`}
+                      ></div>
                     </div>
                   )}
                 </button>
@@ -539,24 +660,41 @@ export default function HomePage() {
                       }
                     }}
                     onTouchStart={() => setShowTooltip(item.id)}
-                    onTouchEnd={() => setTimeout(() => setShowTooltip(null), 3000)}
+                    onTouchEnd={() =>
+                      setTimeout(() => setShowTooltip(null), 3000)
+                    }
                     onMouseEnter={() => setShowTooltip(item.id)}
                     onMouseLeave={() => setShowTooltip(null)}
                   >
-                    <i className={`${item.icon} mr-3`}></i>{item.name}
-                    
+                    <i className={`${item.icon} mr-3`}></i>
+                    {item.name}
+
                     {/* Mobile Tooltip */}
                     {showTooltip === item.id && (
-                      <div className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
-                        item.id === 'bulk' ? 'right-0' : 'left-1/2 transform -translate-x-1/2'
-                      }`}>
-                        <div className="font-semibold mb-2 text-base">{item.name}</div>
-                        <div className="text-gray-300 mb-2 leading-relaxed">{item.description}</div>
-                        <div className="text-blue-300 text-sm">Tap to login and access</div>
+                      <div
+                        className={`absolute top-full mt-2 px-4 py-3 bg-gray-900 text-white text-sm rounded-lg shadow-lg min-w-[280px] max-w-[350px] z-30 ${
+                          item.id === "bulk"
+                            ? "right-0"
+                            : "left-1/2 transform -translate-x-1/2"
+                        }`}
+                      >
+                        <div className="font-semibold mb-2 text-base">
+                          {item.name}
+                        </div>
+                        <div className="text-gray-300 mb-2 leading-relaxed">
+                          {item.description}
+                        </div>
+                        <div className="text-blue-300 text-sm">
+                          Tap to login and access
+                        </div>
                         {/* Arrow */}
-                        <div className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
-                          item.id === 'bulk' ? 'right-4' : 'left-1/2 transform -translate-x-1/2'
-                        }`}></div>
+                        <div
+                          className={`absolute bottom-full w-0 h-0 border-l-4 border-r-4 border-b-4 border-transparent border-b-gray-900 ${
+                            item.id === "bulk"
+                              ? "right-4"
+                              : "left-1/2 transform -translate-x-1/2"
+                          }`}
+                        ></div>
                       </div>
                     )}
                   </button>
@@ -698,7 +836,7 @@ export default function HomePage() {
           }
         }
       `}</style>
-      
+
       {/* Toast Container */}
       <ToastContainer />
     </div>

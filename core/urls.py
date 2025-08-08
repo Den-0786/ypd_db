@@ -79,6 +79,7 @@ urlpatterns = [
         name="api_executive_positions",
     ),
     path("api/dashboard-stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
+    path("api/home-stats/", views.api_home_stats, name="api_home_stats"),
     # Notification API URLs
     path("api/notifications/", views.api_notifications, name="api_notifications"),
     path("api/notifications/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
@@ -91,4 +92,48 @@ urlpatterns = [
         views.send_birthday_sms,
         name="send_birthday_sms",
     ),
+    # Quiz API URLs
+    path("api/quizzes/", views.api_quizzes, name="api_quizzes"),
+    path("api/quizzes/active/", views.api_active_quiz, name="api_active_quiz"),
+    path("api/quizzes/submit/", views.api_submit_quiz, name="api_submit_quiz"),
+    path("api/quizzes/results/", views.api_quiz_results, name="api_quiz_results"),
+    path("api/quizzes/results/<int:quiz_id>/", views.api_quiz_results, name="api_quiz_results_detail"),
+    path("api/quizzes/create/", views.api_create_quiz, name="api_create_quiz"),
+    path("api/quizzes/<int:quiz_id>/end/", views.api_end_quiz, name="api_end_quiz"),
+    path("api/quizzes/<int:quiz_id>/delete/", views.api_delete_quiz, name="api_delete_quiz"),
+    path("api/quizzes/cleanup/", views.api_cleanup_expired_quizzes, name="api_cleanup_expired_quizzes"),
+    path("api/quizzes/congregation-stats/", views.api_congregation_quiz_stats, name="api_congregation_quiz_stats"),
+    # Y-Store API URLs
+    path("api/ystore/", views.api_ystore_items, name="api_ystore_items"),
+    path("api/ystore/admin/", views.api_ystore_admin_items, name="api_ystore_admin_items"),
+    path("api/ystore/create/", views.api_ystore_create_item, name="api_ystore_create_item"),
+    path("api/ystore/<int:item_id>/update/", views.api_ystore_update_item, name="api_ystore_update_item"),
+    path("api/ystore/<int:item_id>/delete/", views.api_ystore_delete_item, name="api_ystore_delete_item"),
+    
+    # Branch President API endpoints
+    path('api/branch-presidents/', views.api_branch_presidents, name='api_branch_presidents'),
+    path('api/branch-presidents/admin/', views.api_branch_presidents_admin, name='api_branch_presidents_admin'),
+    path('api/branch-presidents/create/', views.api_branch_president_create, name='api_branch_president_create'),
+    path('api/branch-presidents/<int:president_id>/update/', views.api_branch_president_update, name='api_branch_president_update'),
+    path('api/branch-presidents/<int:president_id>/delete/', views.api_branch_president_delete, name='api_branch_president_delete'),
+    
+    # Settings API URLs
+    path('api/settings/profile/', views.api_settings_profile, name='api_settings_profile'),
+    path('api/settings/security/', views.api_settings_security, name='api_settings_security'),
+    path('api/settings/website/', views.api_settings_website, name='api_settings_website'),
+    
+    # Blog API URLs
+    path('api/blog/', views.api_blog, name='api_blog'),
+    path('api/blog/<int:blog_id>/', views.api_blog, name='api_blog_detail'),
+    
+    # Media API URLs
+    path('api/media/', views.api_media, name='api_media'),
+    path('api/media/<int:media_id>/', views.api_media, name='api_media_detail'),
+    
+    # Events API URLs
+    path('api/events/', views.api_events, name='api_events'),
+    path('api/events/<int:event_id>/', views.api_events, name='api_events_detail'),
+    
+    # Council API URLs
+    path('api/council/', views.api_council, name='api_council'),
 ]

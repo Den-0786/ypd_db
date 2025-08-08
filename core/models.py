@@ -25,6 +25,13 @@ DISTRICT_EXECUTIVE_POSITIONS = [
     ("evangelism_coordinator", "Evangelism Coordinator"),
 ]
 
+# Executive Level Choices
+EXECUTIVE_LEVEL_CHOICES = [
+    ("local", "Local Executive"),
+    ("district", "District Executive"),
+    ("both", "Both Local & District Executive"),
+]
+
 
 class Congregation(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -99,7 +106,28 @@ class Guilder(models.Model):
         choices=LOCAL_EXECUTIVE_POSITIONS + DISTRICT_EXECUTIVE_POSITIONS,
         blank=True,
         null=True,
-        help_text="Executive position if applicable",
+        help_text="Primary executive position if applicable",
+    )
+    executive_level = models.CharField(
+        max_length=20,
+        choices=EXECUTIVE_LEVEL_CHOICES,
+        default="local",
+        help_text="Level of executive role (Local, District, or Both)",
+    )
+    # Additional fields for dual roles
+    local_executive_position = models.CharField(
+        max_length=50,
+        choices=LOCAL_EXECUTIVE_POSITIONS,
+        blank=True,
+        null=True,
+        help_text="Local executive position if applicable",
+    )
+    district_executive_position = models.CharField(
+        max_length=50,
+        choices=DISTRICT_EXECUTIVE_POSITIONS,
+        blank=True,
+        null=True,
+        help_text="District executive position if applicable",
     )
 
     # Permissions/roles
@@ -109,6 +137,28 @@ class Guilder(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.phone_number}) - {self.congregation.name}"
+
+    def get_primary_executive_position(self):
+        """Get the primary executive position based on level"""
+        if self.executive_level == "local":
+            return self.local_executive_position or self.executive_position
+        elif self.executive_level == "district":
+            return self.district_executive_position or self.executive_position
+        elif self.executive_level == "both":
+            return self.local_executive_position or self.district_executive_position or self.executive_position
+        return self.executive_position
+
+    def is_local_executive(self):
+        """Check if this person is a local executive"""
+        return self.is_executive and self.executive_level in ["local", "both"]
+
+    def is_district_executive(self):
+        """Check if this person is a district executive"""
+        return self.is_executive and self.executive_level in ["district", "both"]
+
+    def is_dual_executive(self):
+        """Check if this person is both local and district executive"""
+        return self.is_executive and self.executive_level == "both"
 
     class Meta:
         ordering = ["first_name", "last_name"]
@@ -241,3 +291,139 @@ class SystemSettings(models.Model):
         for key, value in kwargs.items():
             message = message.replace(f"{{{key}}}", str(value))
         return message
+
+
+# Quiz Models
+class Quiz(models.Model):
+    """Model for storing quiz information"""
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    question = models.TextField()
+    option_a = models.CharField(max_length=500)
+    option_b = models.CharField(max_length=500)
+    option_c = models.CharField(max_length=500)
+    option_d = models.CharField(max_length=500)
+    correct_answer = models.CharField(max_length=1, choices=[
+        ('A', 'A'),
+        ('B', 'B'),
+        ('C', 'C'),
+        ('D', 'D'),
+    ])
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    password = models.CharField(max_length=50, default="youth2024")
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_active', 'start_time', 'end_time']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.title} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+    @property
+    def is_currently_active(self):
+        """Check if quiz is currently active based on time"""
+        now = timezone.now()
+        return self.is_active and self.start_time <= now <= self.end_time
+
+    @property
+    def has_ended(self):
+        """Check if quiz has ended"""
+        return timezone.now() > self.end_time
+
+    @property
+    def has_started(self):
+        """Check if quiz has started"""
+        return timezone.now() >= self.start_time
+
+
+class QuizSubmission(models.Model):
+    """Model for storing quiz submissions"""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='submissions')
+    name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=15)
+    congregation = models.CharField(max_length=100)
+    selected_answer = models.CharField(max_length=1, choices=[
+        ('A', 'A'),
+        ('B', 'B'),
+        ('C', 'C'),
+        ('D', 'D'),
+    ])
+    is_correct = models.BooleanField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-submitted_at']
+        indexes = [
+            models.Index(fields=['quiz', 'phone_number']),
+            models.Index(fields=['quiz', 'is_correct']),
+            models.Index(fields=['submitted_at']),
+        ]
+        # Ensure one submission per phone number per quiz
+        unique_together = ['quiz', 'phone_number']
+
+    def __str__(self):
+        return f"{self.name} - {self.quiz.title} - {'Correct' if self.is_correct else 'Incorrect'}"
+
+    def save(self, *args, **kwargs):
+        # Automatically determine if answer is correct
+        self.is_correct = self.selected_answer == self.quiz.correct_answer
+        super().save(*args, **kwargs)
+
+
+class YStoreItem(models.Model):
+    """Model for storing Y-Store items"""
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    image = models.ImageField(upload_to='ystore/', null=True, blank=True)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    stock = models.IntegerField(default=0)
+    is_out_of_stock = models.BooleanField(default=False)
+    category = models.CharField(max_length=50, choices=[
+        ('Sash', 'Sash'),
+        ('Plague', 'Plague'),
+        ('Cloth', 'Cloth'),
+        ('T-Shirt', 'T-Shirt'),
+        ('Hymn Book', 'Hymn Book'),
+        ('Bible', 'Bible'),
+        ('Church Cloth', 'Church Cloth'),
+    ])
+    tags = models.CharField(max_length=500, blank=True)
+    treasurer_info = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    dashboard_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Y-Store Item"
+        verbose_name_plural = "Y-Store Items"
+
+
+class BranchPresident(models.Model):
+    congregation = models.CharField(max_length=200)
+    location = models.CharField(max_length=200)
+    president_name = models.CharField(max_length=200)
+    phone_number = models.CharField(max_length=20)
+    email = models.EmailField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.president_name} - {self.congregation}"
+
+    class Meta:
+        verbose_name = "Branch President"
+        verbose_name_plural = "Branch Presidents"

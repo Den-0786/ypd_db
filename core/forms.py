@@ -45,6 +45,9 @@ class GuilderForm(forms.ModelForm):
             "joins_other_activities",
             "is_executive",
             "executive_position",
+            "executive_level",
+            "local_executive_position",
+            "district_executive_position",
             "role",
         ]
         widgets = {
@@ -57,8 +60,11 @@ class GuilderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Make executive_position required only if is_executive is True
+        # Make executive fields required only if is_executive is True
         self.fields["executive_position"].required = False
+        self.fields["executive_level"].required = False
+        self.fields["local_executive_position"].required = False
+        self.fields["district_executive_position"].required = False
 
     def clean_phone_number(self):
         phone = self.cleaned_data.get("phone_number")
@@ -70,19 +76,38 @@ class GuilderForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        phone_number = cleaned_data.get("phone_number")
-        congregation = cleaned_data.get("congregation")
+        is_executive = cleaned_data.get("is_executive")
+        executive_level = cleaned_data.get("executive_level")
+        executive_position = cleaned_data.get("executive_position")
+        local_executive_position = cleaned_data.get("local_executive_position")
+        district_executive_position = cleaned_data.get("district_executive_position")
 
-        if phone_number and congregation:
-            existing_guilder = Guilder.objects.filter(phone_number=phone_number).first()
-            if existing_guilder:
-                if existing_guilder.congregation == congregation:
-                    raise ValidationError("This person already exists in the system.")
-                else:
-                    raise ValidationError(
-                        f"This phone number is already linked to a guilder from {existing_guilder.congregation.name}. "
-                        "Please verify or contact the local secretary."
-                    )
+        if is_executive:
+            # Validate executive level and positions
+            if not executive_level:
+                raise forms.ValidationError("Executive level is required when marking as executive.")
+            
+            if executive_level == "local":
+                if not local_executive_position:
+                    raise forms.ValidationError("Local executive position is required for local executives.")
+                # Set primary position to local position
+                cleaned_data["executive_position"] = local_executive_position
+                
+            elif executive_level == "district":
+                if not district_executive_position:
+                    raise forms.ValidationError("District executive position is required for district executives.")
+                # Set primary position to district position
+                cleaned_data["executive_position"] = district_executive_position
+                
+            elif executive_level == "both":
+                if not local_executive_position and not district_executive_position:
+                    raise forms.ValidationError("At least one position (local or district) is required for dual executives.")
+                # Set primary position to the first available position
+                if local_executive_position:
+                    cleaned_data["executive_position"] = local_executive_position
+                elif district_executive_position:
+                    cleaned_data["executive_position"] = district_executive_position
+
         return cleaned_data
 
 

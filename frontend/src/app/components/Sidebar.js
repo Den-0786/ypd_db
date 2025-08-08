@@ -16,7 +16,7 @@ export default function Sidebar({
 }) {
   const { theme, setTheme, mounted } = useTheme();
   const { showSuccess } = useToast();
-  
+
   // Test toast on mount
   useEffect(() => {
     if (mounted) {
@@ -25,13 +25,13 @@ export default function Sidebar({
       }, 1000);
     }
   }, [mounted, showSuccess]);
-  
+
   // Get user information from localStorage
   const [userInfo, setUserInfo] = useState(null);
-  
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const user = localStorage.getItem('user');
+      const user = localStorage.getItem("user");
       if (user) {
         try {
           const parsedUser = JSON.parse(user);
@@ -39,13 +39,17 @@ export default function Sidebar({
           if (parsedUser.congregationId === "district") {
             setUserInfo({
               username: "District Admin",
-              congregationName: "District Executive"
+              congregationName: "District Executive",
             });
           } else {
             setUserInfo(parsedUser);
           }
         } catch (e) {
-          console.error('Error parsing user info:', e);
+          // Silently handle parsing error - use default values
+          setUserInfo({
+            username: "District Admin",
+            congregationName: "District Executive",
+          });
         }
       }
     }
@@ -107,15 +111,20 @@ export default function Sidebar({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [userMenuOpen, notificationsOpen, sidebarOpen, setUserMenuOpen, setNotificationsOpen, setSidebarOpen]);
+  }, [
+    userMenuOpen,
+    notificationsOpen,
+    sidebarOpen,
+    setUserMenuOpen,
+    setNotificationsOpen,
+    setSidebarOpen,
+  ]);
 
   // Toggle theme
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
   };
-
-
 
   return (
     <>
@@ -233,8 +242,6 @@ export default function Sidebar({
                 <span className="font-medium truncate">Leaderboard</span>
               )}
             </Link>
-
-
 
             {/* Theme Toggle */}
             <div
@@ -389,7 +396,9 @@ export default function Sidebar({
                 </div>
                 {sidebarOpen && (
                   <>
-                    <span className="font-medium text-sm truncate">{userInfo?.username || "User"}</span>
+                    <span className="font-medium text-sm truncate">
+                      {userInfo?.username || "User"}
+                    </span>
                     <i className="fas fa-chevron-down text-xs flex-shrink-0"></i>
                   </>
                 )}
@@ -422,23 +431,26 @@ export default function Sidebar({
                     <button
                       onClick={() => {
                         // Clear localStorage
-                        localStorage.removeItem('authToken');
-                        sessionStorage.removeItem('authToken');
-                        localStorage.removeItem('user');
-                        sessionStorage.removeItem('user');
-                        localStorage.removeItem('congregationId');
-                        localStorage.removeItem('congregationName');
-                        
+                        localStorage.removeItem("authToken");
+                        sessionStorage.removeItem("authToken");
+                        localStorage.removeItem("user");
+                        sessionStorage.removeItem("user");
+                        localStorage.removeItem("congregationId");
+                        localStorage.removeItem("congregationName");
+
                         // Clear autoLogout timers if available
-                        if (typeof window !== "undefined" && window.autoLogout) {
+                        if (
+                          typeof window !== "undefined" &&
+                          window.autoLogout
+                        ) {
                           window.autoLogout.destroy();
                         }
-                        
+
                         // Show success message
                         showSuccess("Logged out successfully!");
-                        
+
                         // Create a visible notification that stays on screen
-                        const notification = document.createElement('div');
+                        const notification = document.createElement("div");
                         notification.innerHTML = `
                           <div style="
                             position: fixed;
@@ -460,7 +472,7 @@ export default function Sidebar({
                           </div>
                         `;
                         document.body.appendChild(notification);
-                        
+
                         // Redirect after a short delay
                         setTimeout(() => {
                           window.location.href = "/";

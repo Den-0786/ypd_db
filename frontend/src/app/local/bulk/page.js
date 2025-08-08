@@ -38,11 +38,11 @@ export default function LocalBulkAddPage() {
     }
 
     try {
-      const response = await fetch('/api/members/add/', {
-        method: 'POST',
+      const response = await fetch("/api/members/add/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify({ members: members }),
       });
@@ -65,8 +65,8 @@ export default function LocalBulkAddPage() {
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return '';
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
   };
 
   return (
@@ -93,24 +93,26 @@ export default function LocalBulkAddPage() {
         {/* Page Header */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-              <i className="fas fa-users text-blue-600 mr-3"></i>
-              <span className="whitespace-nowrap">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white flex items-center flex-wrap">
+              <i className="fas fa-users text-blue-600 mr-2 sm:mr-3 flex-shrink-0"></i>
+              <span className="break-words">
                 {isBulkMode
                   ? "Bulk Member Registration"
                   : "Single Member Registration"}
               </span>
             </h1>
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-gray-600 dark:text-gray-300">
+            <div className="mt-2">
+              <p className="text-gray-600 dark:text-gray-300 mb-3 sm:mb-2">
                 {isBulkMode
                   ? "Add multiple members to the system at once"
                   : "Add a single member to the system"}
               </p>
-              <ModeToggle
-                isBulkMode={isBulkMode}
-                setIsBulkMode={setIsBulkMode}
-              />
+              <div className="flex justify-center sm:justify-end">
+                <ModeToggle
+                  isBulkMode={isBulkMode}
+                  setIsBulkMode={setIsBulkMode}
+                />
+              </div>
             </div>
           </div>
         </div>

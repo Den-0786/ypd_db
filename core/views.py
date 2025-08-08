@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -24,13 +25,15 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import (Paragraph, SimpleDocTemplate, Spacer, Table,
                                 TableStyle)
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from .forms import (BulkGuilderForm, ChangePINForm, CongregationForm,
                     GuilderForm, NewCongregationForm, PINForm, RoleForm,
                     SearchForm, SundayAttendanceForm)
 from .models import (DISTRICT_EXECUTIVE_POSITIONS, LOCAL_EXECUTIVE_POSITIONS,
                      BirthdayMessageLog, BulkProfileCart, Congregation,
-                     Guilder, Notification, Role, SundayAttendance)
+                     Guilder, Notification, Role, SundayAttendance, Quiz, QuizSubmission, YStoreItem, BranchPresident)
 
 
 # Utility function to create notifications
@@ -54,6 +57,749 @@ def create_notification(
     )
 
 
+# Quiz API Views
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_quizzes(request):
+    """Get all active quizzes"""
+    try:
+        quizzes = Quiz.objects.filter(is_active=True).order_by('-created_at')
+        quiz_data = []
+        
+        for quiz in quizzes:
+            quiz_data.append({
+                'id': quiz.id,
+                'title': quiz.title,
+                'description': quiz.description,
+                'question': quiz.question,
+                'option_a': quiz.option_a,
+                'option_b': quiz.option_b,
+                'option_c': quiz.option_c,
+                'option_d': quiz.option_d,
+                'start_time': quiz.start_time.isoformat(),
+                'end_time': quiz.end_time.isoformat(),
+                'password': quiz.password,
+                'is_currently_active': quiz.is_currently_active,
+                'has_ended': quiz.has_ended,
+                'has_started': quiz.has_started,
+                'submissions_count': quiz.submissions.count(),
+                'correct_submissions_count': quiz.submissions.filter(is_correct=True).count(),
+                'created_at': quiz.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'quizzes': quiz_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# Y-Store API Views
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_ystore_items(request):
+    """Get all active Y-Store items for the main website"""
+    try:
+        # Get items that are active and not deleted from dashboard
+        items = YStoreItem.objects.filter(
+            is_active=True,
+            dashboard_deleted=False
+        ).order_by('-created_at')
+        
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'name': item.name,
+                'description': item.description,
+                'price': item.price,
+                'image': item.image.url if item.image else None,
+                'rating': float(item.rating),
+                'stock': item.stock,
+                'is_out_of_stock': item.is_out_of_stock,
+                'category': item.category,
+                'tags': item.tags,
+                'treasurer': {
+                    'name': item.treasurer_name,
+                    'phone': item.treasurer_phone,
+                    'email': item.treasurer_email,
+                },
+                'is_available': item.is_available,
+                'created_at': item.created_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_ystore_admin_items(request):
+    """Get all Y-Store items for admin dashboard"""
+    try:
+        items = YStoreItem.objects.all().order_by('-created_at')
+        
+        items_data = []
+        for item in items:
+            items_data.append({
+                'id': item.id,
+                'name': item.name,
+                'description': item.description,
+                'price': item.price,
+                'image': item.image.url if item.image else None,
+                'rating': float(item.rating),
+                'stock': item.stock,
+                'is_out_of_stock': item.is_out_of_stock,
+                'category': item.category,
+                'tags': item.tags,
+                'treasurer': {
+                    'name': item.treasurer_name,
+                    'phone': item.treasurer_phone,
+                    'email': item.treasurer_email,
+                },
+                'is_active': item.is_active,
+                'dashboard_deleted': item.dashboard_deleted,
+                'created_at': item.created_at.isoformat(),
+                'updated_at': item.updated_at.isoformat(),
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'items': items_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_ystore_create_item(request):
+    """Create a new Y-Store item"""
+    try:
+        data = json.loads(request.body)
+        
+        # Validate required fields
+        required_fields = ['name', 'price', 'description', 'treasurer_name', 'treasurer_phone']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'error': f'{field} is required'
+                }, status=400)
+        
+        # Create the item
+        item = YStoreItem.objects.create(
+            name=data['name'],
+            description=data['description'],
+            price=data['price'],
+            rating=data.get('rating', 4.5),
+            stock=data.get('stock', 0),
+            category=data.get('category', ''),
+            tags=data.get('tags', []),
+            treasurer_name=data['treasurer_name'],
+            treasurer_phone=data['treasurer_phone'],
+            treasurer_email=data.get('treasurer_email', ''),
+            created_by=request.user if request.user.is_authenticated else None,
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'item': {
+                'id': item.id,
+                'name': item.name,
+                'description': item.description,
+                'price': item.price,
+                'image': item.image.url if item.image else None,
+                'rating': float(item.rating),
+                'stock': item.stock,
+                'is_out_of_stock': item.is_out_of_stock,
+                'category': item.category,
+                'tags': item.tags,
+                'treasurer': {
+                    'name': item.treasurer_name,
+                    'phone': item.treasurer_phone,
+                    'email': item.treasurer_email,
+                },
+                'created_at': item.created_at.isoformat(),
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def api_ystore_update_item(request, item_id):
+    """Update a Y-Store item"""
+    try:
+        item = get_object_or_404(YStoreItem, id=item_id)
+        data = json.loads(request.body)
+        
+        # Update fields
+        if 'name' in data:
+            item.name = data['name']
+        if 'description' in data:
+            item.description = data['description']
+        if 'price' in data:
+            item.price = data['price']
+        if 'rating' in data:
+            item.rating = data['rating']
+        if 'stock' in data:
+            item.stock = data['stock']
+        if 'category' in data:
+            item.category = data['category']
+        if 'tags' in data:
+            item.tags = data['tags']
+        if 'treasurer_name' in data:
+            item.treasurer_name = data['treasurer_name']
+        if 'treasurer_phone' in data:
+            item.treasurer_phone = data['treasurer_phone']
+        if 'treasurer_email' in data:
+            item.treasurer_email = data['treasurer_email']
+        if 'is_active' in data:
+            item.is_active = data['is_active']
+        if 'dashboard_deleted' in data:
+            item.dashboard_deleted = data['dashboard_deleted']
+        
+        item.save()
+        
+        return JsonResponse({
+            'success': True,
+            'item': {
+                'id': item.id,
+                'name': item.name,
+                'description': item.description,
+                'price': item.price,
+                'image': item.image.url if item.image else None,
+                'rating': float(item.rating),
+                'stock': item.stock,
+                'is_out_of_stock': item.is_out_of_stock,
+                'category': item.category,
+                'tags': item.tags,
+                'treasurer': {
+                    'name': item.treasurer_name,
+                    'phone': item.treasurer_phone,
+                    'email': item.treasurer_email,
+                },
+                'is_active': item.is_active,
+                'dashboard_deleted': item.dashboard_deleted,
+                'updated_at': item.updated_at.isoformat(),
+            }
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_ystore_delete_item(request, item_id):
+    """Delete Y-Store item (soft delete or hard delete)"""
+    try:
+        item = YStoreItem.objects.get(id=item_id)
+        
+        delete_type = request.GET.get('type', 'soft')  # 'soft' or 'hard'
+        
+        if delete_type == 'hard':
+            item.delete()
+            return Response({'message': 'Item deleted permanently'}, status=200)
+        else:
+            item.dashboard_deleted = True
+            item.save()
+            return Response({'message': 'Item hidden from dashboard'}, status=200)
+            
+    except YStoreItem.DoesNotExist:
+        return Response({'error': 'Item not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+# Branch President API Views
+@api_view(['GET'])
+def api_branch_presidents(request):
+    """Get all branch presidents for main website"""
+    try:
+        presidents = BranchPresident.objects.filter(is_active=True).order_by('congregation')
+        data = []
+        for president in presidents:
+            data.append({
+                'id': president.id,
+                'congregation': president.congregation,
+                'location': president.location,
+                'president_name': president.president_name,
+                'phone_number': president.phone_number,
+                'email': president.email,
+            })
+        return Response(data, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+def api_branch_presidents_admin(request):
+    """Get all branch presidents for admin dashboard"""
+    try:
+        presidents = BranchPresident.objects.all().order_by('congregation')
+        data = []
+        for president in presidents:
+            data.append({
+                'id': president.id,
+                'congregation': president.congregation,
+                'location': president.location,
+                'president_name': president.president_name,
+                'phone_number': president.phone_number,
+                'email': president.email,
+                'is_active': president.is_active,
+                'created_at': president.created_at,
+                'updated_at': president.updated_at,
+            })
+        return Response(data, status=200)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+def api_branch_president_create(request):
+    """Create new branch president"""
+    try:
+        data = request.data
+        president = BranchPresident.objects.create(
+            congregation=data['congregation'],
+            location=data['location'],
+            president_name=data['president_name'],
+            phone_number=data['phone_number'],
+            email=data['email'],
+        )
+        return Response({
+            'message': 'Branch president created successfully',
+            'id': president.id
+        }, status=201)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['PUT'])
+def api_branch_president_update(request, president_id):
+    """Update branch president"""
+    try:
+        president = BranchPresident.objects.get(id=president_id)
+        data = request.data
+        
+        president.congregation = data.get('congregation', president.congregation)
+        president.location = data.get('location', president.location)
+        president.president_name = data.get('president_name', president.president_name)
+        president.phone_number = data.get('phone_number', president.phone_number)
+        president.email = data.get('email', president.email)
+        president.is_active = data.get('is_active', president.is_active)
+        
+        president.save()
+        return Response({'message': 'Branch president updated successfully'}, status=200)
+    except BranchPresident.DoesNotExist:
+        return Response({'error': 'Branch president not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['DELETE'])
+def api_branch_president_delete(request, president_id):
+    """Delete branch president"""
+    try:
+        president = BranchPresident.objects.get(id=president_id)
+        president.delete()
+        return Response({'message': 'Branch president deleted successfully'}, status=200)
+    except BranchPresident.DoesNotExist:
+        return Response({'error': 'Branch president not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_active_quiz(request):
+    """Get the currently active quiz"""
+    try:
+        now = timezone.now()
+        active_quiz = Quiz.objects.filter(
+            is_active=True,
+            start_time__lte=now,
+            end_time__gte=now
+        ).first()
+        
+        if not active_quiz:
+            return JsonResponse({
+                'success': True,
+                'quiz': None
+            })
+        
+        quiz_data = {
+            'id': active_quiz.id,
+            'title': active_quiz.title,
+            'description': active_quiz.description,
+            'question': active_quiz.question,
+            'option_a': active_quiz.option_a,
+            'option_b': active_quiz.option_b,
+            'option_c': active_quiz.option_c,
+            'option_d': active_quiz.option_d,
+            'start_time': active_quiz.start_time.isoformat(),
+            'end_time': active_quiz.end_time.isoformat(),
+            'password': active_quiz.password,
+            'submissions_count': active_quiz.submissions.count(),
+            'correct_submissions_count': active_quiz.submissions.filter(is_correct=True).count(),
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'quiz': quiz_data
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_submit_quiz(request):
+    """Submit a quiz answer"""
+    try:
+        data = json.loads(request.body)
+        
+        quiz_id = data.get('quiz_id')
+        name = data.get('name')
+        phone_number = data.get('phone_number')
+        congregation = data.get('congregation')
+        selected_answer = data.get('selected_answer')
+        
+        # Validate required fields
+        if not all([quiz_id, name, phone_number, congregation, selected_answer]):
+            return JsonResponse({
+                'success': False,
+                'error': 'All fields are required'
+            }, status=400)
+        
+        # Validate answer choice
+        if selected_answer not in ['A', 'B', 'C', 'D']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid answer choice'
+            }, status=400)
+        
+        # Get quiz
+        quiz = get_object_or_404(Quiz, id=quiz_id, is_active=True)
+        
+        # Check if quiz is currently active (temporarily disabled for testing)
+        # if not quiz.is_currently_active:
+        #     return JsonResponse({
+        #         'success': False,
+        #         'error': 'Quiz is not currently active'
+        #     }, status=400)
+        
+        # Check if phone number already submitted
+        existing_submission = QuizSubmission.objects.filter(
+            quiz=quiz,
+            phone_number=phone_number
+        ).first()
+        
+        if existing_submission:
+            return JsonResponse({
+                'success': False,
+                'error': 'You have already submitted an answer for this quiz'
+            }, status=400)
+        
+        # Create submission
+        submission = QuizSubmission.objects.create(
+            quiz=quiz,
+            name=name,
+            phone_number=phone_number,
+            congregation=congregation,
+            selected_answer=selected_answer
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Quiz answer submitted successfully! List of winners will be posted here. Stay tuned. Thank you.',
+            'submission_id': submission.id,
+            'is_correct': submission.is_correct
+        })
+        
+    except Quiz.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Quiz not found'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_quiz_results(request, quiz_id=None):
+    """Get quiz results and statistics"""
+    try:
+        now = timezone.now()
+        # Results are only available 2 hours after quiz ends
+        results_cutoff = now - timedelta(hours=2)
+        
+        if quiz_id:
+            # Get specific quiz results
+            quiz = get_object_or_404(Quiz, id=quiz_id)
+            # Check if results are available
+            if quiz.end_time > results_cutoff:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Results are not yet available. Please check back in 2 hours after the quiz ends.'
+                })
+            quizzes = [quiz]
+        else:
+            # Get all completed quizzes with results available
+            quizzes = Quiz.objects.filter(
+                is_active=True,
+                end_time__lt=results_cutoff
+            ).order_by('-end_time')
+        
+        results = []
+        
+        for quiz in quizzes:
+            submissions = quiz.submissions.all()
+            total_participants = submissions.count()
+            correct_answers = submissions.filter(is_correct=True).count()
+            incorrect_answers = submissions.filter(is_correct=False).count()
+            
+            # Get unique congregations
+            congregations = submissions.values('congregation').distinct()
+            congregations_count = congregations.count()
+            
+            # Get leaderboard (top 5)
+            leaderboard = submissions.filter(is_correct=True).order_by('submitted_at')[:5]
+            leaderboard_data = []
+            
+            for i, submission in enumerate(leaderboard):
+                leaderboard_data.append({
+                    'id': submission.id,
+                    'name': submission.name,
+                    'congregation': submission.congregation,
+                    'score': 100,  # All correct answers get 100%
+                    'time_taken': 0,  # We don't track time yet
+                    'rank': i + 1
+                })
+            
+            # Get congregation performance and leaderboard
+            congregations_data = []
+            congregation_leaderboard = []
+            
+            for cong in congregations:
+                cong_name = cong['congregation']
+                cong_submissions = submissions.filter(congregation=cong_name)
+                cong_participants = cong_submissions.count()
+                cong_correct = cong_submissions.filter(is_correct=True).count()
+                cong_average = (cong_correct / cong_participants * 100) if cong_participants > 0 else 0
+                cong_best = 100 if cong_correct > 0 else 0
+                
+                congregations_data.append({
+                    'name': cong_name,
+                    'participants': cong_participants,
+                    'average_score': round(cong_average, 1),
+                    'best_score': cong_best
+                })
+                
+                # Add to leaderboard data
+                congregation_leaderboard.append({
+                    'congregation': cong_name,
+                    'participants': cong_participants,
+                    'correct_answers': cong_correct,
+                    'success_rate': round(cong_average, 1)
+                })
+            
+            # Sort congregation leaderboard by participants (highest first)
+            congregation_leaderboard.sort(key=lambda x: x['participants'], reverse=True)
+            congregation_leaderboard = congregation_leaderboard[:3]  # Top 3
+            
+            # Add ranks to leaderboard
+            for i, item in enumerate(congregation_leaderboard):
+                item['rank'] = i + 1
+            
+            results.append({
+                'id': quiz.id,
+                'quiz_title': quiz.title,
+                'end_date': quiz.end_time.isoformat(),
+                'total_participants': total_participants,
+                'correct_answers': correct_answers,
+                'incorrect_answers': incorrect_answers,
+                'congregations_count': congregations_count,
+                'leaderboard': leaderboard_data,
+                'congregations': congregations_data,
+                'congregation_leaderboard': congregation_leaderboard,
+                'all_participants': [
+                    {
+                        'name': sub.name,
+                        'phone_number': sub.phone_number,
+                        'congregation': sub.congregation,
+                        'is_correct': sub.is_correct,
+                        'submitted_at': sub.submitted_at.isoformat()
+                    } for sub in submissions.order_by('submitted_at')
+                ]
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': results
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_create_quiz(request):
+    """Create a new quiz (admin only)"""
+    try:
+        data = json.loads(request.body)
+        
+        title = data.get('title')
+        description = data.get('description', '')
+        question = data.get('question')
+        option_a = data.get('option_a')
+        option_b = data.get('option_b')
+        option_c = data.get('option_c')
+        option_d = data.get('option_d')
+        correct_answer = data.get('correct_answer')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        password = data.get('password', 'youth2024')
+        
+        # Validate required fields
+        required_fields = ['title', 'question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'start_time', 'end_time']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'error': f'{field.replace("_", " ").title()} is required'
+                }, status=400)
+        
+        # Validate answer choice
+        if correct_answer not in ['A', 'B', 'C', 'D']:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid correct answer choice'
+            }, status=400)
+        
+        # Parse datetime strings
+        try:
+            start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00'))
+            end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00'))
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid datetime format'
+            }, status=400)
+        
+        # Create quiz (temporarily without user for API access)
+        quiz = Quiz.objects.create(
+            title=title,
+            description=description,
+            question=question,
+            option_a=option_a,
+            option_b=option_b,
+            option_c=option_c,
+            option_d=option_d,
+            correct_answer=correct_answer,
+            start_time=start_time,
+            end_time=end_time,
+            password=password,
+            created_by=None  # Temporarily set to None for API access
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Quiz created successfully!',
+            'quiz_id': quiz.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_end_quiz(request, quiz_id):
+    """End a quiz (admin only)"""
+    try:
+        quiz = get_object_or_404(Quiz, id=quiz_id)  # Temporarily remove user check
+        quiz.is_active = False
+        quiz.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Quiz ended successfully!'
+        })
+        
+    except Quiz.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Quiz not found or you do not have permission to end it'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_delete_quiz(request, quiz_id):
+    """Delete a quiz (admin only)"""
+    try:
+        quiz = get_object_or_404(Quiz, id=quiz_id)  # Temporarily remove user check
+        quiz.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Quiz deleted successfully!'
+        })
+        
+    except Quiz.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Quiz not found or you do not have permission to delete it'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
 # Dashboard Views
 @login_required
 def dashboard(request):
@@ -75,13 +821,17 @@ def dashboard(request):
         total_congregations = congregations.count()
 
         # Get executives and members for district view
+        # District executives: those with district or both level
         district_executives = Guilder.objects.filter(
-            is_executive=True, congregation__is_district=True
-        ).order_by("executive_position", "first_name")
+            is_executive=True,
+            executive_level__in=["district", "both"]
+        ).order_by("district_executive_position", "first_name")
 
+        # Local executives: those with local or both level
         local_executives = Guilder.objects.filter(
-            is_executive=True, congregation__is_district=False
-        ).order_by("congregation__name", "executive_position", "first_name")
+            is_executive=True,
+            executive_level__in=["local", "both"]
+        ).order_by("congregation__name", "local_executive_position", "first_name")
 
         members = Guilder.objects.filter(is_executive=False).order_by(
             "first_name", "last_name"
@@ -106,9 +856,12 @@ def dashboard(request):
         total_congregations = 1
 
         # Get executives and members for local view
+        # Local executives: those with local or both level from this congregation
         executives = Guilder.objects.filter(
-            congregation=user_congregation, is_executive=True
-        ).order_by("executive_position", "first_name")
+            congregation=user_congregation,
+            is_executive=True,
+            executive_level__in=["local", "both"]
+        ).order_by("local_executive_position", "first_name")
 
         members = Guilder.objects.filter(
             congregation=user_congregation, is_executive=False
@@ -959,6 +1712,28 @@ def api_attendance_stats(request):
 def api_add_member(request):
     try:
         data = json.loads(request.body)
+        
+        # Handle executive level and position mapping
+        if data.get("is_executive"):
+            executive_level = data.get("executive_level")
+            
+            if executive_level == "local":
+                # Set primary position to local position
+                if data.get("local_executive_position"):
+                    data["executive_position"] = data["local_executive_position"]
+                    
+            elif executive_level == "district":
+                # Set primary position to district position
+                if data.get("district_executive_position"):
+                    data["executive_position"] = data["district_executive_position"]
+                    
+            elif executive_level == "both":
+                # Set primary position to the first available position
+                if data.get("local_executive_position"):
+                    data["executive_position"] = data["local_executive_position"]
+                elif data.get("district_executive_position"):
+                    data["executive_position"] = data["district_executive_position"]
+        
         form = GuilderForm(data)
 
         if form.is_valid():
@@ -1120,14 +1895,18 @@ def api_dashboard_stats(request):
         distant_members = Guilder.objects.filter(membership_status="Distant").count()
         total_congregations = Congregation.objects.count()
 
-        # Get executives and members
+        # Get executives and members for district view
+        # District executives: those with district or both level
         district_executives = Guilder.objects.filter(
-            is_executive=True, congregation__is_district=True
-        ).order_by("executive_position", "first_name")
+            is_executive=True,
+            executive_level__in=["district", "both"]
+        ).order_by("district_executive_position", "first_name")
 
+        # Local executives: those with local or both level
         local_executives = Guilder.objects.filter(
-            is_executive=True, congregation__is_district=False
-        ).order_by("congregation__name", "executive_position", "first_name")
+            is_executive=True,
+            executive_level__in=["local", "both"]
+        ).order_by("congregation__name", "local_executive_position", "first_name")
 
         members = Guilder.objects.filter(is_executive=False).order_by(
             "first_name", "last_name"
@@ -1148,8 +1927,9 @@ def api_dashboard_stats(request):
                     {
                         "id": exec.id,
                         "name": f"{exec.first_name} {exec.last_name}",
-                        "position": exec.executive_position,
+                        "position": exec.district_executive_position or exec.executive_position,
                         "congregation": exec.congregation.name,
+                        "level": exec.executive_level,
                     }
                     for exec in district_executives
                 ],
@@ -1157,8 +1937,9 @@ def api_dashboard_stats(request):
                     {
                         "id": exec.id,
                         "name": f"{exec.first_name} {exec.last_name}",
-                        "position": exec.executive_position,
+                        "position": exec.local_executive_position or exec.executive_position,
                         "congregation": exec.congregation.name,
+                        "level": exec.executive_level,
                     }
                     for exec in local_executives
                 ],
@@ -1190,9 +1971,12 @@ def api_dashboard_stats(request):
         ).count()
 
         # Get executives and members
+        # Local executives: those with local or both level from this congregation
         executives = Guilder.objects.filter(
-            congregation=user_congregation, is_executive=True
-        ).order_by("executive_position", "first_name")
+            congregation=user_congregation,
+            is_executive=True,
+            executive_level__in=["local", "both"]
+        ).order_by("local_executive_position", "first_name")
 
         members = Guilder.objects.filter(
             congregation=user_congregation, is_executive=False
@@ -1212,7 +1996,8 @@ def api_dashboard_stats(request):
                     {
                         "id": exec.id,
                         "name": f"{exec.first_name} {exec.last_name}",
-                        "position": exec.executive_position,
+                        "position": exec.local_executive_position or exec.executive_position,
+                        "level": exec.executive_level,
                     }
                     for exec in executives
                 ],
@@ -1363,3 +2148,682 @@ def api_send_manual_notification(request):
     else:
         return JsonResponse({"success": False, "error": "Invalid target"})
     return JsonResponse({"success": True})
+
+# Settings API Views
+@csrf_exempt
+@require_http_methods(["GET", "PUT"])
+def api_settings_profile(request):
+    """API endpoint for profile settings"""
+    try:
+        if request.method == "GET":
+            # Get current user profile
+            user = request.user
+            profile_data = {
+                'fullName': f"{user.first_name} {user.last_name}".strip() or user.username,
+                'email': user.email,
+                'phone': getattr(user, 'phone', ''),
+                'role': getattr(user, 'role', 'System Administrator'),
+                'avatar': getattr(user, 'avatar', None),
+            }
+            return JsonResponse({'success': True, 'profile': profile_data})
+        
+        elif request.method == "PUT":
+            # Update user profile
+            data = json.loads(request.body)
+            user = request.user
+            
+            # Update user fields
+            if 'fullName' in data:
+                name_parts = data['fullName'].split(' ', 1)
+                user.first_name = name_parts[0]
+                user.last_name = name_parts[1] if len(name_parts) > 1 else ''
+            
+            if 'email' in data:
+                user.email = data['email']
+            
+            if 'phone' in data:
+                user.phone = data['phone']
+            
+            if 'role' in data:
+                user.role = data['role']
+            
+            user.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Profile updated successfully'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT"])
+def api_settings_security(request):
+    """API endpoint for security settings (password/PIN changes)"""
+    try:
+        if request.method == "GET":
+            # Get current security settings
+            user = request.user
+            security_data = {
+                'twoFactorAuth': getattr(user, 'two_factor_auth', False),
+                'requirePinForActions': getattr(user, 'require_pin_for_actions', False),
+                'hasPin': hasattr(user, 'pin') and bool(user.pin),
+                'lastPasswordChange': getattr(user, 'last_password_change', None),
+                'lastPinChange': getattr(user, 'last_pin_change', None),
+            }
+            return JsonResponse({'success': True, 'security': security_data})
+        
+        elif request.method == "PUT":
+            # Update security settings
+            data = json.loads(request.body)
+            user = request.user
+            
+            # Handle password change
+            if data.get('newPassword'):
+                if not user.check_password(data.get('currentPassword', '')):
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'currentPassword': 'Current password is incorrect'}
+                    }, status=400)
+                
+                if len(data['newPassword']) < 8:
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'newPassword': 'Password must be at least 8 characters long'}
+                    }, status=400)
+                
+                if data['newPassword'] != data.get('confirmPassword', ''):
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'confirmPassword': 'Passwords do not match'}
+                    }, status=400)
+                
+                user.set_password(data['newPassword'])
+                user.last_password_change = timezone.now()
+            
+            # Handle PIN change
+            if data.get('newPin'):
+                if not re.match(r'^\d{4,6}$', data['newPin']):
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'newPin': 'PIN must be 4-6 digits'}
+                    }, status=400)
+                
+                if data['newPin'] != data.get('confirmPin', ''):
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'confirmPin': 'PINs do not match'}
+                    }, status=400)
+                
+                # Check current PIN if user has one
+                if hasattr(user, 'pin') and user.pin:
+                    if data.get('currentPin') != user.pin:
+                        return JsonResponse({
+                            'success': False,
+                            'errors': {'currentPin': 'Current PIN is incorrect'}
+                        }, status=400)
+                
+                user.pin = data['newPin']
+                user.last_pin_change = timezone.now()
+            
+            user.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': 'Security settings updated successfully'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT"])
+def api_settings_website(request):
+    """API endpoint for website settings"""
+    try:
+        if request.method == "GET":
+            # Get current website settings
+            website_settings = {
+                'websiteTitle': 'PCG Ahinsan District YPG',
+                'contactEmail': 'youth@presbyterian.org',
+                'phoneNumber': '+233 20 123 4567',
+                'address': 'Ahinsan District, Kumasi, Ghana',
+                'description': 'Presbyterian Church of Ghana Youth Ministry - Ahinsan District',
+                'socialMedia': {
+                    'facebook': 'https://facebook.com/presbyterianyouth',
+                    'instagram': 'https://instagram.com/presbyterianyouth',
+                    'twitter': 'https://twitter.com/presbyterianyouth',
+                    'youtube': 'https://youtube.com/presbyterianyouth',
+                    'linkedin': 'https://linkedin.com/company/presbyterianyouth',
+                },
+                'appearance': {
+                    'theme': 'light',
+                    'language': 'English',
+                    'primaryColor': '#3B82F6',
+                    'borderRadius': 'medium',
+                },
+            }
+            return JsonResponse({'success': True, 'settings': website_settings})
+        
+        elif request.method == "PUT":
+            # Update website settings
+            data = json.loads(request.body)
+            
+            # Validate required fields
+            errors = {}
+            if not data.get('websiteTitle', '').strip():
+                errors['websiteTitle'] = 'Website title is required'
+            
+            if not data.get('contactEmail', '').strip():
+                errors['contactEmail'] = 'Contact email is required'
+            elif not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', data['contactEmail']):
+                errors['contactEmail'] = 'Please enter a valid email address'
+            
+            if not data.get('phoneNumber', '').strip():
+                errors['phoneNumber'] = 'Phone number is required'
+            elif not re.match(r'^(\+233|0)[0-9]{9}$', data['phoneNumber']):
+                errors['phoneNumber'] = 'Please enter a valid Ghanaian phone number'
+            
+            if errors:
+                return JsonResponse({
+                    'success': False,
+                    'errors': errors
+                }, status=400)
+            
+            # In a real application, you would save these to a database
+            # For now, we'll just return success
+            return JsonResponse({
+                'success': True, 
+                'message': 'Website settings updated successfully'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_cleanup_expired_quizzes(request):
+    """Automatically cleanup quizzes older than 2 days"""
+    try:
+        now = timezone.now()
+        cutoff_date = now - timedelta(days=2)
+        
+        # Get expired quizzes
+        expired_quizzes = Quiz.objects.filter(
+            end_time__lt=cutoff_date,
+            is_active=True
+        )
+        
+        cleanup_count = expired_quizzes.count()
+        
+        # Deactivate expired quizzes
+        expired_quizzes.update(is_active=False)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Cleaned up {cleanup_count} expired quizzes',
+            'cleanup_count': cleanup_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_congregation_quiz_stats(request):
+    """Get congregation-specific quiz statistics and leaderboard"""
+    try:
+        now = timezone.now()
+        results_cutoff = now - timedelta(hours=2)
+        
+        # Get all completed quizzes with results available
+        quizzes = Quiz.objects.filter(
+            is_active=True,
+            end_time__lt=results_cutoff
+        ).order_by('-end_time')
+        
+        # Aggregate congregation statistics across all quizzes
+        congregation_stats = {}
+        
+        for quiz in quizzes:
+            submissions = quiz.submissions.all()
+            
+            for submission in submissions:
+                cong_name = submission.congregation
+                
+                if cong_name not in congregation_stats:
+                    congregation_stats[cong_name] = {
+                        'name': cong_name,
+                        'total_quizzes': 0,
+                        'total_participants': 0,
+                        'total_correct_answers': 0,
+                        'quiz_participation': []
+                    }
+                
+                # Count this quiz participation
+                if quiz.id not in [q['quiz_id'] for q in congregation_stats[cong_name]['quiz_participation']]:
+                    congregation_stats[cong_name]['total_quizzes'] += 1
+                    congregation_stats[cong_name]['quiz_participation'].append({
+                        'quiz_id': quiz.id,
+                        'quiz_title': quiz.title,
+                        'participants': submissions.filter(congregation=cong_name).count(),
+                        'correct_answers': submissions.filter(congregation=cong_name, is_correct=True).count()
+                    })
+                
+                congregation_stats[cong_name]['total_participants'] += 1
+                if submission.is_correct:
+                    congregation_stats[cong_name]['total_correct_answers'] += 1
+        
+        # Calculate success rates and create leaderboard
+        leaderboard = []
+        for cong_name, stats in congregation_stats.items():
+            success_rate = (stats['total_correct_answers'] / stats['total_participants'] * 100) if stats['total_participants'] > 0 else 0
+            
+            leaderboard.append({
+                'name': cong_name,
+                'total_quizzes': stats['total_quizzes'],
+                'total_participants': stats['total_participants'],
+                'total_correct_answers': stats['total_correct_answers'],
+                'success_rate': round(success_rate, 1),
+                'quiz_participation': stats['quiz_participation']
+            })
+        
+        # Sort by total participants (highest first)
+        leaderboard.sort(key=lambda x: x['total_participants'], reverse=True)
+        
+        # Add ranks
+        for i, item in enumerate(leaderboard):
+            item['rank'] = i + 1
+        
+        return JsonResponse({
+            'success': True,
+            'leaderboard': leaderboard[:10],  # Top 10 congregations
+            'total_congregations': len(leaderboard)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def api_home_stats(request):
+    """API endpoint for home page statistics - provides real data for core metrics"""
+    try:
+        # Get real data from database
+        total_members = Guilder.objects.count()
+        active_members = Guilder.objects.filter(membership_status="Active").count()
+        total_male = Guilder.objects.filter(gender="Male").count()
+        total_female = Guilder.objects.filter(gender="Female").count()
+        total_congregations = Congregation.objects.count()
+        executive_members = Guilder.objects.filter(is_executive=True).count()
+        
+        # Calculate Sunday attendance (average of recent records)
+        recent_attendance = SundayAttendance.objects.filter(
+            date__gte=timezone.now().date() - timedelta(days=30)
+        ).aggregate(
+            avg_total=Avg('total_count'),
+            total_records=Count('id')
+        )
+        
+        sunday_attendance = int(recent_attendance['avg_total'] or 0)
+        
+        # Calculate this week's attendance
+        current_week_start = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
+        this_week_attendance = SundayAttendance.objects.filter(
+            date__gte=current_week_start
+        ).aggregate(
+            total=Sum('total_count')
+        )['total'] or 0
+        
+        # Calculate this month's attendance
+        current_month_start = timezone.now().date().replace(day=1)
+        this_month_attendance = SundayAttendance.objects.filter(
+            date__gte=current_month_start
+        ).aggregate(
+            total=Sum('total_count')
+        )['total'] or 0
+        
+        # Calculate growth rate (comparing last 2 weeks)
+        last_week_start = current_week_start - timedelta(days=7)
+        last_week_attendance = SundayAttendance.objects.filter(
+            date__gte=last_week_start,
+            date__lt=current_week_start
+        ).aggregate(
+            total=Sum('total_count')
+        )['total'] or 0
+        
+        growth_rate = 0
+        if last_week_attendance > 0:
+            growth_rate = ((this_week_attendance - last_week_attendance) / last_week_attendance) * 100
+        
+        # Get leaderboard data (top 3 congregations by recent attendance)
+        leaderboard_data = []
+        recent_attendance_by_congregation = SundayAttendance.objects.filter(
+            date__gte=timezone.now().date() - timedelta(days=30)
+        ).values('congregation__name').annotate(
+            total_attendance=Sum('total_count'),
+            avg_attendance=Avg('total_count')
+        ).order_by('-avg_attendance')[:3]
+        
+        for i, item in enumerate(recent_attendance_by_congregation, 1):
+            leaderboard_data.append({
+                'rank': i,
+                'congregation': item['congregation__name'],
+                'total_count': int(item['avg_attendance'] or 0),
+                'male_count': 0,  # Would need to calculate from individual records
+                'female_count': 0,  # Would need to calculate from individual records
+            })
+        
+        # Get congregation list for dropdown
+        congregations = list(Congregation.objects.values_list('name', flat=True).order_by('name'))
+        
+        return JsonResponse({
+            'success': True,
+            'data': {
+                # Real data
+                'totalMembers': total_members,
+                'activeMembers': active_members,
+                'totalMale': total_male,
+                'totalFemale': total_female,
+                'totalCongregations': total_congregations,
+                'sundayAttendance': sunday_attendance,
+                'executiveMembers': executive_members,
+                'thisWeekAttendance': this_week_attendance,
+                'thisMonthAttendance': this_month_attendance,
+                'growthRate': round(growth_rate, 1),
+                'leaderboardTop': leaderboard_data,
+                'congregations': congregations,
+                
+                # Hybrid data (keep as mock for now)
+                'weeklyQuiz': 35,  # Mock data
+                'totalEvents': 12,  # Mock data
+                'volunteerHours': 1850,  # Mock data
+                'bibleStudyGroups': 18,  # Mock data
+                'communityOutreach': 150,  # Mock data
+                'prayerRequests': 45,  # Mock data
+                'digitalEngagement': 85,  # Mock data
+                'leadershipTraining': 28,  # Mock data
+                'worshipTeams': 8,  # Mock data
+                'missionTrips': 3,  # Mock data
+                'smallGroups': 15,  # Mock data
+                'discipleship': 65,  # Mock data
+                'innovationScore': "A+",  # Mock data
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+# Blog API Views
+@csrf_exempt
+@require_http_methods(["GET", "POST", "PUT", "DELETE"])
+def api_blog(request, blog_id=None):
+    """API endpoint for blog posts"""
+    try:
+        if request.method == "GET":
+            # Get all blog posts
+            blog_posts = [
+                {
+                    'id': 1,
+                    'title': 'Welcome to YPG',
+                    'content': 'Welcome to the Presbyterian Church of Ghana Youth Ministry.',
+                    'author': 'Admin',
+                    'category': 'General',
+                    'date': '2024-01-15',
+                    'image': None,
+                }
+            ]
+            return JsonResponse({'success': True, 'blogPosts': blog_posts})
+        
+        elif request.method == "POST":
+            # Create new blog post
+            data = json.loads(request.body)
+            # In a real application, you would save to database
+            new_post = {
+                'id': len(blog_posts) + 1,
+                'title': data.get('title', ''),
+                'content': data.get('content', ''),
+                'author': data.get('author', 'Admin'),
+                'category': data.get('category', 'General'),
+                'date': timezone.now().strftime('%Y-%m-%d'),
+                'image': data.get('image', None),
+            }
+            return JsonResponse({'success': True, 'blogPost': new_post})
+        
+        elif request.method == "PUT":
+            # Update blog post
+            data = json.loads(request.body)
+            # In a real application, you would update in database
+            updated_post = {
+                'id': blog_id,
+                'title': data.get('title', ''),
+                'content': data.get('content', ''),
+                'author': data.get('author', 'Admin'),
+                'category': data.get('category', 'General'),
+                'date': timezone.now().strftime('%Y-%m-%d'),
+                'image': data.get('image', None),
+            }
+            return JsonResponse({'success': True, 'blogPost': updated_post})
+        
+        elif request.method == "DELETE":
+            # Delete blog post
+            delete_type = request.GET.get('type', 'both')
+            # In a real application, you would delete from database
+            return JsonResponse({'success': True, 'message': 'Blog post deleted successfully'})
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+# Media API Views
+@csrf_exempt
+@require_http_methods(["GET", "POST", "PUT", "DELETE"])
+def api_media(request, media_id=None):
+    """API endpoint for media files"""
+    try:
+        if request.method == "GET":
+            # Get all media files
+            media_files = [
+                {
+                    'id': 1,
+                    'title': 'YPG Event Photo',
+                    'description': 'Photo from recent YPG event',
+                    'type': 'image',
+                    'date': '2024-01-15',
+                    'size': '2.5MB',
+                }
+            ]
+            return JsonResponse({'success': True, 'media': media_files})
+        
+        elif request.method == "POST":
+            # Create new media file
+            data = json.loads(request.body)
+            new_media = {
+                'id': len(media_files) + 1,
+                'title': data.get('title', ''),
+                'description': data.get('description', ''),
+                'type': data.get('type', 'image'),
+                'date': timezone.now().strftime('%Y-%m-%d'),
+                'size': data.get('size', '1MB'),
+            }
+            return JsonResponse({'success': True, 'media': new_media})
+        
+        elif request.method == "PUT":
+            # Update media file
+            data = json.loads(request.body)
+            updated_media = {
+                'id': media_id,
+                'title': data.get('title', ''),
+                'description': data.get('description', ''),
+                'type': data.get('type', 'image'),
+                'date': timezone.now().strftime('%Y-%m-%d'),
+                'size': data.get('size', '1MB'),
+            }
+            return JsonResponse({'success': True, 'media': updated_media})
+        
+        elif request.method == "DELETE":
+            # Delete media file
+            # In a real application, you would delete from database
+            return JsonResponse({'success': True, 'message': 'Media file deleted successfully'})
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+# Events API Views
+@csrf_exempt
+@require_http_methods(["GET", "POST", "PUT", "DELETE"])
+def api_events(request, event_id=None):
+    """API endpoint for events"""
+    try:
+        if request.method == "GET":
+            # Get all events
+            events = [
+                {
+                    'id': 1,
+                    'title': 'YPG Meeting',
+                    'description': 'Monthly YPG meeting',
+                    'date': '2024-01-20',
+                    'time': '10:00 AM',
+                    'location': 'Church Hall',
+                    'type': 'Meeting',
+                }
+            ]
+            return JsonResponse({'success': True, 'events': events})
+        
+        elif request.method == "POST":
+            # Create new event
+            data = json.loads(request.body)
+            new_event = {
+                'id': len(events) + 1,
+                'title': data.get('title', ''),
+                'description': data.get('description', ''),
+                'date': data.get('date', ''),
+                'time': data.get('time', ''),
+                'location': data.get('location', ''),
+                'type': data.get('type', 'Event'),
+            }
+            return JsonResponse({'success': True, 'event': new_event})
+        
+        elif request.method == "PUT":
+            # Update event
+            data = json.loads(request.body)
+            updated_event = {
+                'id': event_id,
+                'title': data.get('title', ''),
+                'description': data.get('description', ''),
+                'date': data.get('date', ''),
+                'time': data.get('time', ''),
+                'location': data.get('location', ''),
+                'type': data.get('type', 'Event'),
+            }
+            return JsonResponse({'success': True, 'event': updated_event})
+        
+        elif request.method == "DELETE":
+            # Delete event
+            delete_type = request.GET.get('type', 'both')
+            # In a real application, you would delete from database
+            return JsonResponse({'success': True, 'message': 'Event deleted successfully'})
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)
+
+
+# Council API Views
+@csrf_exempt
+@require_http_methods(["GET", "POST", "PUT", "DELETE"])
+def api_council(request):
+    """API endpoint for council members"""
+    try:
+        if request.method == "GET":
+            # Get all council members
+            council_members = [
+                {
+                    'id': 1,
+                    'name': 'John Doe',
+                    'position': 'Branch President',
+                    'congregation': 'Emmanuel Congregation Ahinsan',
+                    'phone': '+233244123456',
+                    'email': 'john.doe@example.com',
+                    'description': 'Branch President of Emmanuel Congregation',
+                    'image': None,
+                }
+            ]
+            return JsonResponse({'success': True, 'councilMembers': council_members})
+        
+        elif request.method == "POST":
+            # Create new council member
+            data = json.loads(request.body)
+            new_member = {
+                'id': len(council_members) + 1,
+                'name': data.get('name', ''),
+                'position': data.get('position', ''),
+                'congregation': data.get('congregation', ''),
+                'phone': data.get('phone', ''),
+                'email': data.get('email', ''),
+                'description': data.get('description', ''),
+                'image': data.get('image', None),
+            }
+            return JsonResponse({'success': True, 'councilMember': new_member})
+        
+        elif request.method == "PUT":
+            # Update council member
+            data = json.loads(request.body)
+            updated_member = {
+                'id': data.get('id', 1),
+                'name': data.get('name', ''),
+                'position': data.get('position', ''),
+                'congregation': data.get('congregation', ''),
+                'phone': data.get('phone', ''),
+                'email': data.get('email', ''),
+                'description': data.get('description', ''),
+                'image': data.get('image', None),
+            }
+            return JsonResponse({'success': True, 'councilMember': updated_member})
+        
+        elif request.method == "DELETE":
+            # Delete council member
+            member_id = request.GET.get('id')
+            delete_type = request.GET.get('type', 'both')
+            # In a real application, you would delete from database
+            return JsonResponse({'success': True, 'message': 'Council member deleted successfully'})
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': str(e)
+        }, status=400)

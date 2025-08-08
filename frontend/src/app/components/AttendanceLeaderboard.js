@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import dataStore from "../utils/dataStore";
+import getDataStore from "../utils/dataStore";
 
 export default function AttendanceLeaderboard({ type = "weekly" }) {
   const [leaderboardData, setLeaderboardData] = useState(null);
@@ -13,8 +13,9 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
 
       try {
         // Get leaderboard data from data store
+        const dataStore = getDataStore();
         const data = dataStore.getLeaderboardData(type);
-        
+
         if (data && data.length > 0) {
           // Transform data to match expected format
           const transformedData = {
@@ -28,11 +29,12 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
             previousWinner: null, // Will be implemented when we have historical data
             showComparison: false,
             period: type === "weekly" ? "This Week" : "This Month",
-            date: type === "weekly" 
-              ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
-              : `${new Date().toLocaleString('default', { month: 'long' })} ${new Date().getFullYear()}`,
+            date:
+              type === "weekly"
+                ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
+                : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
           };
-          
+
           setLeaderboardData(transformedData);
         } else {
           // Fallback to mock data if no real data exists
@@ -71,11 +73,10 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
             period: type === "weekly" ? "This Week" : "This Month",
             date: type === "weekly" ? "Dec 15-21, 2024" : "December 2024",
           };
-          
+
           setLeaderboardData(mockData);
         }
       } catch (error) {
-        console.error("Error fetching leaderboard data:", error);
         // Fallback to mock data on error
         const mockData = {
           currentWinners: [
@@ -112,7 +113,7 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
           period: type === "weekly" ? "This Week" : "This Month",
           date: type === "weekly" ? "Dec 15-21, 2024" : "December 2024",
         };
-        
+
         setLeaderboardData(mockData);
       }
 

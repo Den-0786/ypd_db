@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
-import dataStore from "../utils/dataStore";
+import getDataStore from "../utils/dataStore";
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -81,10 +81,11 @@ export default function AnalyticsPage() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      
+
       // Get analytics data from data store
+      const dataStore = getDataStore();
       const analyticsData = dataStore.getAnalyticsData();
-      
+
       if (analyticsData && Object.keys(analyticsData).length > 0) {
         setChartData(analyticsData);
       } else {
@@ -171,13 +172,41 @@ export default function AnalyticsPage() {
               { name: "Kokobriko", count: 6, color: "#F472B6" },
             ],
             genderDistribution: [
-              { congregation: "Emmanuel Congregation Ahinsan", male: 22, female: 23 },
-              { congregation: "Peniel Congregation Esreso No1", male: 16, female: 16 },
-              { congregation: "Mizpah Congregation Odagya No1", male: 14, female: 14 },
-              { congregation: "Christ Congregation Ahinsan Estate", male: 11, female: 11 },
-              { congregation: "Ebenezer Congregation Dompoase Aprabo", male: 9, female: 9 },
-              { congregation: "Favour Congregation Esreso No2", male: 8, female: 7 },
-              { congregation: "Liberty Congregation Esreso High Tension", male: 6, female: 6 },
+              {
+                congregation: "Emmanuel Congregation Ahinsan",
+                male: 22,
+                female: 23,
+              },
+              {
+                congregation: "Peniel Congregation Esreso No1",
+                male: 16,
+                female: 16,
+              },
+              {
+                congregation: "Mizpah Congregation Odagya No1",
+                male: 14,
+                female: 14,
+              },
+              {
+                congregation: "Christ Congregation Ahinsan Estate",
+                male: 11,
+                female: 11,
+              },
+              {
+                congregation: "Ebenezer Congregation Dompoase Aprabo",
+                male: 9,
+                female: 9,
+              },
+              {
+                congregation: "Favour Congregation Esreso No2",
+                male: 8,
+                female: 7,
+              },
+              {
+                congregation: "Liberty Congregation Esreso High Tension",
+                male: 6,
+                female: 6,
+              },
               { congregation: "Odagya No2", male: 5, female: 5 },
               { congregation: "NOM", male: 4, female: 4 },
               { congregation: "Kokobriko", male: 3, female: 3 },
@@ -186,7 +215,7 @@ export default function AnalyticsPage() {
         };
         setChartData(mockData);
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error("Error fetching analytics data:", error);

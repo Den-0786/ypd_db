@@ -11,13 +11,13 @@ import LogAttendanceModal from "../../components/LogAttendanceModal";
 import JointProgramModal from "../../components/JointProgramModal";
 import PinModal from "../../components/PinModal";
 import ToastContainer from "../../components/ToastContainer";
-import dataStore from "../../utils/dataStore";
+import getDataStore from "../../utils/dataStore";
 
 export default function LocalAttendancePage() {
   const [mounted, setMounted] = useState(false);
   const [congregationId, setCongregationId] = useState(null);
   const [congregationName, setCongregationName] = useState(null);
-  
+
   const [selectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [showLogModal, setShowLogModal] = useState(false);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
@@ -80,30 +80,35 @@ export default function LocalAttendancePage() {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
-    
+
     // Get all records and group by month/year to show all available data
     const allRecords = attendanceRecords;
-    
+
     // Find the most recent month with data, or use current month
     let targetMonth = currentMonth;
     let targetYear = currentYear;
-    
+
     if (allRecords.length > 0) {
-      const latestRecord = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      const latestRecord = allRecords.sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      )[0];
       const latestDate = new Date(latestRecord.date);
       targetMonth = latestDate.getMonth();
       targetYear = latestDate.getFullYear();
     }
-    
+
     // Filter records for the target month and year
-    const monthRecords = allRecords.filter(record => {
+    const monthRecords = allRecords.filter((record) => {
       const recordDate = new Date(record.date);
-      return recordDate.getMonth() === targetMonth && recordDate.getFullYear() === targetYear;
+      return (
+        recordDate.getMonth() === targetMonth &&
+        recordDate.getFullYear() === targetYear
+      );
     });
 
     // Group by week
     const weeksMap = new Map();
-    monthRecords.forEach(record => {
+    monthRecords.forEach((record) => {
       const weekNumber = getWeekNumber(record.date);
       if (!weeksMap.has(weekNumber)) {
         weeksMap.set(weekNumber, {
@@ -156,9 +161,9 @@ export default function LocalAttendancePage() {
         male: 50,
         female: 58,
         total: 108,
-          isJointProgram: false,
-          programTitle: "",
-          location: "",
+        isJointProgram: false,
+        programTitle: "",
+        location: "",
       },
       {
         week: "Week 5",
@@ -193,26 +198,28 @@ export default function LocalAttendancePage() {
   const generateCurrentYearData = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-    
+
     // Get all records and find the most recent year with data
     const allRecords = attendanceRecords;
     let targetYear = currentYear;
-    
+
     if (allRecords.length > 0) {
-      const latestRecord = allRecords.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      const latestRecord = allRecords.sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      )[0];
       const latestDate = new Date(latestRecord.date);
       targetYear = latestDate.getFullYear();
     }
-    
+
     // Filter records for the target year
-    const yearRecords = allRecords.filter(record => {
+    const yearRecords = allRecords.filter((record) => {
       const recordDate = new Date(record.date);
       return recordDate.getFullYear() === targetYear;
     });
 
     // Group by month
     const monthsMap = new Map();
-    yearRecords.forEach(record => {
+    yearRecords.forEach((record) => {
       const recordDate = new Date(record.date);
       const monthName = getMonthName(record.date);
       if (!monthsMap.has(monthName)) {
@@ -325,31 +332,41 @@ export default function LocalAttendancePage() {
   // Handle mounting and data loading
   useEffect(() => {
     setMounted(true);
-    
+
     // Load congregation data from localStorage
-    const storedCongregationId = localStorage.getItem('congregationId');
-    const storedCongregationName = localStorage.getItem('congregationName');
-    
+    const storedCongregationId = localStorage.getItem("congregationId");
+    const storedCongregationName = localStorage.getItem("congregationName");
+
     setCongregationId(storedCongregationId);
     setCongregationName(storedCongregationName);
-    
+
     // Load data if congregation is available
     if (storedCongregationName) {
-      const allRecords = dataStore.getAttendanceRecords();
-      const congregationRecords = allRecords.filter(record => record.congregation === storedCongregationName);
-      
+      const allRecords = getDataStore().getAttendanceRecords();
+      const congregationRecords = allRecords.filter(
+        (record) => record.congregation === storedCongregationName
+      );
+
       setAttendanceRecords(congregationRecords);
-      
+
       // Update stats for congregation only
-      const totalMale = congregationRecords.reduce((sum, r) => sum + (r.male || 0), 0);
-      const totalFemale = congregationRecords.reduce((sum, r) => sum + (r.female || 0), 0);
-      const weeksLogged = new Set(congregationRecords.map(r => `${r.year}-${r.month}-${r.week}`)).size;
-      
+      const totalMale = congregationRecords.reduce(
+        (sum, r) => sum + (r.male || 0),
+        0
+      );
+      const totalFemale = congregationRecords.reduce(
+        (sum, r) => sum + (r.female || 0),
+        0
+      );
+      const weeksLogged = new Set(
+        congregationRecords.map((r) => `${r.year}-${r.month}-${r.week}`)
+      ).size;
+
       // Add mock data totals if no real data exists
       const mockTotalMale = totalMale === 0 ? 232 : totalMale; // Sum of weeks 1-5 male
       const mockTotalFemale = totalFemale === 0 ? 268 : totalFemale; // Sum of weeks 1-5 female
       const mockWeeksLogged = weeksLogged === 0 ? 5 : weeksLogged; // 5 weeks of mock data
-      
+
       setAttendanceStats({
         totalMale: mockTotalMale,
         totalFemale: mockTotalFemale,
@@ -357,18 +374,20 @@ export default function LocalAttendancePage() {
         totalWeeks: 52,
       });
     }
-    
+
     // Listen for data changes
     const handleStorageChange = () => {
       if (storedCongregationName) {
-        const allRecords = dataStore.getAttendanceRecords();
-        const congregationRecords = allRecords.filter(record => record.congregation === storedCongregationName);
+        const allRecords = getDataStore().getAttendanceRecords();
+        const congregationRecords = allRecords.filter(
+          (record) => record.congregation === storedCongregationName
+        );
         setAttendanceRecords(congregationRecords);
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   // Generate current month and year data
@@ -405,13 +424,16 @@ export default function LocalAttendancePage() {
       // Handle delete operations
       switch (pendingDeleteAction) {
         case "week":
-            window.showToast("PIN verified for week delete operation", "success");
+          window.showToast("PIN verified for week delete operation", "success");
           break;
         case "month":
-            window.showToast("PIN verified for month delete operation", "success");
+          window.showToast(
+            "PIN verified for month delete operation",
+            "success"
+          );
           break;
         case "day":
-            window.showToast("PIN verified for day delete operation", "success");
+          window.showToast("PIN verified for day delete operation", "success");
           break;
         default:
           break;
@@ -421,13 +443,13 @@ export default function LocalAttendancePage() {
       // Handle edit operations
       switch (pendingEditAction) {
         case "week":
-            window.showToast("PIN verified for week edit operation", "success");
+          window.showToast("PIN verified for week edit operation", "success");
           break;
         case "month":
-            window.showToast("PIN verified for month edit operation", "success");
+          window.showToast("PIN verified for month edit operation", "success");
           break;
         case "day":
-            window.showToast("PIN verified for day edit operation", "success");
+          window.showToast("PIN verified for day edit operation", "success");
           break;
         default:
           break;
@@ -496,11 +518,11 @@ export default function LocalAttendancePage() {
         notes: "",
       };
 
-      const response = await fetch('/api/attendance/log/', {
-        method: 'POST',
+      const response = await fetch("/api/attendance/log/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify(attendanceData),
       });
@@ -520,23 +542,29 @@ export default function LocalAttendancePage() {
       } else {
         const errorData = await response.json();
         if (typeof window !== "undefined" && window.showToast) {
-          window.showToast(errorData.message || "Error logging attendance", "error");
+          window.showToast(
+            errorData.message || "Error logging attendance",
+            "error"
+          );
         }
       }
     } catch (error) {
       console.error("Error logging attendance:", error);
       if (typeof window !== "undefined" && window.showToast) {
-        window.showToast("Error logging attendance. Please try again.", "error");
+        window.showToast(
+          "Error logging attendance. Please try again.",
+          "error"
+        );
       }
     }
   };
 
   const handleSubmitJointProgram = () => {
     // Add to data store
-    const newJointProgram = dataStore.addAttendanceRecord({
+    const newJointProgram = getDataStore().addAttendanceRecord({
       date: jointProgramForm.date,
-              programTitle: jointProgramForm.programTitle,
-              location: jointProgramForm.location,
+      programTitle: jointProgramForm.programTitle,
+      location: jointProgramForm.location,
       loggedBy: jointProgramForm.loggedBy,
       position: jointProgramForm.position,
       week: jointProgramForm.week,
@@ -547,10 +575,10 @@ export default function LocalAttendancePage() {
     });
 
     // Update local state
-    setAttendanceRecords(prev => [...prev, newJointProgram]);
+    setAttendanceRecords((prev) => [...prev, newJointProgram]);
 
     if (typeof window !== "undefined" && window.showToast) {
-    window.showToast("Joint program logged successfully!", "success");
+      window.showToast("Joint program logged successfully!", "success");
     } else {
       console.log("Joint program logged successfully!");
     }
@@ -561,8 +589,8 @@ export default function LocalAttendancePage() {
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return '';
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
   };
 
   return (
@@ -598,7 +626,9 @@ export default function LocalAttendancePage() {
                 <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
                   <div className="text-white text-xs opacity-90">Day</div>
                   <div className="text-green-300 font-semibold">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long' })}
+                    {new Date().toLocaleDateString("en-US", {
+                      weekday: "long",
+                    })}
                   </div>
                 </div>
               </div>
@@ -615,8 +645,8 @@ export default function LocalAttendancePage() {
             // Handle filter changes here if needed
           }}
         />
-        <AttendanceForDayCard 
-          selectedDate={selectedDate} 
+        <AttendanceForDayCard
+          selectedDate={selectedDate}
           onEdit={() => {
             setPendingEditAction("day");
             setShowPinModal(true);
@@ -626,8 +656,8 @@ export default function LocalAttendancePage() {
             setShowPinModal(true);
           }}
         />
-        <WeeklyAttendanceCards 
-          currentMonthData={currentMonthData} 
+        <WeeklyAttendanceCards
+          currentMonthData={currentMonthData}
           onDeleteWeek={(week) => {
             setPendingDeleteAction("week");
             setShowPinModal(true);
@@ -637,7 +667,7 @@ export default function LocalAttendancePage() {
             setShowPinModal(true);
           }}
         />
-        <YearlyAttendanceCards 
+        <YearlyAttendanceCards
           currentYearData={currentYearData}
           onEditMonth={(month) => {
             setPendingEditAction("month");
@@ -674,19 +704,19 @@ export default function LocalAttendancePage() {
           pendingDeleteAction
             ? "Enter PIN for Delete Operation"
             : pendingEditAction
-            ? "Enter PIN for Edit Operation"
-            : pendingAction === "log"
-            ? "Enter PIN to Log Attendance"
-            : "Enter PIN for Joint Program"
+              ? "Enter PIN for Edit Operation"
+              : pendingAction === "log"
+                ? "Enter PIN to Log Attendance"
+                : "Enter PIN for Joint Program"
         }
         description={
           pendingDeleteAction
             ? "Please enter your PIN to confirm the delete operation"
             : pendingEditAction
-            ? "Please enter your PIN to confirm the edit operation"
-            : pendingAction === "log"
-            ? "Please enter your PIN to log attendance"
-            : "Please enter your PIN to schedule joint program"
+              ? "Please enter your PIN to confirm the edit operation"
+              : pendingAction === "log"
+                ? "Please enter your PIN to log attendance"
+                : "Please enter your PIN to schedule joint program"
         }
         type={pendingDeleteAction ? "delete" : "edit"}
       />

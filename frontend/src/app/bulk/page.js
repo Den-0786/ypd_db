@@ -131,11 +131,11 @@ export default function BulkRegistrationPage() {
 
   const handleSubmitSingle = async () => {
     try {
-      const response = await fetch('/api/members/add/', {
-        method: 'POST',
+      const response = await fetch("/api/members/add/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify(currentMember),
       });
@@ -213,8 +213,8 @@ export default function BulkRegistrationPage() {
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return '';
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
   };
 
   const handleSubmit = async () => {
@@ -224,11 +224,11 @@ export default function BulkRegistrationPage() {
     }
 
     try {
-      const response = await fetch('/api/members/add/', {
-        method: 'POST',
+      const response = await fetch("/api/members/add/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify({ members: members }),
       });
@@ -270,24 +270,26 @@ export default function BulkRegistrationPage() {
         {/* Page Header */}
         <div className="neumorphic-light dark:neumorphic-dark p-6">
           <div>
-            <h1 className="text-3xl font-bold text-light-text dark:text-dark-text flex items-center">
-              <i className="fas fa-users text-light-accent dark:text-dark-accent mr-3"></i>
-              <span className="whitespace-nowrap">
+            <h1 className="text-2xl sm:text-3xl font-bold text-light-text dark:text-dark-text flex items-center flex-wrap">
+              <i className="fas fa-users text-light-accent dark:text-dark-accent mr-2 sm:mr-3 flex-shrink-0"></i>
+              <span className="break-words">
                 {isBulkMode
                   ? "Bulk Member Registration"
                   : "Single Member Registration"}
               </span>
             </h1>
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-light-text-secondary dark:text-dark-text-secondary">
+            <div className="mt-2">
+              <p className="text-light-text-secondary dark:text-dark-text-secondary mb-3 sm:mb-2">
                 {isBulkMode
                   ? "Add multiple members to the system at once"
                   : "Add a single member to the system"}
               </p>
-              <ModeToggle
-                isBulkMode={isBulkMode}
-                setIsBulkMode={setIsBulkMode}
-              />
+              <div className="flex justify-center sm:justify-end">
+                <ModeToggle
+                  isBulkMode={isBulkMode}
+                  setIsBulkMode={setIsBulkMode}
+                />
+              </div>
             </div>
           </div>
         </div>

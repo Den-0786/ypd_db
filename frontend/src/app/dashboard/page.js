@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -7,11 +8,13 @@ import autoLogout from "../utils/autoLogout";
 
 export default function DashboardPage() {
   const [activeQuiz, setActiveQuiz] = useState(null);
-  const [quizPassword, setQuizPassword] = useState("youth2024");
+  const [quizPassword, setQuizPassword] = useState("");
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
+    title: "",
+    description: "",
     question: "",
     optionA: "",
     optionB: "",
@@ -22,6 +25,13 @@ export default function DashboardPage() {
     endTime: "",
   });
   const [quizSubmissions, setQuizSubmissions] = useState([]);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalMembers: 0,
+    totalCongregations: 0,
+    thisWeekAttendance: 0,
+    newMembersThisMonth: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({
     show: false,
     message: "",
@@ -31,7 +41,8 @@ export default function DashboardPage() {
   // Initialize auto-logout when component mounts
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
     if (token) {
       autoLogout.updateLoginStatus(true);
     } else {
@@ -45,7 +56,49 @@ export default function DashboardPage() {
     };
   }, []);
 
+  // Fetch dashboard data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+    fetchActiveQuiz();
+  },[]);
 
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8000/api/home-stats/");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setDashboardStats({
+            totalMembers: data.data.totalMembers || 0,
+            totalCongregations: data.data.totalCongregations || 0,
+            thisWeekAttendance: data.data.thisWeekAttendance || 0,
+            newMembersThisMonth: data.data.newMembersThisMonth || 0,
+          });
+        }
+      } else {
+        showToast("Failed to fetch dashboard data", "error");
+      }
+    } catch (error) {
+      showToast("Error fetching dashboard data", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchActiveQuiz = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/quizzes/active/");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.quiz) {
+          setActiveQuiz(data.quiz);
+        }
+      }
+    } catch (error) {
+      showToast("Error fetching active quiz", "error");
+    }
+  };
 
   const showToast = (message, type = "success") => {
     setToast({ show: true, message, type });
@@ -75,12 +128,18 @@ export default function DashboardPage() {
       .sort(() => Math.random() - 0.5)
       .join("");
 
-    setQuizPassword(password);
+    return password;
+  };
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateRandomPassword();
+    setQuizPassword(newPassword);
     showToast("New password generated successfully!", "success");
   };
 
-  const handleCreateQuiz = () => {
+  const handleCreateQuiz = async () => {
     if (
+      !newQuestion.title ||
       !newQuestion.question ||
       !newQuestion.optionA ||
       !newQuestion.optionB ||
@@ -94,44 +153,134 @@ export default function DashboardPage() {
       return;
     }
 
-    const quiz = {
-      id: Date.now(),
-      ...newQuestion,
-      status: "active",
-      submissions: [],
-      createdAt: new Date().toISOString(),
-    };
+    // Generate a random password if none is provided
+    const passwordToUse = quizPassword || generateRandomPassword();
 
-    setActiveQuiz(quiz);
-    setNewQuestion({
-      question: "",
-      optionA: "",
-      optionB: "",
-      optionC: "",
-      optionD: "",
-      correctAnswer: "",
-      startTime: "",
-      endTime: "",
-    });
-    setShowQuizModal(false);
-    showToast("Quiz created successfully!", "success");
-  };
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/quizzes/create/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: newQuestion.title,
+            description: newQuestion.description,
+            question: newQuestion.question,
+            option_a: newQuestion.optionA,
+            option_b: newQuestion.optionB,
+            option_c: newQuestion.optionC,
+            option_d: newQuestion.optionD,
+            correct_answer: newQuestion.correctAnswer,
+            start_time: newQuestion.startTime,
+            end_time: newQuestion.endTime,
+            password: passwordToUse,
+          }),
+        }
+      );
 
-  const handleEndQuiz = () => {
-    if (activeQuiz) {
-      setActiveQuiz({ ...activeQuiz, status: "ended" });
-      showToast("Quiz ended successfully!", "success");
+      const data = await response.json();
+
+      if (data.success) {
+        setActiveQuiz({
+          id: data.quiz_id,
+          title: newQuestion.title,
+          question: newQuestion.question,
+          option_a: newQuestion.optionA,
+          option_b: newQuestion.optionB,
+          option_c: newQuestion.optionC,
+          option_d: newQuestion.optionD,
+          correct_answer: newQuestion.correctAnswer,
+          start_time: newQuestion.startTime,
+          end_time: newQuestion.endTime,
+          password: passwordToUse,
+          is_active: true,
+          submissions_count: 0,
+          correct_submissions_count: 0,
+        });
+
+        setNewQuestion({
+          title: "",
+          description: "",
+          question: "",
+          optionA: "",
+          optionB: "",
+          optionC: "",
+          optionD: "",
+          correctAnswer: "",
+          startTime: "",
+          endTime: "",
+        });
+        setShowQuizModal(false);
+        showToast("Quiz created successfully!", "success");
+      } else {
+        showToast(data.error || "Failed to create quiz", "error");
+      }
+    } catch (error) {
+      showToast("Failed to create quiz", "error");
     }
   };
 
-  const handleDeleteQuiz = () => {
-    setActiveQuiz(null);
-    setQuizSubmissions([]);
-    showToast("Quiz deleted successfully!", "success");
+  const handleEndQuiz = async () => {
+    if (!activeQuiz) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/quizzes/${activeQuiz.id}/end/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setActiveQuiz({ ...activeQuiz, is_active: false });
+        showToast("Quiz ended successfully!", "success");
+      } else {
+        showToast(data.error || "Failed to end quiz", "error");
+      }
+    } catch (error) {
+      showToast("Failed to end quiz", "error");
+    }
+  };
+
+  const handleDeleteQuiz = async () => {
+    if (!activeQuiz) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/quizzes/${activeQuiz.id}/delete/`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setActiveQuiz(null);
+        setQuizSubmissions([]);
+        showToast("Quiz deleted successfully!", "success");
+      } else {
+        showToast(data.error || "Failed to delete quiz", "error");
+      }
+    } catch (error) {
+      showToast("Failed to delete quiz", "error");
+    }
   };
 
   const handlePasswordSubmit = (password) => {
-    if (password === quizPassword) {
+    const correctPassword = activeQuiz ? activeQuiz.password : quizPassword;
+
+    if (password === correctPassword) {
       setShowPasswordModal(false);
       setShowQuizModal(true);
     } else {
@@ -139,36 +288,36 @@ export default function DashboardPage() {
     }
   };
 
-  const handleQuizSubmission = (submission) => {
-    // Check if phone number already exists
-    const existingSubmission = quizSubmissions.find(
-      (sub) => sub.phoneNumber === submission.phoneNumber
-    );
+  const handleQuizSubmission = async (submission) => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/quizzes/submit/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            quiz_id: activeQuiz.id,
+            name: submission.name,
+            phone_number: submission.phoneNumber,
+            congregation: submission.congregation,
+            selected_answer: submission.selectedAnswer,
+          }),
+        }
+      );
 
-    if (existingSubmission) {
-      showToast("You have already submitted an answer!", "error");
-      return;
+      const data = await response.json();
+
+      if (data.success) {
+        fetchActiveQuiz();
+        showToast(data.message, "success");
+      } else {
+        showToast(data.error || "Failed to submit quiz", "error");
+      }
+    } catch (error) {
+      showToast("Failed to submit quiz", "error");
     }
-
-    const isNameInDatabase = Math.random() > 0.3;
-
-    if (!isNameInDatabase) {
-      showToast("Name not found in database. Submission rejected.", "error");
-      return;
-    }
-
-    const newSubmission = {
-      id: Date.now(),
-      ...submission,
-      submittedAt: new Date().toISOString(),
-      isCorrect: submission.selectedAnswer === activeQuiz.correctAnswer,
-    };
-
-    setQuizSubmissions([...quizSubmissions, newSubmission]);
-    showToast(
-      "Quiz answer submitted successfully! List of winners will be posted here. Stay tuned. Thank you.",
-      "success"
-    );
   };
 
   const getWinners = () => {
@@ -176,10 +325,12 @@ export default function DashboardPage() {
   };
 
   const getTotalParticipants = () => {
-    return quizSubmissions.length;
+    return activeQuiz ? activeQuiz.submissions_count : 0;
   };
 
-
+  const getCorrectAnswers = () => {
+    return activeQuiz ? activeQuiz.correct_submissions_count : 0;
+  };
 
   return (
     <DashboardLayout currentPage="Dashboard">
@@ -231,106 +382,114 @@ export default function DashboardPage() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                  Total Members
-                </p>
-                <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
-                  1,247
-                </p>
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <i className="fas fa-users text-xl lg:text-2xl text-blue-600 group-hover:scale-110 transition-transform duration-200"></i>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                  Congregations
-                </p>
-                <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
-                  10
-                </p>
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <i className="fas fa-church text-xl lg:text-2xl text-green-600 group-hover:scale-110 transition-transform duration-200"></i>
+        <div className="overflow-x-auto pb-2">
+          <div className="flex gap-3 sm:gap-6 lg:grid lg:grid-cols-4 min-w-max lg:min-w-0">
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group rounded-lg p-3 sm:p-4 lg:p-6 flex-shrink-0 w-48 sm:w-auto lg:w-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    Total Members
+                  </p>
+                  <p className="text-sm sm:text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {loading ? "Loading..." : dashboardStats.totalMembers}
+                  </p>
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                  <i className="fas fa-users text-sm sm:text-xl lg:text-2xl text-blue-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                  This Week&apos;s Attendance
-                </p>
-                <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
-                  892
-                </p>
-              </div>
-              <div className="ml-3 lg:ml-4">
-                <i className="fas fa-calendar-check text-xl lg:text-2xl text-purple-600 group-hover:scale-110 transition-transform duration-200"></i>
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group rounded-lg p-3 sm:p-4 lg:p-6 flex-shrink-0 w-48 sm:w-auto lg:w-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    Congregations
+                  </p>
+                  <p className="text-sm sm:text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {loading ? "Loading..." : dashboardStats.totalCongregations}
+                  </p>
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                  <i className="fas fa-church text-sm sm:text-xl lg:text-2xl text-green-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group rounded-lg p-4 lg:p-6">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
-            <div className="relative z-10 flex items-center justify-between">
-              <div>
-                <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">
-                  New Members This Month
-                </p>
-                <p className="text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
-                  23
-                </p>
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group rounded-lg p-3 sm:p-4 lg:p-6 flex-shrink-0 w-48 sm:w-auto lg:w-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    This Week&apos;s Attendance
+                  </p>
+                  <p className="text-sm sm:text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {loading ? "Loading..." : dashboardStats.thisWeekAttendance}
+                  </p>
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                  <i className="fas fa-calendar-check text-sm sm:text-xl lg:text-2xl text-purple-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
               </div>
-              <div className="ml-3 lg:ml-4">
-                <i className="fas fa-user-plus text-xl lg:text-2xl text-orange-600 group-hover:scale-110 transition-transform duration-200"></i>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group rounded-lg p-3 sm:p-4 lg:p-6 flex-shrink-0 w-48 sm:w-auto lg:w-auto">
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    New Members This Month
+                  </p>
+                  <p className="text-sm sm:text-lg lg:text-2xl font-bold text-gray-900 dark:text-white">
+                    {loading
+                      ? "Loading..."
+                      : dashboardStats.newMembersThisMonth}
+                  </p>
+                </div>
+                <div className="ml-2 flex-shrink-0">
+                  <i className="fas fa-user-plus text-sm sm:text-xl lg:text-2xl text-orange-600 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              <i className="fas fa-question-circle text-blue-600 mr-3"></i>
-              Quiz Management
+          <div className="flex justify-between items-center mb-6 gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              <i className="fas fa-question-circle text-blue-600 mr-2 sm:mr-3"></i>
+              <span className="hidden sm:inline">Quiz Management</span>
+              <span className="sm:hidden">Quiz</span>
             </h2>
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:space-x-3">
               <button
                 onClick={() => setShowPasswordModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base"
               >
-                <i className="fas fa-plus mr-2"></i>
-                Create Quiz
+                <i className="fas fa-plus mr-1 sm:mr-2"></i>
+                <span className="hidden xs:inline">Create Quiz</span>
+                <span className="xs:hidden">Create</span>
               </button>
-              {activeQuiz && activeQuiz.status === "active" && (
+              {activeQuiz && activeQuiz.is_active && (
                 <button
                   onClick={handleEndQuiz}
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base"
                 >
-                  <i className="fas fa-stop mr-2"></i>
-                  End Quiz
+                  <i className="fas fa-stop mr-1 sm:mr-2"></i>
+                  <span className="hidden xs:inline">End Quiz</span>
+                  <span className="xs:hidden">End</span>
                 </button>
               )}
               {activeQuiz && (
                 <button
                   onClick={handleDeleteQuiz}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center"
+                  className="bg-red-600 hover:bg-red-700 text-white px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base"
                 >
-                  <i className="fas fa-trash mr-2"></i>
-                  Delete Quiz
+                  <i className="fas fa-trash mr-1 sm:mr-2"></i>
+                  <span className="hidden xs:inline">Delete Quiz</span>
+                  <span className="xs:hidden">Delete</span>
                 </button>
               )}
             </div>
@@ -342,49 +501,57 @@ export default function DashboardPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Current Quiz
+                    Current Quiz: {activeQuiz.title}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-300 mb-2">
                     <strong>Question:</strong> {activeQuiz.question}
                   </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <strong>A:</strong> {activeQuiz.optionA}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className="truncate">
+                      <strong>A:</strong>{" "}
+                      <span className="ml-1">{activeQuiz.option_a}</span>
                     </div>
-                    <div>
-                      <strong>B:</strong> {activeQuiz.optionB}
+                    <div className="truncate">
+                      <strong>B:</strong>{" "}
+                      <span className="ml-1">{activeQuiz.option_b}</span>
                     </div>
-                    <div>
-                      <strong>C:</strong> {activeQuiz.optionC}
+                    <div className="truncate">
+                      <strong>C:</strong>{" "}
+                      <span className="ml-1">{activeQuiz.option_c}</span>
                     </div>
-                    <div>
-                      <strong>D:</strong> {activeQuiz.optionD}
+                    <div className="truncate">
+                      <strong>D:</strong>{" "}
+                      <span className="ml-1">{activeQuiz.option_d}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      activeQuiz.status === "active"
+                      activeQuiz.is_active
                         ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                         : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                     }`}
                   >
-                    {activeQuiz.status === "active" ? "Active" : "Ended"}
+                    {activeQuiz.is_active ? "Active" : "Ended"}
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div className="truncate">
                   <strong>Start Time:</strong>{" "}
-                  {new Date(activeQuiz.startTime).toLocaleString()}
+                  <span className="text-xs sm:text-sm">
+                    {new Date(activeQuiz.start_time).toLocaleString()}
+                  </span>
                 </div>
-                <div>
+                <div className="truncate">
                   <strong>End Time:</strong>{" "}
-                  {new Date(activeQuiz.endTime).toLocaleString()}
+                  <span className="text-xs sm:text-sm">
+                    {new Date(activeQuiz.end_time).toLocaleString()}
+                  </span>
                 </div>
                 <div>
-                  <strong>Submissions:</strong> {quizSubmissions.length}
+                  <strong>Submissions:</strong> {activeQuiz.submissions_count}
                 </div>
               </div>
             </div>
@@ -411,10 +578,10 @@ export default function DashboardPage() {
                   <i className="fas fa-trophy text-green-600 text-2xl mr-3"></i>
                   <div>
                     <p className="text-sm text-green-600 dark:text-green-400">
-                      Winners
+                      Correct Answers
                     </p>
                     <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                      {getWinners().length}
+                      {getCorrectAnswers()}
                     </p>
                   </div>
                 </div>
@@ -429,83 +596,13 @@ export default function DashboardPage() {
                     <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                       {getTotalParticipants() > 0
                         ? Math.round(
-                            (getWinners().length / getTotalParticipants()) * 100
+                            (getCorrectAnswers() / getTotalParticipants()) * 100
                           )
                         : 0}
                       %
                     </p>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Quiz Submissions Table */}
-          {activeQuiz && quizSubmissions.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Quiz Submissions
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Congregation
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Phone
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Answer
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Result
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Submitted
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {quizSubmissions.map((submission) => (
-                      <tr
-                        key={submission.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {submission.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {submission.congregation}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {submission.phoneNumber}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {submission.selectedAnswer}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              submission.isCorrect
-                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                            }`}
-                          >
-                            {submission.isCorrect ? "Correct" : "Incorrect"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {new Date(submission.submittedAt).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
           )}
@@ -527,7 +624,7 @@ export default function DashboardPage() {
                   type="text"
                   value={quizPassword}
                   onChange={(e) => setQuizPassword(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  className="flex-1 px-2 w-[2rem] py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   placeholder="Enter quiz password"
                 />
                 <button
@@ -543,7 +640,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <button
-              onClick={generateRandomPassword}
+              onClick={handleGeneratePassword}
               className="bg-purple-600 hover:bg-purple-700 mt-6 text-white px-3 py-2 rounded-md font-medium transition-colors duration-200 flex items-center"
             >
               <i className="fas fa-sync-alt mr-2"></i>G N P
@@ -679,6 +776,39 @@ export default function DashboardPage() {
               Create New Quiz
             </h3>
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Quiz Title
+                </label>
+                <input
+                  type="text"
+                  value={newQuestion.title}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  placeholder="Enter quiz title..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={newQuestion.description}
+                  onChange={(e) =>
+                    setNewQuestion({
+                      ...newQuestion,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  rows="2"
+                  placeholder="Enter quiz description..."
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Question
@@ -839,7 +969,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-      
+
       {/* Toast Container */}
       <ToastContainer />
     </DashboardLayout>

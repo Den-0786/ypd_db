@@ -5,12 +5,18 @@ import BulkEditModal from "../../components/BulkEditModal";
 import PinModal from "../../components/PinModal";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 import { useToast, ToastContainer } from "../../components/Toast";
-import dataStore from "../../utils/dataStore";
+import getDataStore from "../../utils/dataStore";
 
 export default function LocalMembersPage() {
   // Get congregation info from localStorage
-  const congregationId = typeof window !== "undefined" ? localStorage.getItem('congregationId') : null;
-  const congregationName = typeof window !== "undefined" ? localStorage.getItem('congregationName') : null;
+  const congregationId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("congregationId")
+      : null;
+  const congregationName =
+    typeof window !== "undefined"
+      ? localStorage.getItem("congregationName")
+      : null;
   const [mounted, setMounted] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
@@ -47,9 +53,10 @@ export default function LocalMembersPage() {
   useEffect(() => {
     if (congregationName) {
       // Filter members by congregation
+      const dataStore = getDataStore();
       const allMembers = dataStore.getMembers();
-      const congregationMembers = allMembers.filter(member => 
-        member.congregation === congregationName
+      const congregationMembers = allMembers.filter(
+        (member) => member.congregation === congregationName
       );
       // Update the members data to show only congregation-specific data
       // This will be used in the existing members display logic
@@ -627,9 +634,9 @@ export default function LocalMembersPage() {
   // Update congregation name when it changes
   useEffect(() => {
     if (congregationName) {
-      setCongregation(prev => ({
+      setCongregation((prev) => ({
         ...prev,
-        name: congregationName
+        name: congregationName,
       }));
     }
   }, [congregationName]);
@@ -751,7 +758,7 @@ export default function LocalMembersPage() {
     showSuccess("Member updated successfully!");
 
     // Update members list
-    const updatedMembers = members.map(member =>
+    const updatedMembers = members.map((member) =>
       member.id === editForm.id ? { ...member, ...editForm } : member
     );
     setMembers(updatedMembers);
@@ -1663,7 +1670,8 @@ export default function LocalMembersPage() {
                                 Congregation:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {congregationName || "Emmanuel Congregation Ahinsan"}
+                                {congregationName ||
+                                  "Emmanuel Congregation Ahinsan"}
                               </p>
                             </div>
                           </div>
