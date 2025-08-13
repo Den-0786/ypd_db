@@ -25,7 +25,6 @@ export function ThemeProvider({ children }) {
           setTheme("dark");
         }
       } catch (error) {
-        console.warn("Error accessing localStorage:", error);
         // Fallback to system preference
         if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
           setTheme("dark");
@@ -44,9 +43,7 @@ export function ThemeProvider({ children }) {
         document.documentElement.classList.remove("light", "dark");
         document.documentElement.classList.add(theme);
         localStorage.setItem("theme", theme);
-      } catch (error) {
-        console.warn("Error updating theme:", error);
-      }
+      } catch (error) {}
     }
   }, [theme, mounted]);
 
@@ -65,7 +62,7 @@ export function useTheme() {
   const context = useContext(ThemeContext);
   if (context === undefined) {
     // Return default values instead of throwing error to prevent invariant issues
-    console.warn("useTheme must be used within a ThemeProvider");
+
     return {
       theme: "light",
       setTheme: () => {},

@@ -67,7 +67,6 @@ export function ResourceProvider({ children }) {
 export function useResource() {
   const context = useContext(ResourceContext);
   if (context === undefined) {
-    console.warn("useResource must be used within a ResourceProvider");
     return {
       resources: [],
       currentResource: null,

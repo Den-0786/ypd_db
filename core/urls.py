@@ -47,11 +47,20 @@ urlpatterns = [
         views.export_attendance_pdf,
         name="export_attendance_pdf",
     ),
+    # Authentication API URLs
+    path("api/auth/login/", views.api_login, name="api_login"),
+    path("api/auth/pin-login/", views.api_pin_login, name="api_pin_login"),
+    path("api/auth/logout/", views.api_logout, name="api_logout"),
+    
     # API URLs
     path("api/members/", views.api_members, name="api_members"),
     path(
         "api/attendance/stats/", views.api_attendance_stats, name="api_attendance_stats"
     ),
+    path("api/attendance/log/", views.api_log_attendance, name="api_log_attendance"),
+    path("api/attendance/records/", views.api_attendance_records, name="api_attendance_records"),
+    path("api/attendance/<int:attendance_id>/", views.api_update_attendance, name="api_update_attendance"),
+    path("api/attendance/<int:attendance_id>/delete/", views.api_delete_attendance, name="api_delete_attendance"),
     path("api/members/add/", views.api_add_member, name="api_add_member"),
     path(
         "api/analytics/attendance-chart/",
@@ -81,10 +90,11 @@ urlpatterns = [
     path("api/dashboard-stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("api/home-stats/", views.api_home_stats, name="api_home_stats"),
     # Notification API URLs
-    path("api/notifications/", views.api_notifications, name="api_notifications"),
-    path("api/notifications/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
-    path("api/notifications/clear/", views.api_clear_notifications, name="api_clear_notifications"),
-    path("api/notifications/send/", views.api_send_manual_notification, name="api_send_manual_notification"),
+path("api/notifications/", views.api_notifications, name="api_notifications"),
+path("api/notifications/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
+path("api/notifications/clear/", views.api_clear_notifications, name="api_clear_notifications"),
+path("api/notifications/send/", views.api_send_manual_notification, name="api_send_manual_notification"),
+path("api/notifications/create-test/", views.api_create_test_notifications, name="api_create_test_notifications"),
     # Birthday SMS URLs
     path("birthdays/", views.birthday_dashboard, name="birthday_dashboard"),
     path(
@@ -103,24 +113,26 @@ urlpatterns = [
     path("api/quizzes/<int:quiz_id>/delete/", views.api_delete_quiz, name="api_delete_quiz"),
     path("api/quizzes/cleanup/", views.api_cleanup_expired_quizzes, name="api_cleanup_expired_quizzes"),
     path("api/quizzes/congregation-stats/", views.api_congregation_quiz_stats, name="api_congregation_quiz_stats"),
-    # Y-Store API URLs
-    path("api/ystore/", views.api_ystore_items, name="api_ystore_items"),
-    path("api/ystore/admin/", views.api_ystore_admin_items, name="api_ystore_admin_items"),
-    path("api/ystore/create/", views.api_ystore_create_item, name="api_ystore_create_item"),
-    path("api/ystore/<int:item_id>/update/", views.api_ystore_update_item, name="api_ystore_update_item"),
-    path("api/ystore/<int:item_id>/delete/", views.api_ystore_delete_item, name="api_ystore_delete_item"),
-    
-    # Branch President API endpoints
-    path('api/branch-presidents/', views.api_branch_presidents, name='api_branch_presidents'),
-    path('api/branch-presidents/admin/', views.api_branch_presidents_admin, name='api_branch_presidents_admin'),
-    path('api/branch-presidents/create/', views.api_branch_president_create, name='api_branch_president_create'),
-    path('api/branch-presidents/<int:president_id>/update/', views.api_branch_president_update, name='api_branch_president_update'),
-    path('api/branch-presidents/<int:president_id>/delete/', views.api_branch_president_delete, name='api_branch_president_delete'),
+
     
     # Settings API URLs
     path('api/settings/profile/', views.api_settings_profile, name='api_settings_profile'),
     path('api/settings/security/', views.api_settings_security, name='api_settings_security'),
     path('api/settings/website/', views.api_settings_website, name='api_settings_website'),
+    
+    # Data Management API URLs
+    path('api/data/export/csv/', views.api_export_csv, name='api_export_csv'),
+    path('api/data/export/excel/', views.api_export_excel, name='api_export_excel'),
+    path('api/data/export/pdf/', views.api_export_pdf, name='api_export_pdf'),
+    path('api/data/backup/create/', views.api_create_backup, name='api_create_backup'),
+    path('api/data/backup/restore/', views.api_restore_backup, name='api_restore_backup'),
+    path('api/data/clear/', views.api_clear_data, name='api_clear_data'),
+    
+    # Reminder Settings API URLs
+    path('api/reminder-settings/', views.api_reminder_settings, name='api_reminder_settings'),
+    
+    # Analytics API URLs
+    path('api/analytics/detailed/', views.api_analytics_detailed, name='api_analytics_detailed'),
     
     # Blog API URLs
     path('api/blog/', views.api_blog, name='api_blog'),

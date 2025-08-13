@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useState, useEffect, useRef } from "react";
 import LocalSidebar from "./LocalSidebar";
@@ -358,6 +359,49 @@ export default function LocalDashboardLayout({
   const [securityAccessGranted, setSecurityAccessGranted] = useState(false);
   const { toasts, showSuccess, showError, removeToast } = useToast();
 
+  // Profile state management
+  const [profileData, setProfileData] = useState({
+    username: "",
+    fullName: "",
+    email: "",
+    phone: "",
+    role: "",
+    avatar: null,
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+
+  // Security state management
+  const [securityData, setSecurityData] = useState({
+    username: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    currentPin: "",
+    newPin: "",
+    confirmPin: "",
+    twoFactorAuth: false,
+    requirePinForActions: true,
+  });
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [securitySaving, setSecuritySaving] = useState(false);
+
+  // Data Management
+  const [dataManagementLoading, setDataManagementLoading] = useState(false);
+
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPin, setShowCurrentPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
+
+  // Helper function to ensure form values are never undefined
+  const getFormValue = (value) => {
+    return value !== undefined && value !== null ? value : "";
+  };
+
   // Handle security tab access
   const handleSecurityTabClick = () => {
     if (!securityAccessGranted) {
@@ -396,21 +440,465 @@ export default function LocalDashboardLayout({
     setPinModalConfig({});
   };
 
+  // Profile API functions
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/profile/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.profile) {
+          // Ensure all fields have default values to prevent controlled/uncontrolled input issues
+          const sanitizedProfile = {
+            username: data.profile.username || "",
+            fullName: data.profile.fullName || "",
+            email: data.profile.email || "",
+            phone: data.profile.phone || "",
+            role: data.profile.role || "Local Executive",
+            avatar: data.profile.avatar || null,
+          };
+          setProfileData(sanitizedProfile);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      showError("Failed to load profile data");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const updateProfile = async (updatedData) => {
+    try {
+      setProfileSaving(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/profile/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedData),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setProfileData(data.profile);
+          showSuccess("Profile updated successfully!");
+          return true;
+        } else {
+          showError(data.error || "Failed to update profile");
+          return false;
+        }
+      } else {
+        showError("Failed to update profile");
+        return false;
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      showError("Failed to update profile");
+      return false;
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   // Handle settings actions with toast messages
-  const handleProfileUpdate = () => {
-    showSuccess("Profile updated successfully!");
+  const handleProfileUpdate = async () => {
+    // This will be called from the form submission
+    const success = await updateProfile(profileData);
+    if (success) {
+      // Profile updated successfully
+    }
   };
 
-  const handlePasswordUpdate = () => {
-    showSuccess("Password settings updated successfully!");
+  // Fetch security settings
+  const fetchSecuritySettings = async () => {
+    try {
+      setSecurityLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.security) {
+          setSecurityData((prev) => ({
+            ...prev,
+            username: data.security.username || "",
+            twoFactorAuth: data.security.twoFactorAuth || false,
+            requirePinForActions: data.security.requirePinForActions || true,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching security settings:", error);
+    } finally {
+      setSecurityLoading(false);
+    }
   };
 
-  const handlePinUpdate = () => {
-    showSuccess("PIN settings updated successfully!");
+  // Handle username update only
+  const handleUsernameUpdate = async () => {
+    try {
+      // Validation checks
+      if (!securityData.username.trim()) {
+        showError("Username is required");
+        return;
+      }
+
+      // Get current username from profile data to compare
+      const currentUsername = profileData.username || "";
+
+      // Check if new username is same as current username
+      if (securityData.username === currentUsername) {
+        showError(
+          "New username cannot be the same as current username. Please use a different username."
+        );
+        return;
+      }
+
+      setSecuritySaving(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: securityData.username,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "Username updated successfully!");
+          // Update profile data to reflect the change
+          setProfileData((prev) => ({
+            ...prev,
+            username: securityData.username,
+          }));
+        } else {
+          showError(data.error || "Failed to update username");
+        }
+      } else {
+        showError("Failed to update username");
+      }
+    } catch (error) {
+      console.error("Error updating username:", error);
+      showError("Failed to update username");
+    } finally {
+      setSecuritySaving(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    try {
+      // Validation checks
+      if (!securityData.currentPassword.trim()) {
+        showError("Current password is required");
+        return;
+      }
+
+      if (!securityData.newPassword.trim()) {
+        showError("New password is required");
+        return;
+      }
+
+      if (securityData.newPassword.length < 8) {
+        showError("New password must be at least 8 characters long");
+        return;
+      }
+
+      if (securityData.newPassword !== securityData.confirmPassword) {
+        showError("New passwords do not match");
+        return;
+      }
+
+      // Check if new password is same as current password
+      if (securityData.newPassword === securityData.currentPassword) {
+        showError(
+          "New password cannot be the same as current password. Please use a different password."
+        );
+        return;
+      }
+
+      setSecuritySaving(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPassword: securityData.currentPassword,
+            newPassword: securityData.newPassword,
+            confirmPassword: securityData.confirmPassword,
+            twoFactorAuth: securityData.twoFactorAuth,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "Password updated successfully!");
+          // Clear sensitive fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }));
+        } else {
+          showError(data.error || "Failed to update password");
+        }
+      } else {
+        showError("Failed to update password");
+      }
+    } catch (error) {
+      console.error("Error updating password:", error);
+      showError("Failed to update password");
+    } finally {
+      setSecuritySaving(false);
+    }
+  };
+
+  const handlePinUpdate = async () => {
+    try {
+      // Validation checks
+      if (!securityData.currentPin.trim()) {
+        showError("Current PIN is required");
+        return;
+      }
+
+      if (!securityData.newPin.trim()) {
+        showError("New PIN is required");
+        return;
+      }
+
+      if (!/^\d{4,6}$/.test(securityData.newPin)) {
+        showError("PIN must be 4-6 digits");
+        return;
+      }
+
+      if (securityData.newPin !== securityData.confirmPin) {
+        showError("New PINs do not match");
+        return;
+      }
+
+      // Check if new PIN is same as current PIN
+      if (securityData.newPin === securityData.currentPin) {
+        showError(
+          "New PIN cannot be the same as current PIN. Please use a different PIN."
+        );
+        return;
+      }
+
+      setSecuritySaving(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPin: securityData.currentPin,
+            newPin: securityData.newPin,
+            confirmPin: securityData.confirmPin,
+            requirePinForActions: securityData.requirePinForActions,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "PIN updated successfully!");
+          // Clear sensitive fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPin: "",
+            newPin: "",
+            confirmPin: "",
+          }));
+        } else {
+          showError(data.error || "Failed to update PIN");
+        }
+      } else {
+        showError("Failed to update PIN");
+      }
+    } catch (error) {
+      console.error("Error updating PIN:", error);
+      showError("Failed to update PIN");
+    } finally {
+      setSecuritySaving(false);
+    }
   };
 
   const handleNotificationUpdate = () => {
     showSuccess("Notification preferences updated successfully!");
+  };
+
+  // Data Management Functions
+  const handleExportData = async (format) => {
+    try {
+      setDataManagementLoading(true);
+
+      const response = await fetch(
+        `http://localhost:8000/api/data/export/${format}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            type: "all", // Export all data
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Create and download file
+          const blob = new Blob([data.data], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download =
+            data.filename ||
+            `ypg_data_${format}_${new Date().toISOString().split("T")[0]}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+
+          showSuccess(`${format.toUpperCase()} export completed successfully!`);
+        } else {
+          showError(data.error || `Failed to export ${format}`);
+        }
+      } else {
+        showError(`Failed to export ${format}`);
+      }
+    } catch (error) {
+      console.error(`Error exporting ${format}:`, error);
+      showError(`Failed to export ${format}`);
+    } finally {
+      setDataManagementLoading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      setDataManagementLoading(true);
+
+      const response = await fetch(
+        "http://localhost:8000/api/data/backup/create/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "Backup created successfully!");
+        } else {
+          showError(data.error || "Failed to create backup");
+        }
+      } else {
+        showError("Failed to create backup");
+      }
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      showError("Failed to create backup");
+    } finally {
+      setDataManagementLoading(false);
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    try {
+      setDataManagementLoading(true);
+
+      const response = await fetch(
+        "http://localhost:8000/api/data/backup/restore/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "Backup restored successfully!");
+        } else {
+          showError(data.error || "Failed to restore backup");
+        }
+      } else {
+        showError("Failed to restore backup");
+      }
+    } catch (error) {
+      console.error("Error restoring backup:", error);
+      showError("Failed to restore backup");
+    } finally {
+      setDataManagementLoading(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    const confirmation = prompt(
+      "Type 'DELETE_ALL_DATA' to confirm you want to clear all data:"
+    );
+    if (confirmation !== "DELETE_ALL_DATA") {
+      showError("Operation cancelled. Confirmation required.");
+      return;
+    }
+
+    try {
+      setDataManagementLoading(true);
+
+      const response = await fetch("http://localhost:8000/api/data/clear/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          confirmation: "DELETE_ALL_DATA",
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(data.message || "All data cleared successfully!");
+        } else {
+          showError(data.error || "Failed to clear data");
+        }
+      } else {
+        showError("Failed to clear data");
+      }
+    } catch (error) {
+      console.error("Error clearing data:", error);
+      showError("Failed to clear data");
+    } finally {
+      setDataManagementLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -420,16 +908,40 @@ export default function LocalDashboardLayout({
     }, 1000);
   };
 
+  
+  useEffect(() => {
+    if (settingsOpen && activeSettingsTab === "profile") {
+      fetchProfile();
+    }
+  }, [settingsOpen, activeSettingsTab]);
+  useEffect(() => {
+    if (settingsOpen && activeSettingsTab === "security") {
+      fetchSecuritySettings();
+    }
+  }, [settingsOpen, activeSettingsTab]);
+
+  useEffect(() => {
+    if (!settingsOpen) {
+      setProfileData({
+        username: "",
+        fullName: "",
+        email: "",
+        phone: "",
+        role: "",
+        avatar: null,
+      });
+    }
+  }, [settingsOpen]);
+
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Set up global toast function for autoLogout utility
+      
       window.showToast = (message, type = "success", duration = 3000) => {
         if (type === "success") {
           showSuccess(message);
         } else if (type === "error") {
           showError(message);
         } else {
-          // For info type, use success but with different styling
           showSuccess(message);
         }
       };
@@ -453,33 +965,60 @@ export default function LocalDashboardLayout({
     }
   }, [showSuccess, showError]);
 
-  // Sample notifications
-  const notifications = [
-    {
-      id: 1,
-      message: "New member registration pending approval",
-      time: "2 min ago",
-      type: "info",
-    },
-    {
-      id: 2,
-      message: "Weekly attendance report is ready",
-      time: "1 hour ago",
-      type: "success",
-    },
-    {
-      id: 3,
-      message: "System backup completed successfully",
-      time: "3 hours ago",
-      type: "success",
-    },
-    {
-      id: 4,
-      message: "Database maintenance scheduled for tonight",
-      time: "5 hours ago",
-      type: "warning",
-    },
-  ];
+
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+
+      const response = await fetch("http://localhost:8000/api/notifications/");
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.notifications) {
+          
+          const transformedNotifications = data.notifications.map(
+            (notification) => ({
+              id: notification.id,
+              message: notification.message,
+              time: notification.created_at,
+              type: notification.type,
+              title: notification.title,
+              is_read: notification.is_read,
+              sender: notification.sender,
+              congregation: notification.congregation,
+            })
+          );
+          setNotifications(transformedNotifications);
+        }
+      } else if (response.status === 401) {
+        console.log("Unauthorized, user not logged in");
+        setNotifications([]);
+      } else {
+        console.error("Failed to fetch notifications:", response.status);
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchNotifications();
+
+
+    const interval = setInterval(fetchNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div
@@ -633,54 +1172,111 @@ export default function LocalDashboardLayout({
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                         Profile Settings
                       </h3>
-                      <div className="space-y-3 sm:space-y-4">
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            defaultValue="Admin User"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                          />
+
+                      {profileLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                          <span className="ml-2 text-gray-600 dark:text-gray-400">
+                            Loading profile...
+                          </span>
                         </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            defaultValue="admin@ypg.com"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                          />
+                      ) : (
+                        <div className="space-y-3 sm:space-y-4">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Full Name
+                            </label>
+                            <input
+                              type="text"
+                              value={getFormValue(profileData.fullName)}
+                              onChange={(e) =>
+                                setProfileData((prev) => ({
+                                  ...prev,
+                                  fullName: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                              placeholder="Enter your full name"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Email
+                            </label>
+                            <input
+                              type="email"
+                              value={getFormValue(profileData.email)}
+                              onChange={(e) =>
+                                setProfileData((prev) => ({
+                                  ...prev,
+                                  email: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                              placeholder="Enter your email"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Phone
+                            </label>
+                            <input
+                              type="tel"
+                              value={getFormValue(profileData.phone)}
+                              onChange={(e) =>
+                                setProfileData((prev) => ({
+                                  ...prev,
+                                  phone: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                              placeholder="Enter your phone number"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Role
+                            </label>
+                            <select
+                              value={getFormValue(profileData.role)}
+                              onChange={(e) =>
+                                setProfileData((prev) => ({
+                                  ...prev,
+                                  role: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            >
+                              <option value="Local Executive">
+                                Local Executive
+                              </option>
+                              <option value="District Executive">
+                                District Executive
+                              </option>
+                              <option value="System Administrator">
+                                System Administrator
+                              </option>
+                              <option value="Data Manager">Data Manager</option>
+                              <option value="Viewer">Viewer</option>
+                            </select>
+                          </div>
+
+                          <button
+                            onClick={handleProfileUpdate}
+                            disabled={profileSaving}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                          >
+                            {profileSaving ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Updating...
+                              </>
+                            ) : (
+                              "Update Profile"
+                            )}
+                          </button>
                         </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                            Phone
-                          </label>
-                          <input
-                            type="tel"
-                            defaultValue="+233 20 123 4567"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                            Role
-                          </label>
-                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base">
-                            <option>System Administrator</option>
-                            <option>Data Manager</option>
-                            <option>Viewer</option>
-                          </select>
-                        </div>
-                        <button
-                          onClick={handleProfileUpdate}
-                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
-                        >
-                          Update Profile
-                        </button>
-                      </div>
+                      )}
                     </div>
                   )}
                   {activeSettingsTab === "security" && (
@@ -716,52 +1312,180 @@ export default function LocalDashboardLayout({
                           <h4 className="text-xs sm:text-md font-medium text-gray-900 dark:text-white">
                             Password Settings
                           </h4>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Current Password
-                            </label>
-                            <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              New Password
-                            </label>
-                            <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Confirm New Password
-                            </label>
-                            <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="2fa"
-                              className="rounded"
-                            />
-                            <label
-                              htmlFor="2fa"
-                              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              Enable Two-Factor Authentication
-                            </label>
-                          </div>
-                          <button
-                            onClick={handlePasswordUpdate}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
-                          >
-                            Update Password Settings
-                          </button>
+                          {securityLoading ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                                Loading...
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  New Username
+                                </label>
+                                <input
+                                  type="text"
+                                  value={securityData.username}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      username: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  placeholder="Enter new username"
+                                />
+                              </div>
+                              <button
+                                onClick={handleUsernameUpdate}
+                                disabled={securitySaving}
+                                className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                              >
+                                {securitySaving ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                                    Updating Username...
+                                  </>
+                                ) : (
+                                  "Update Username"
+                                )}
+                              </button>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  Current Password
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={
+                                      showCurrentPassword ? "text" : "password"
+                                    }
+                                    value={securityData.currentPassword}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        currentPassword: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                    placeholder="Enter current password"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowCurrentPassword(
+                                        !showCurrentPassword
+                                      )
+                                    }
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showCurrentPassword ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  New Password
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showNewPassword ? "text" : "password"}
+                                    value={securityData.newPassword}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        newPassword: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                    placeholder="Enter new password"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowNewPassword(!showNewPassword)
+                                    }
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showNewPassword ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  Confirm New Password
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={
+                                      showConfirmPassword ? "text" : "password"
+                                    }
+                                    value={securityData.confirmPassword}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        confirmPassword: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                    placeholder="Confirm new password"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowConfirmPassword(
+                                        !showConfirmPassword
+                                      )
+                                    }
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showConfirmPassword ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="2fa"
+                                  checked={securityData.twoFactorAuth}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      twoFactorAuth: e.target.checked,
+                                    }))
+                                  }
+                                  className="rounded"
+                                />
+                                <label
+                                  htmlFor="2fa"
+                                  className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
+                                >
+                                  Enable Two-Factor Authentication
+                                </label>
+                              </div>
+                              <button
+                                onClick={handlePasswordUpdate}
+                                disabled={securitySaving}
+                                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {securitySaving ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                                    Updating...
+                                  </>
+                                ) : (
+                                  "Update Password Settings"
+                                )}
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                       {/* PIN Authentication Form */}
@@ -774,59 +1498,142 @@ export default function LocalDashboardLayout({
                             PIN authentication is used for quick actions and
                             sensitive operations.
                           </p>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Current PIN
-                            </label>
-                            <input
-                              type="password"
-                              maxLength="6"
-                              placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              New PIN
-                            </label>
-                            <input
-                              type="password"
-                              maxLength="6"
-                              placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Confirm New PIN
-                            </label>
-                            <input
-                              type="password"
-                              maxLength="6"
-                              placeholder="Confirm 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="pin-actions"
-                              className="rounded"
-                              defaultChecked
-                            />
-                            <label
-                              htmlFor="pin-actions"
-                              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              Require PIN for sensitive actions
-                            </label>
-                          </div>
-                          <button
-                            onClick={handlePinUpdate}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
-                          >
-                            Update PIN Settings
-                          </button>
+                          {securityLoading ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                              <span className="ml-2 text-gray-600 dark:text-gray-400">
+                                Loading...
+                              </span>
+                            </div>
+                          ) : (
+                            <>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  Current PIN
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showCurrentPin ? "text" : "password"}
+                                    maxLength="6"
+                                    value={securityData.currentPin}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        currentPin: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Enter 4-6 digit PIN"
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowCurrentPin(!showCurrentPin)
+                                    }
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showCurrentPin ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  New PIN
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showNewPin ? "text" : "password"}
+                                    maxLength="6"
+                                    value={securityData.newPin}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        newPin: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Enter 4-6 digit PIN"
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowNewPin(!showNewPin)}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showNewPin ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                  Confirm New PIN
+                                </label>
+                                <div className="relative">
+                                  <input
+                                    type={showConfirmPin ? "text" : "password"}
+                                    maxLength="6"
+                                    value={securityData.confirmPin}
+                                    onChange={(e) =>
+                                      setSecurityData((prev) => ({
+                                        ...prev,
+                                        confirmPin: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="Confirm 4-6 digit PIN"
+                                    className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setShowConfirmPin(!showConfirmPin)
+                                    }
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  >
+                                    <i
+                                      className={`fas ${showConfirmPin ? "fa-eye-slash" : "fa-eye"} text-sm`}
+                                    ></i>
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="pin-actions"
+                                  checked={securityData.requirePinForActions}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      requirePinForActions: e.target.checked,
+                                    }))
+                                  }
+                                  className="rounded"
+                                />
+                                <label
+                                  htmlFor="pin-actions"
+                                  className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
+                                >
+                                  Require PIN for sensitive actions
+                                </label>
+                              </div>
+                              <button
+                                onClick={handlePinUpdate}
+                                disabled={securitySaving}
+                                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {securitySaving ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                                    Updating...
+                                  </>
+                                ) : (
+                                  "Update PIN Settings"
+                                )}
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -975,17 +1782,35 @@ export default function LocalDashboardLayout({
                             Download your data in various formats
                           </p>
                           <div className="space-y-2">
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
-                              <i className="fas fa-download mr-2"></i>Export as
-                              CSV
+                            <button
+                              onClick={() => handleExportData("csv")}
+                              disabled={dataManagementLoading}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-download mr-2"></i>
+                              {dataManagementLoading
+                                ? "Exporting..."
+                                : "Export as CSV"}
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
-                              <i className="fas fa-file-excel mr-2"></i>Export
-                              as Excel
+                            <button
+                              onClick={() => handleExportData("excel")}
+                              disabled={dataManagementLoading}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-file-excel mr-2"></i>
+                              {dataManagementLoading
+                                ? "Exporting..."
+                                : "Export as Excel"}
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
-                              <i className="fas fa-file-pdf mr-2"></i>Export as
-                              PDF
+                            <button
+                              onClick={() => handleExportData("pdf")}
+                              disabled={dataManagementLoading}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-file-pdf mr-2"></i>
+                              {dataManagementLoading
+                                ? "Exporting..."
+                                : "Export as PDF"}
                             </button>
                           </div>
                         </div>
@@ -997,12 +1822,25 @@ export default function LocalDashboardLayout({
                             Manage your data backups
                           </p>
                           <div className="space-y-2">
-                            <button className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700">
-                              <i className="fas fa-save mr-2"></i>Create Backup
+                            <button
+                              onClick={handleCreateBackup}
+                              disabled={dataManagementLoading}
+                              className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-save mr-2"></i>
+                              {dataManagementLoading
+                                ? "Creating..."
+                                : "Create Backup"}
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700">
-                              <i className="fas fa-upload mr-2"></i>Restore from
-                              Backup
+                            <button
+                              onClick={handleRestoreBackup}
+                              disabled={dataManagementLoading}
+                              className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <i className="fas fa-upload mr-2"></i>
+                              {dataManagementLoading
+                                ? "Restoring..."
+                                : "Restore from Backup"}
                             </button>
                           </div>
                         </div>
@@ -1013,8 +1851,15 @@ export default function LocalDashboardLayout({
                           <p className="text-xs text-red-700 dark:text-red-300 mb-3">
                             Irreversible actions
                           </p>
-                          <button className="w-full text-left px-3 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-700">
-                            <i className="fas fa-trash mr-2"></i>Clear All Data
+                          <button
+                            onClick={handleClearData}
+                            disabled={dataManagementLoading}
+                            className="w-full text-left px-3 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <i className="fas fa-trash mr-2"></i>
+                            {dataManagementLoading
+                              ? "Clearing..."
+                              : "Clear All Data"}
                           </button>
                         </div>
                       </div>
@@ -1031,13 +1876,13 @@ export default function LocalDashboardLayout({
                             Version Information
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Version: 1.0.0
+                            Version: 1.1.0
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Build: 2024.1.1
+                            Build: 2025.1.1
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Last Updated: January 2024
+                            Last Updated: August 202524
                           </p>
                         </div>
                         <div>
@@ -1045,8 +1890,8 @@ export default function LocalDashboardLayout({
                             Description
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            YPG Database Management System is a comprehensive
-                            solution for managing Young People&apos;s Group
+                            Ahinsan District YPG Database Management System is a comprehensive
+                            solution for managing Young People&apos;s Guild
                             data, attendance tracking, and analytics. Built with
                             modern web technologies to provide a seamless
                             experience for church administrators and youth

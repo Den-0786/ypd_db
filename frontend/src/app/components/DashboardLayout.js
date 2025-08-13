@@ -31,36 +31,53 @@ export default function DashboardLayout({
   const [reminderSettings, setReminderSettings] = useState({
     attendance_reminder: {
       title: "Attendance Reminder",
-      message_template: "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!",
+      message_template:
+        "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!",
       is_active: true,
-      target_congregations: "all", // "all", "specific", "non_submitting"
-      selected_congregations: []
+      target_congregations: "all", 
+      selected_congregations: [],
     },
     birthday_message: {
       title: "Birthday Message", 
-      message_template: "Happy Birthday {name}! May God bless you abundantly. - YPG",
+      message_template:
+        "Happy Birthday {name}! May God bless you abundantly. - YPG",
       is_active: true,
       target_congregations: "all",
-      selected_congregations: []
+      selected_congregations: [],
     },
     welcome_message: {
       title: "Welcome Message",
-      message_template: "Welcome {name} to {congregation}! We're glad to have you join us.",
+      message_template:
+        "Welcome {name} to {congregation}! We're glad to have you join us.",
       is_active: true,
       target_congregations: "all",
-      selected_congregations: []
+      selected_congregations: [],
     },
     joint_program_notification: {
       title: "Joint Program Notification",
-      message_template: "Joint program scheduled for {date} ({day}) at {location}. All congregations are invited!",
+      message_template:
+        "Joint program scheduled for {date} ({day}) at {location}. All congregations are invited!",
       is_active: true,
       target_congregations: "all",
-      selected_congregations: []
-    }
+      selected_congregations: [],
+    },
   });
 
-  // All 10 congregations from the system
-  const [availableCongregations] = useState([
+  // Dynamic congregations from the system
+  const [availableCongregations, setAvailableCongregations] = useState([]);
+
+  // Fetch congregations from API
+  useEffect(() => {
+    const fetchCongregations = async () => {
+      try {
+        const response = await fetch("http://localhost:8000/api/home-stats/");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data && data.data.congregations) {
+            setAvailableCongregations(data.data.congregations);
+          } else {
+            // Fallback to default congregations if API doesn't return congregation list
+            setAvailableCongregations([
     "Emmanuel Congregation Ahinsan",
     "Peniel Congregation Esreso No1",
     "Mizpah Congregation Odagya No1",
@@ -70,8 +87,52 @@ export default function DashboardLayout({
     "Liberty Congregation Esreso High Tension",
     "Odagya No2",
     "NOM",
-    "Kokobriko"
-  ]);
+              "Kokobriko",
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching congregations:", error);
+        // Fallback to default congregations
+        setAvailableCongregations([
+          "Emmanuel Congregation Ahinsan",
+          "Peniel Congregation Esreso No1",
+          "Mizpah Congregation Odagya No1",
+          "Christ Congregation Ahinsan Estate",
+          "Ebenezer Congregation Dompoase Aprabo",
+          "Favour Congregation Esreso No2",
+          "Liberty Congregation Esreso High Tension",
+          "Odagya No2",
+          "NOM",
+          "Kokobriko",
+        ]);
+      }
+    };
+
+    fetchCongregations();
+  }, []);
+
+  // Fetch reminder settings from API
+  useEffect(() => {
+    const fetchReminderSettings = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8000/api/reminder-settings/"
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.settings) {
+            setReminderSettings(data.settings);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching reminder settings:", error);
+        // Keep default settings if API fails
+      }
+    };
+
+    fetchReminderSettings();
+  }, []);
   const { toasts, showSuccess, showError, removeToast } = useToast();
 
   // Initialize sidebar based on screen size
@@ -104,7 +165,8 @@ export default function DashboardLayout({
   // Initialize auto-logout
   useEffect(() => {
     // Check if user is logged in
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const token =
+      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
     if (token) {
       autoLogout.updateLoginStatus(true);
       // Make autoLogout available globally
@@ -168,17 +230,262 @@ export default function DashboardLayout({
     setPinModalConfig({});
   };
 
+  // Profile state management
+  const [profileData, setProfileData] = useState({
+    username: "district_admin",
+    fullName: "Admin User",
+    email: "admin@ypg.com",
+    phone: "+233 20 123 4567",
+    role: "System Administrator",
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  // Security state management
+  const [securityData, setSecurityData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    currentPin: "",
+    newPin: "",
+    confirmPin: "",
+    twoFactorAuth: false,
+    requirePinForActions: true,
+  });
+
+  // Password visibility states
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPin, setShowCurrentPin] = useState(false);
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [showConfirmPin, setShowConfirmPin] = useState(false);
+  const [securityLoading, setSecurityLoading] = useState(false);
+
+  // Fetch security data from API
+  const fetchSecurityData = async () => {
+    try {
+      setSecurityLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.security) {
+          setSecurityData((prev) => ({
+            ...prev,
+            twoFactorAuth: data.security.twoFactorAuth || false,
+            requirePinForActions: data.security.requirePinForActions || true,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching security settings:", error);
+    } finally {
+      setSecurityLoading(false);
+    }
+  };
+
+  // Fetch security on mount
+  useEffect(() => {
+    fetchSecurityData();
+  }, []);
+
+  // Fetch profile data from API
+  const fetchProfileData = async () => {
+    try {
+      setProfileLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/profile/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.profile) {
+          setProfileData(data.profile);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Fetch profile on mount
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
   // Handle settings actions with toast messages
-  const handleProfileUpdate = () => {
+  const handleProfileUpdate = async () => {
+    try {
+      setProfileLoading(true);
+      const response = await fetch(
+        "http://localhost:8000/api/settings/profile/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profileData),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
     showSuccess("Profile updated successfully!");
+          // Update the profile data with the response data
+          if (data.profile) {
+            setProfileData(data.profile);
+          } else {
+            // Refresh profile data from server
+            fetchProfileData();
+          }
+        } else {
+          showError(data.error || "Failed to update profile");
+        }
+      } else {
+        showError("Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      showError("Failed to update profile");
+    } finally {
+      setProfileLoading(false);
+    }
   };
 
-  const handlePasswordUpdate = () => {
-    showSuccess("Password settings updated successfully!");
+  const handlePasswordUpdate = async () => {
+    try {
+      setSecurityLoading(true);
+
+      // Validate passwords
+      if (!securityData.currentPassword) {
+        showError("Current password is required");
+        return;
+      }
+      if (!securityData.newPassword) {
+        showError("New password is required");
+        return;
+      }
+      if (securityData.newPassword !== securityData.confirmPassword) {
+        showError("New passwords do not match");
+        return;
+      }
+      if (securityData.newPassword.length < 8) {
+        showError("New password must be at least 8 characters long");
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: profileData.username,
+            currentPassword: securityData.currentPassword,
+            newPassword: securityData.newPassword,
+            confirmPassword: securityData.confirmPassword,
+            twoFactorAuth: securityData.twoFactorAuth,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess("Password updated successfully!");
+          // Clear password fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }));
+        } else {
+          showError(
+            data.error ||
+              data.errors?.currentPassword ||
+              "Failed to update password"
+          );
+        }
+      } else {
+        showError("Failed to update password");
+      }
+    } catch (error) {
+      console.error("Error updating password:", error);
+      showError("Failed to update password");
+    } finally {
+      setSecurityLoading(false);
+    }
   };
 
-  const handlePinUpdate = () => {
-    showSuccess("PIN settings updated successfully!");
+  const handlePinUpdate = async () => {
+    try {
+      setSecurityLoading(true);
+
+      // Validate PINs
+      if (!securityData.currentPin) {
+        showError("Current PIN is required");
+        return;
+      }
+      if (!securityData.newPin) {
+        showError("New PIN is required");
+        return;
+      }
+      if (securityData.newPin !== securityData.confirmPin) {
+        showError("New PINs do not match");
+        return;
+      }
+      if (!/^\d{4,6}$/.test(securityData.newPin)) {
+        showError("PIN must be 4-6 digits");
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPin: securityData.currentPin,
+            newPin: securityData.newPin,
+            confirmPin: securityData.confirmPin,
+            requirePinForActions: securityData.requirePinForActions,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess("PIN updated successfully!");
+          // Clear PIN fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPin: "",
+            newPin: "",
+            confirmPin: "",
+          }));
+        } else {
+          showError(
+            data.error || data.errors?.currentPin || "Failed to update PIN"
+          );
+        }
+      } else {
+        showError("Failed to update PIN");
+      }
+    } catch (error) {
+      console.error("Error updating PIN:", error);
+      showError("Failed to update PIN");
+    } finally {
+      setSecurityLoading(false);
+    }
   };
 
   const handleNotificationUpdate = () => {
@@ -191,10 +498,10 @@ export default function DashboardLayout({
       window.autoLogout.manualLogout();
     } else {
       // Fallback if auto-logout is not available
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
       
       showSuccess("Logged out successfully!");
       setTimeout(() => {
@@ -204,25 +511,174 @@ export default function DashboardLayout({
   };
 
   const handleReminderSettingChange = (settingType, field, value) => {
-    setReminderSettings(prev => ({
+    setReminderSettings((prev) => ({
       ...prev,
       [settingType]: {
         ...prev[settingType],
-        [field]: value
-      }
+        [field]: value,
+      },
     }));
   };
 
-  const handleSaveReminderSettings = () => {
-    // TODO: Save to backend
+  const handleSaveReminderSettings = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/reminder-settings/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(reminderSettings),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
     showSuccess("Reminder settings saved successfully!");
+      } else {
+        showError(data.error || "Failed to save reminder settings");
+      }
+    } catch (error) {
+      console.error("Error saving reminder settings:", error);
+      showError("Failed to save reminder settings");
+    }
   };
 
-  const handleSendReminder = (settingType) => {
+  // Data Management Functions
+  const handleExportData = async (format, type = "all") => {
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/data/export/${format}/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ type }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        if (format === "csv" || format === "excel") {
+          // Create and download file
+          const blob = new Blob([data.data], { type: "text/csv" });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = data.filename;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          showSuccess(`${format.toUpperCase()} export completed successfully!`);
+        } else {
+          showSuccess(data.message);
+        }
+      } else {
+        showError(data.error || "Export failed");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      showError("Export failed");
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/data/backup/create/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        showSuccess(
+          `Backup created successfully! Members: ${data.backup_info.members_count}, Attendance: ${data.backup_info.attendance_count}, Congregations: ${data.backup_info.congregations_count}`
+        );
+      } else {
+        showError(data.error || "Backup creation failed");
+      }
+    } catch (error) {
+      console.error("Backup error:", error);
+      showError("Backup creation failed");
+    }
+  };
+
+  const handleRestoreBackup = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/data/backup/restore/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        showSuccess(
+          `Backup restored successfully! Members: ${data.restored_info.members_count}, Attendance: ${data.restored_info.attendance_count}, Congregations: ${data.restored_info.congregations_count}`
+        );
+      } else {
+        showError(data.error || "Backup restoration failed");
+      }
+    } catch (error) {
+      console.error("Restore error:", error);
+      showError("Backup restoration failed");
+    }
+  };
+
+  const handleClearData = async () => {
+    const confirmation = prompt(
+      "Type DELETE_ALL_DATA to confirm clearing all data:"
+    );
+
+    if (confirmation === "DELETE_ALL_DATA") {
+      try {
+        const response = await fetch("http://localhost:8000/api/data/clear/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ confirmation }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showSuccess(data.message);
+        } else {
+          showError(data.error || "Data clearing failed");
+        }
+      } catch (error) {
+        console.error("Clear data error:", error);
+        showError("Data clearing failed");
+      }
+    } else {
+      showError("Operation cancelled");
+    }
+  };
+
+  const handleSendReminder = async (settingType) => {
     const setting = reminderSettings[settingType];
     
     if (!setting.is_active) {
-      showError("This message type is currently disabled. Please enable it first.");
+      showError(
+        "This message type is currently disabled. Please enable it first."
+      );
       return;
     }
 
@@ -234,88 +690,160 @@ export default function DashboardLayout({
         break;
       case "specific":
         if (setting.selected_congregations.length === 0) {
-          showError("Please select at least one congregation to send messages to.");
+          showError(
+            "Please select at least one congregation to send messages to."
+          );
           return;
         }
         targetCongregations = setting.selected_congregations;
         break;
       case "non_submitting":
         // This would be determined by the current attendance data
-        targetCongregations = ["Emmanuel Congregation Ahinsan", "Peniel Congregation Esreso No1"]; // Demo data
+        targetCongregations = [
+          "Emmanuel Congregation Ahinsan",
+          "Peniel Congregation Esreso No1",
+        ]; // Demo data
         break;
     }
 
-    // TODO: Send to backend API
+    // Send to backend API
+    try {
+      // Process message template with real data
     const message = setting.message_template
-      .replace('{congregation}', 'Test Congregation')
-      .replace('{date}', new Date().toLocaleDateString())
-      .replace('{day}', new Date().toLocaleDateString('en-US', { weekday: 'long' }))
-      .replace('{name}', 'John Doe')
-      .replace('{location}', 'Main Hall');
+        .replace(/{congregation}/g, targetCongregations.join(", "))
+        .replace(/{date}/g, new Date().toLocaleDateString())
+        .replace(
+          /{day}/g,
+          new Date().toLocaleDateString("en-US", { weekday: "long" })
+        )
+        .replace(/{name}/g, "YPG Members")
+        .replace(/{location}/g, "Main Hall");
 
-    showSuccess(`Sending ${setting.title} to ${targetCongregations.length} congregation(s): ${targetCongregations.join(', ')}`);
-    
-    // Simulate sending
-    setTimeout(() => {
-      showSuccess(`Successfully sent ${setting.title} to ${targetCongregations.length} congregation(s)!`);
-    }, 2000);
+      const response = await fetch(
+        "http://localhost:8000/api/notifications/send/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            target: setting.target_congregations === "all" ? "all" : "specific",
+            title: setting.title,
+            message: message,
+            congregations: targetCongregations,
+            type: settingType,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess(
+            `Successfully sent ${setting.title} to ${targetCongregations.length} congregation(s)!`
+          );
+          // Refresh notifications to show the new one
+          fetchNotifications();
+        } else {
+          showError(data.error || "Failed to send notification");
+        }
+      } else {
+        showError("Failed to send notification");
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      showError("Failed to send notification");
+    }
   };
 
   const handleTestReminder = (settingType) => {
     const setting = reminderSettings[settingType];
     const testMessage = setting.message_template
-      .replace('{congregation}', 'Test Congregation')
-      .replace('{date}', '2025-01-19')
-      .replace('{day}', 'Sunday')
-      .replace('{name}', 'John Doe')
-      .replace('{location}', 'Main Hall');
+      .replace("{congregation}", "Test Congregation")
+      .replace("{date}", "2025-01-19")
+      .replace("{day}", "Sunday")
+      .replace("{name}", "John Doe")
+      .replace("{location}", "Main Hall");
     
     showSuccess(`Test message: ${testMessage}`);
   };
 
   const handleCongregationSelection = (settingType, congregation) => {
     const setting = reminderSettings[settingType];
-    const updatedSelected = setting.selected_congregations.includes(congregation)
-      ? setting.selected_congregations.filter(c => c !== congregation)
+    const updatedSelected = setting.selected_congregations.includes(
+      congregation
+    )
+      ? setting.selected_congregations.filter((c) => c !== congregation)
       : [...setting.selected_congregations, congregation];
     
-    handleReminderSettingChange(settingType, 'selected_congregations', updatedSelected);
+    handleReminderSettingChange(
+      settingType,
+      "selected_congregations",
+      updatedSelected
+    );
   };
 
   const handleTargetCongregationChange = (settingType, target) => {
-    handleReminderSettingChange(settingType, 'target_congregations', target);
-    if (target === 'all') {
-      handleReminderSettingChange(settingType, 'selected_congregations', []);
+    handleReminderSettingChange(settingType, "target_congregations", target);
+    if (target === "all") {
+      handleReminderSettingChange(settingType, "selected_congregations", []);
     }
   };
 
-  // Sample notifications
-  const notifications = [
-    {
-      id: 1,
-      message: "New member registration pending approval",
-      time: "2 min ago",
-      type: "info",
-    },
-    {
-      id: 2,
-      message: "Weekly attendance report is ready",
-      time: "1 hour ago",
-      type: "success",
-    },
-    {
-      id: 3,
-      message: "System backup completed successfully",
-      time: "3 hours ago",
-      type: "success",
-    },
-    {
-      id: 4,
-      message: "Database maintenance scheduled for tonight",
-      time: "5 hours ago",
-      type: "warning",
-    },
-  ];
+  // Real-time notifications from API
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+
+      const response = await fetch("http://localhost:8000/api/notifications/");
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.notifications) {
+          // Transform API data to match expected format
+          const transformedNotifications = data.notifications.map(
+            (notification) => ({
+              id: notification.id,
+              message: notification.message,
+              time: notification.created_at,
+              type: notification.type,
+              title: notification.title,
+              is_read: notification.is_read,
+              sender: notification.sender,
+              congregation: notification.congregation,
+            })
+          );
+          setNotifications(transformedNotifications);
+        }
+      } else if (response.status === 401) {
+        console.log("Unauthorized, user not logged in");
+        setNotifications([]);
+      } else {
+        console.error("Failed to fetch notifications:", response.status);
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      // Keep empty array if API fails
+      setNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  // Fetch notifications on mount and set up polling
+  useEffect(() => {
+    fetchNotifications();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div
@@ -496,8 +1024,15 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="text"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userName") || "Admin User" : "Admin User"}
+                            value={profileData.fullName}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({
+                                ...prev,
+                                fullName: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            disabled={profileLoading}
                           />
                         </div>
                         <div>
@@ -506,8 +1041,15 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="email"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userEmail") || "admin@ypg.com" : "admin@ypg.com"}
+                            value={profileData.email}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            disabled={profileLoading}
                           />
                         </div>
                         <div>
@@ -516,25 +1058,52 @@ export default function DashboardLayout({
                           </label>
                           <input
                             type="tel"
-                            defaultValue={typeof window !== "undefined" ? localStorage.getItem("userPhone") || "+233 20 123 4567" : "+233 20 123 4567"}
+                            value={profileData.phone}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            disabled={profileLoading}
                           />
                         </div>
                         <div>
                           <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                             Role
                           </label>
-                          <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base">
-                            <option>System Administrator</option>
-                            <option>Data Manager</option>
-                            <option>Viewer</option>
+                          <select
+                            value={profileData.role}
+                            onChange={(e) =>
+                              setProfileData((prev) => ({
+                                ...prev,
+                                role: e.target.value,
+                              }))
+                            }
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            disabled={profileLoading}
+                          >
+                            <option value="System Administrator">
+                              System Administrator
+                            </option>
+                            <option value="Data Manager">Data Manager</option>
+                            <option value="Viewer">Viewer</option>
                           </select>
                         </div>
                         <button
                           onClick={handleProfileUpdate}
-                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                          disabled={profileLoading}
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Update Profile
+                          {profileLoading ? (
+                            <>
+                              <i className="fas fa-spinner fa-spin mr-2"></i>
+                              Updating...
+                            </>
+                          ) : (
+                            "Update Profile"
+                          )}
                         </button>
                       </div>
                     </div>
@@ -570,40 +1139,227 @@ export default function DashboardLayout({
                       {securityMethod === "password" && (
                         <div className="space-y-3 sm:space-y-4">
                           <h4 className="text-xs sm:text-md font-medium text-gray-900 dark:text-white">
-                            Password Settings
+                            Username & Password Settings
                           </h4>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Username
+                            </label>
+                            <input
+                              type="text"
+                              value={profileData.username}
+                              onChange={(e) =>
+                                setProfileData((prev) => ({
+                                  ...prev,
+                                  username: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                              disabled={securityLoading}
+                            />
+                          </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Current Password
                             </label>
-                            <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                            <div className="relative">
+                              <input
+                                type={showCurrentPassword ? "text" : "password"}
+                                value={securityData.currentPassword}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    currentPassword: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowCurrentPassword(!showCurrentPassword)
+                                }
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showCurrentPassword ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               New Password
                             </label>
+                            <div className="relative">
                             <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                                type={showNewPassword ? "text" : "password"}
+                                value={securityData.newPassword}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    newPassword: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowNewPassword(!showNewPassword)
+                                }
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showNewPassword ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Confirm New Password
                             </label>
+                            <div className="relative">
                             <input
-                              type="password"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={securityData.confirmPassword}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    confirmPassword: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowConfirmPassword(!showConfirmPassword)
+                                }
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showConfirmPassword ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <input
                               type="checkbox"
                               id="2fa"
+                              checked={securityData.twoFactorAuth}
+                              onChange={(e) =>
+                                setSecurityData((prev) => ({
+                                  ...prev,
+                                  twoFactorAuth: e.target.checked,
+                                }))
+                              }
                               className="rounded"
+                              disabled={securityLoading}
                             />
                             <label
                               htmlFor="2fa"
@@ -614,9 +1370,17 @@ export default function DashboardLayout({
                           </div>
                           <button
                             onClick={handlePasswordUpdate}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                            disabled={securityLoading}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Update Password Settings
+                            {securityLoading ? (
+                              <>
+                                <i className="fas fa-spinner fa-spin mr-2"></i>
+                                Updating...
+                              </>
+                            ) : (
+                              "Update Password Settings"
+                            )}
                           </button>
                         </div>
                       )}
@@ -634,41 +1398,208 @@ export default function DashboardLayout({
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Current PIN
                             </label>
+                            <div className="relative">
                             <input
-                              type="password"
+                                type={showCurrentPin ? "text" : "password"}
                               maxLength="6"
+                                value={securityData.currentPin}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    currentPin: e.target.value,
+                                  }))
+                                }
                               placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowCurrentPin(!showCurrentPin)
+                                }
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showCurrentPin ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               New PIN
                             </label>
+                            <div className="relative">
                             <input
-                              type="password"
+                                type={showNewPin ? "text" : "password"}
                               maxLength="6"
+                                value={securityData.newPin}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    newPin: e.target.value,
+                                  }))
+                                }
                               placeholder="Enter 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowNewPin(!showNewPin)}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showNewPin ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
                               Confirm New PIN
                             </label>
+                            <div className="relative">
                             <input
-                              type="password"
+                                type={showConfirmPin ? "text" : "password"}
                               maxLength="6"
+                                value={securityData.confirmPin}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    confirmPin: e.target.value,
+                                  }))
+                                }
                               placeholder="Confirm 4-6 digit PIN"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                            />
+                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                disabled={securityLoading}
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowConfirmPin(!showConfirmPin)
+                                }
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                disabled={securityLoading}
+                              >
+                                {showConfirmPin ? (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                    />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <input
                               type="checkbox"
                               id="pin-actions"
+                              checked={securityData.requirePinForActions}
+                              onChange={(e) =>
+                                setSecurityData((prev) => ({
+                                  ...prev,
+                                  requirePinForActions: e.target.checked,
+                                }))
+                              }
                               className="rounded"
-                              defaultChecked
+                              disabled={securityLoading}
                             />
                             <label
                               htmlFor="pin-actions"
@@ -679,9 +1610,17 @@ export default function DashboardLayout({
                           </div>
                           <button
                             onClick={handlePinUpdate}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base"
+                            disabled={securityLoading}
+                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            Update PIN Settings
+                            {securityLoading ? (
+                              <>
+                                <i className="fas fa-spinner fa-spin mr-2"></i>
+                                Updating...
+                              </>
+                            ) : (
+                              "Update PIN Settings"
+                            )}
                           </button>
                         </div>
                       )}
@@ -831,15 +1770,24 @@ export default function DashboardLayout({
                             Download your data in various formats
                           </p>
                           <div className="space-y-2">
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
+                            <button
+                              onClick={() => handleExportData("csv", "all")}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
+                            >
                               <i className="fas fa-download mr-2"></i>Export as
                               CSV
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
+                            <button
+                              onClick={() => handleExportData("excel", "all")}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
+                            >
                               <i className="fas fa-file-excel mr-2"></i>Export
                               as Excel
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700">
+                            <button
+                              onClick={() => handleExportData("pdf", "all")}
+                              className="w-full text-left px-3 py-2 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded text-sm hover:bg-blue-200 dark:hover:bg-blue-700 transition-colors"
+                            >
                               <i className="fas fa-file-pdf mr-2"></i>Export as
                               PDF
                             </button>
@@ -853,10 +1801,16 @@ export default function DashboardLayout({
                             Manage your data backups
                           </p>
                           <div className="space-y-2">
-                            <button className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700">
+                            <button
+                              onClick={handleCreateBackup}
+                              className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors"
+                            >
                               <i className="fas fa-save mr-2"></i>Create Backup
                             </button>
-                            <button className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700">
+                            <button
+                              onClick={handleRestoreBackup}
+                              className="w-full text-left px-3 py-2 bg-yellow-100 dark:bg-yellow-800 text-yellow-700 dark:text-yellow-300 rounded text-sm hover:bg-yellow-200 dark:hover:bg-yellow-700 transition-colors"
+                            >
                               <i className="fas fa-upload mr-2"></i>Restore from
                               Backup
                             </button>
@@ -869,7 +1823,10 @@ export default function DashboardLayout({
                           <p className="text-xs text-red-700 dark:text-red-300 mb-3">
                             Irreversible actions
                           </p>
-                          <button className="w-full text-left px-3 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-700">
+                          <button
+                            onClick={handleClearData}
+                            className="w-full text-left px-3 py-2 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-300 rounded text-sm hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
+                          >
                             <i className="fas fa-trash mr-2"></i>Clear All Data
                           </button>
                         </div>
@@ -887,13 +1844,13 @@ export default function DashboardLayout({
                             Version Information
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Version: 1.0.0
+                            Version: 1.1.0
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
                             Build: 2025.1.1
                           </p>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Last Updated: January 2024
+                            Last Updated: August 2025
                           </p>
                         </div>
                         <div>
@@ -901,8 +1858,8 @@ export default function DashboardLayout({
                             Description
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            YPG Database Management System is a comprehensive
-                            solution for managing Young People&apos;s Group
+                            Ahinsan District YPG Database Management System is a comprehensive
+                            solution for managing Young People&apos;s Guild
                             data, attendance tracking, and analytics. Built with
                             modern web technologies to provide a seamless
                             experience for church administrators and youth
@@ -966,15 +1923,24 @@ export default function DashboardLayout({
                                   Attendance Reminder
                                 </h4>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                                  Message sent to congregations for attendance submission
+                                  Message sent to congregations for attendance
+                                  submission
                                 </p>
                               </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={reminderSettings.attendance_reminder.is_active}
-                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "is_active", e.target.checked)}
+                                checked={
+                                  reminderSettings.attendance_reminder.is_active
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "attendance_reminder",
+                                    "is_active",
+                                    e.target.checked
+                                  )
+                                }
                                 className="sr-only peer"
                               />
                               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -987,8 +1953,16 @@ export default function DashboardLayout({
                               </label>
                               <input
                                 type="text"
-                                value={reminderSettings.attendance_reminder.title}
-                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "title", e.target.value)}
+                                value={
+                                  reminderSettings.attendance_reminder.title
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "attendance_reminder",
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -997,17 +1971,27 @@ export default function DashboardLayout({
                                 Message Template
                               </label>
                               <textarea
-                                value={reminderSettings.attendance_reminder.message_template}
-                                onChange={(e) => handleReminderSettingChange("attendance_reminder", "message_template", e.target.value)}
+                                value={
+                                  reminderSettings.attendance_reminder
+                                    .message_template
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "attendance_reminder",
+                                    "message_template",
+                                    e.target.value
+                                  )
+                                }
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                                 placeholder="Use {congregation}, {date}, {day} as placeholders"
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Available placeholders: {"{congregation}"}, {"{date}"}, {"{day}"}
+                                Available placeholders: {"{congregation}"},{" "}
+                                {"{date}"}, {"{day}"}
                               </p>
                             </div>
-                                                         <div>
+                            <div>
                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                  Target Congregations
                                </label>
@@ -1018,49 +2002,95 @@ export default function DashboardLayout({
                                        type="radio"
                                        name="attendance_target"
                                        value="all"
-                                       checked={reminderSettings.attendance_reminder.target_congregations === "all"}
-                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                      checked={
+                                        reminderSettings.attendance_reminder
+                                          .target_congregations === "all"
+                                      }
+                                      onChange={(e) =>
+                                        handleTargetCongregationChange(
+                                          "attendance_reminder",
+                                          e.target.value
+                                        )
+                                      }
                                        className="mr-2"
                                      />
-                                     <span className="text-xs text-gray-700 dark:text-gray-300">All Congregations</span>
+                                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                                      All Congregations
+                                    </span>
                                    </label>
                                    <label className="flex items-center">
                                      <input
                                        type="radio"
                                        name="attendance_target"
                                        value="specific"
-                                       checked={reminderSettings.attendance_reminder.target_congregations === "specific"}
-                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                      checked={
+                                        reminderSettings.attendance_reminder
+                                          .target_congregations === "specific"
+                                      }
+                                      onChange={(e) =>
+                                        handleTargetCongregationChange(
+                                          "attendance_reminder",
+                                          e.target.value
+                                        )
+                                      }
                                        className="mr-2"
                                      />
-                                     <span className="text-xs text-gray-700 dark:text-gray-300">Specific Congregations</span>
+                                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                                      Specific Congregations
+                                    </span>
                                    </label>
                                    <label className="flex items-center">
                                      <input
                                        type="radio"
                                        name="attendance_target"
                                        value="non_submitting"
-                                       checked={reminderSettings.attendance_reminder.target_congregations === "non_submitting"}
-                                       onChange={(e) => handleTargetCongregationChange("attendance_reminder", e.target.value)}
+                                      checked={
+                                        reminderSettings.attendance_reminder
+                                          .target_congregations ===
+                                        "non_submitting"
+                                      }
+                                      onChange={(e) =>
+                                        handleTargetCongregationChange(
+                                          "attendance_reminder",
+                                          e.target.value
+                                        )
+                                      }
                                        className="mr-2"
                                      />
-                                     <span className="text-xs text-gray-700 dark:text-gray-300">Non-submitting Only</span>
+                                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                                      Non-submitting Only
+                                    </span>
                                    </label>
                                  </div>
-                                 {reminderSettings.attendance_reminder.target_congregations === "specific" && (
+                                {reminderSettings.attendance_reminder
+                                  .target_congregations === "specific" && (
                                    <div className="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
                                      <div className="grid grid-cols-2 gap-1">
-                                       {availableCongregations.map((congregation) => (
-                                         <label key={congregation} className="flex items-center text-xs">
+                                      {availableCongregations.map(
+                                        (congregation) => (
+                                          <label
+                                            key={congregation}
+                                            className="flex items-center text-xs"
+                                          >
                                            <input
                                              type="checkbox"
-                                             checked={reminderSettings.attendance_reminder.selected_congregations.includes(congregation)}
-                                             onChange={() => handleCongregationSelection("attendance_reminder", congregation)}
+                                              checked={reminderSettings.attendance_reminder.selected_congregations.includes(
+                                                congregation
+                                              )}
+                                              onChange={() =>
+                                                handleCongregationSelection(
+                                                  "attendance_reminder",
+                                                  congregation
+                                                )
+                                              }
                                              className="mr-1"
                                            />
-                                           <span className="truncate">{congregation}</span>
+                                            <span className="truncate">
+                                              {congregation}
+                                            </span>
                                          </label>
-                                       ))}
+                                        )
+                                      )}
                                      </div>
                                    </div>
                                  )}
@@ -1068,16 +2098,21 @@ export default function DashboardLayout({
                              </div>
                              <div className="flex space-x-2">
                                <button
-                                 onClick={() => handleTestReminder("attendance_reminder")}
+                                onClick={() =>
+                                  handleTestReminder("attendance_reminder")
+                                }
                                  className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
                                >
                                  <i className="fas fa-play mr-1"></i>Test Message
                                </button>
                                <button
-                                 onClick={() => handleSendReminder("attendance_reminder")}
+                                onClick={() =>
+                                  handleSendReminder("attendance_reminder")
+                                }
                                  className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
                                >
-                                 <i className="fas fa-paper-plane mr-1"></i>Send Message
+                                <i className="fas fa-paper-plane mr-1"></i>Send
+                                Message
                                </button>
                              </div>
                            </div>
@@ -1102,8 +2137,16 @@ export default function DashboardLayout({
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={reminderSettings.birthday_message.is_active}
-                                onChange={(e) => handleReminderSettingChange("birthday_message", "is_active", e.target.checked)}
+                                checked={
+                                  reminderSettings.birthday_message.is_active
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "birthday_message",
+                                    "is_active",
+                                    e.target.checked
+                                  )
+                                }
                                 className="sr-only peer"
                               />
                               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -1117,7 +2160,13 @@ export default function DashboardLayout({
                               <input
                                 type="text"
                                 value={reminderSettings.birthday_message.title}
-                                onChange={(e) => handleReminderSettingChange("birthday_message", "title", e.target.value)}
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "birthday_message",
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -1126,8 +2175,17 @@ export default function DashboardLayout({
                                 Message Template
                               </label>
                               <textarea
-                                value={reminderSettings.birthday_message.message_template}
-                                onChange={(e) => handleReminderSettingChange("birthday_message", "message_template", e.target.value)}
+                                value={
+                                  reminderSettings.birthday_message
+                                    .message_template
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "birthday_message",
+                                    "message_template",
+                                    e.target.value
+                                  )
+                                }
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                                 placeholder="Use {name} as placeholder"
@@ -1137,7 +2195,9 @@ export default function DashboardLayout({
                               </p>
                             </div>
                             <button
-                              onClick={() => handleTestReminder("birthday_message")}
+                              onClick={() =>
+                                handleTestReminder("birthday_message")
+                              }
                               className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
                             >
                               <i className="fas fa-play mr-1"></i>Test Message
@@ -1164,8 +2224,16 @@ export default function DashboardLayout({
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={reminderSettings.welcome_message.is_active}
-                                onChange={(e) => handleReminderSettingChange("welcome_message", "is_active", e.target.checked)}
+                                checked={
+                                  reminderSettings.welcome_message.is_active
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "welcome_message",
+                                    "is_active",
+                                    e.target.checked
+                                  )
+                                }
                                 className="sr-only peer"
                               />
                               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -1179,7 +2247,13 @@ export default function DashboardLayout({
                               <input
                                 type="text"
                                 value={reminderSettings.welcome_message.title}
-                                onChange={(e) => handleReminderSettingChange("welcome_message", "title", e.target.value)}
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "welcome_message",
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -1188,18 +2262,30 @@ export default function DashboardLayout({
                                 Message Template
                               </label>
                               <textarea
-                                value={reminderSettings.welcome_message.message_template}
-                                onChange={(e) => handleReminderSettingChange("welcome_message", "message_template", e.target.value)}
+                                value={
+                                  reminderSettings.welcome_message
+                                    .message_template
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "welcome_message",
+                                    "message_template",
+                                    e.target.value
+                                  )
+                                }
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                                 placeholder="Use {name}, {congregation} as placeholders"
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Available placeholders: {"{name}"}, {"{congregation}"}
+                                Available placeholders: {"{name}"},{" "}
+                                {"{congregation}"}
                               </p>
                             </div>
                             <button
-                              onClick={() => handleTestReminder("welcome_message")}
+                              onClick={() =>
+                                handleTestReminder("welcome_message")
+                              }
                               className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
                             >
                               <i className="fas fa-play mr-1"></i>Test Message
@@ -1226,8 +2312,17 @@ export default function DashboardLayout({
                             <label className="relative inline-flex items-center cursor-pointer">
                               <input
                                 type="checkbox"
-                                checked={reminderSettings.joint_program_notification.is_active}
-                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "is_active", e.target.checked)}
+                                checked={
+                                  reminderSettings.joint_program_notification
+                                    .is_active
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "joint_program_notification",
+                                    "is_active",
+                                    e.target.checked
+                                  )
+                                }
                                 className="sr-only peer"
                               />
                               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
@@ -1240,8 +2335,17 @@ export default function DashboardLayout({
                               </label>
                               <input
                                 type="text"
-                                value={reminderSettings.joint_program_notification.title}
-                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "title", e.target.value)}
+                                value={
+                                  reminderSettings.joint_program_notification
+                                    .title
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "joint_program_notification",
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                               />
                             </div>
@@ -1250,18 +2354,30 @@ export default function DashboardLayout({
                                 Message Template
                               </label>
                               <textarea
-                                value={reminderSettings.joint_program_notification.message_template}
-                                onChange={(e) => handleReminderSettingChange("joint_program_notification", "message_template", e.target.value)}
+                                value={
+                                  reminderSettings.joint_program_notification
+                                    .message_template
+                                }
+                                onChange={(e) =>
+                                  handleReminderSettingChange(
+                                    "joint_program_notification",
+                                    "message_template",
+                                    e.target.value
+                                  )
+                                }
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white text-xs bg-white dark:bg-gray-700"
                                 placeholder="Use {date}, {day}, {location} as placeholders"
                               />
                               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                Available placeholders: {"{date}"}, {"{day}"}, {"{location}"}
+                                Available placeholders: {"{date}"}, {"{day}"},{" "}
+                                {"{location}"}
                               </p>
                             </div>
                             <button
-                              onClick={() => handleTestReminder("joint_program_notification")}
+                              onClick={() =>
+                                handleTestReminder("joint_program_notification")
+                              }
                               className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
                             >
                               <i className="fas fa-play mr-1"></i>Test Message

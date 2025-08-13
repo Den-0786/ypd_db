@@ -35,7 +35,7 @@ export default function LocalAttendancePage() {
     total: 0,
     loggedBy: "",
     position: "",
-    congregation: "Emmanuel Congregation Ahinsan", // Default congregation
+    congregation: congregationName || "Local Congregation", // Dynamic congregation
   });
   const [jointProgramForm, setJointProgramForm] = useState({
     week: "",
@@ -46,7 +46,7 @@ export default function LocalAttendancePage() {
     location: "",
     loggedBy: "",
     position: "",
-    congregation: "Emmanuel Congregation Ahinsan", // Default congregation
+    congregation: congregationName || "Local Congregation", // Dynamic congregation
   });
 
   // Get attendance records from data store
@@ -57,6 +57,7 @@ export default function LocalAttendancePage() {
     weeksLogged: 0,
     totalWeeks: 52,
   });
+  const [loading, setLoading] = useState(true);
 
   // Helper function to get week number from date
   const getWeekNumber = (date) => {
@@ -127,57 +128,12 @@ export default function LocalAttendancePage() {
       week.total += record.total;
     });
 
-    // Create mock data for weeks 1-5 with realistic attendance numbers
-    const mockWeeks = [
-      {
-        week: "Week 1",
-        male: 45,
-        female: 52,
-        total: 97,
-        isJointProgram: false,
-        programTitle: "",
-        location: "",
-      },
-      {
-        week: "Week 2",
-        male: 48,
-        female: 55,
-        total: 103,
-        isJointProgram: false,
-        programTitle: "",
-        location: "",
-      },
-      {
-        week: "Week 3",
-        male: 42,
-        female: 49,
-        total: 91,
-        isJointProgram: false,
-        programTitle: "",
-        location: "",
-      },
-      {
-        week: "Week 4",
-        male: 50,
-        female: 58,
-        total: 108,
-        isJointProgram: false,
-        programTitle: "",
-        location: "",
-      },
-      {
-        week: "Week 5",
-        male: 47,
-        female: 54,
-        total: 101,
-        isJointProgram: true,
-        programTitle: "Joint Youth Program",
-        location: "District Center",
-      },
-    ];
-
-    // Use mock data if no real data exists, otherwise merge with real data
-    const weeks = weeksMap.size === 0 ? mockWeeks : mockWeeks;
+    // Convert weeksMap to array and sort by week number
+    const weeks = Array.from(weeksMap.values()).sort((a, b) => {
+      const weekA = parseInt(a.week.replace("Week ", ""));
+      const weekB = parseInt(b.week.replace("Week ", ""));
+      return weekA - weekB;
+    });
 
     // Calculate totals
     const totalMale = weeks.reduce((sum, week) => sum + week.male, 0);
@@ -236,84 +192,25 @@ export default function LocalAttendancePage() {
       month.total += record.total;
     });
 
-    // Create mock data for all 12 months with realistic attendance numbers
-    const mockMonths = [
-      {
-        month: "January",
-        male: 180,
-        female: 210,
-        total: 390,
-      },
-      {
-        month: "February",
-        male: 175,
-        female: 205,
-        total: 380,
-      },
-      {
-        month: "March",
-        male: 185,
-        female: 215,
-        total: 400,
-      },
-      {
-        month: "April",
-        male: 190,
-        female: 220,
-        total: 410,
-      },
-      {
-        month: "May",
-        male: 195,
-        female: 225,
-        total: 420,
-      },
-      {
-        month: "June",
-        male: 200,
-        female: 230,
-        total: 430,
-      },
-      {
-        month: "July",
-        male: 205,
-        female: 235,
-        total: 440,
-      },
-      {
-        month: "August",
-        male: 210,
-        female: 240,
-        total: 450,
-      },
-      {
-        month: "September",
-        male: 215,
-        female: 245,
-        total: 460,
-      },
-      {
-        month: "October",
-        male: 220,
-        female: 250,
-        total: 470,
-      },
-      {
-        month: "November",
-        male: 225,
-        female: 255,
-        total: 480,
-      },
-      {
-        month: "December",
-        male: 230,
-        female: 260,
-        total: 490,
-      },
+    // Convert monthsMap to array and sort by month order
+    const monthOrder = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
 
-    // Use mock data if no real data exists, otherwise merge with real data
-    const months = monthsMap.size === 0 ? mockMonths : mockMonths;
+    const months = Array.from(monthsMap.values()).sort((a, b) => {
+      return monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month);
+    });
 
     // Calculate totals
     const totalMale = months.reduce((sum, month) => sum + month.male, 0);
@@ -342,57 +239,70 @@ export default function LocalAttendancePage() {
 
     // Load data if congregation is available
     if (storedCongregationName) {
-      const allRecords = getDataStore().getAttendanceRecords();
-      const congregationRecords = allRecords.filter(
-        (record) => record.congregation === storedCongregationName
-      );
+      loadAttendanceData(storedCongregationName);
+    }
+  }, []);
 
-      setAttendanceRecords(congregationRecords);
+  const loadAttendanceData = async (congregationName) => {
+    try {
+      setLoading(true);
+      const dataStore = getDataStore();
+
+      // Fetch attendance records from API
+      const records = await dataStore.getAttendanceRecords({
+        congregation: congregationName,
+      });
+
+      setAttendanceRecords(records);
 
       // Update stats for congregation only
-      const totalMale = congregationRecords.reduce(
-        (sum, r) => sum + (r.male || 0),
-        0
-      );
-      const totalFemale = congregationRecords.reduce(
-        (sum, r) => sum + (r.female || 0),
-        0
-      );
+      const totalMale = records.reduce((sum, r) => sum + (r.male || 0), 0);
+      const totalFemale = records.reduce((sum, r) => sum + (r.female || 0), 0);
       const weeksLogged = new Set(
-        congregationRecords.map((r) => `${r.year}-${r.month}-${r.week}`)
+        records.map((r) => `${r.year}-${r.month}-${r.week}`)
       ).size;
 
-      // Add mock data totals if no real data exists
-      const mockTotalMale = totalMale === 0 ? 232 : totalMale; // Sum of weeks 1-5 male
-      const mockTotalFemale = totalFemale === 0 ? 268 : totalFemale; // Sum of weeks 1-5 female
-      const mockWeeksLogged = weeksLogged === 0 ? 5 : weeksLogged; // 5 weeks of mock data
-
       setAttendanceStats({
-        totalMale: mockTotalMale,
-        totalFemale: mockTotalFemale,
-        weeksLogged: mockWeeksLogged,
+        totalMale: totalMale,
+        totalFemale: totalFemale,
+        weeksLogged: weeksLogged,
         totalWeeks: 52,
       });
-    }
 
-    // Listen for data changes
-    const handleStorageChange = () => {
-      if (storedCongregationName) {
-        const allRecords = getDataStore().getAttendanceRecords();
-        const congregationRecords = allRecords.filter(
-          (record) => record.congregation === storedCongregationName
-        );
-        setAttendanceRecords(congregationRecords);
+      // Update form congregation
+      setLogForm((prev) => ({ ...prev, congregation: congregationName }));
+      setJointProgramForm((prev) => ({
+        ...prev,
+        congregation: congregationName,
+      }));
+    } catch (error) {
+      // Show error toast
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Error loading attendance data", "error");
       }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, []);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Generate current month and year data
   const currentMonthData = generateCurrentMonthData();
   const currentYearData = generateCurrentYearData();
+
+  // Get attendance data for the selected date
+  const getAttendanceForDate = (date) => {
+    const record = attendanceRecords.find((r) => r.date === date);
+    if (record) {
+      return {
+        male: record.male || 0,
+        female: record.female || 0,
+        total: record.total || 0,
+      };
+    }
+    return { male: 0, female: 0, total: 0 };
+  };
+
+  const selectedDateAttendance = getAttendanceForDate(selectedDate);
 
   useEffect(() => {
     setLogForm((prev) => ({
@@ -507,49 +417,42 @@ export default function LocalAttendancePage() {
 
   const handleSubmitLog = async () => {
     try {
+      const dataStore = getDataStore();
+
       const attendanceData = {
         date: logForm.date,
-        male_count: logForm.male,
-        female_count: logForm.female,
-        total_count: logForm.total,
-        logged_by: logForm.loggedBy,
-        position: logForm.position,
+        male: logForm.male,
+        female: logForm.female,
+        total: logForm.total,
         congregation: logForm.congregation,
-        notes: "",
+        week: logForm.week,
+        month: logForm.month,
+        year: logForm.year,
+        loggedBy: logForm.loggedBy,
+        position: logForm.position,
       };
 
-      const response = await fetch("/api/attendance/log/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify(attendanceData),
-      });
+      // Use the new API endpoint
+      const newRecord = await dataStore.addAttendanceRecord(attendanceData);
 
-      if (response.ok) {
-        const result = await response.json();
-        if (typeof window !== "undefined" && window.showToast) {
-          window.showToast("Attendance logged successfully!", "success");
-        } else {
-          console.log("Attendance logged successfully!");
-        }
-        handleCloseLogModal();
-        // Refresh attendance data
-        // The original code had a fetchAttendanceData() call here, but fetchAttendanceData is not defined.
-        // Assuming the intent was to refetch or update the local state if needed.
-        // For now, we'll just close the modal and let the user see the success message.
-      } else {
-        const errorData = await response.json();
-        if (typeof window !== "undefined" && window.showToast) {
-          window.showToast(
-            errorData.message || "Error logging attendance",
-            "error"
-          );
-        }
+      // Update local state
+      setAttendanceRecords((prev) => [...prev, newRecord]);
+
+      // Update stats
+      const updatedStats = {
+        totalMale: attendanceStats.totalMale + logForm.male,
+        totalFemale: attendanceStats.totalFemale + logForm.female,
+        weeksLogged: attendanceStats.weeksLogged + 1,
+        totalWeeks: attendanceStats.totalWeeks,
+      };
+      setAttendanceStats(updatedStats);
+
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Attendance logged successfully!", "success");
       }
+
+      handleCloseLogModal();
     } catch (error) {
-      console.error("Error logging attendance:", error);
       if (typeof window !== "undefined" && window.showToast) {
         window.showToast(
           "Error logging attendance. Please try again.",
@@ -559,30 +462,45 @@ export default function LocalAttendancePage() {
     }
   };
 
-  const handleSubmitJointProgram = () => {
-    // Add to data store
-    const newJointProgram = getDataStore().addAttendanceRecord({
-      date: jointProgramForm.date,
-      programTitle: jointProgramForm.programTitle,
-      location: jointProgramForm.location,
-      loggedBy: jointProgramForm.loggedBy,
-      position: jointProgramForm.position,
-      week: jointProgramForm.week,
-      month: jointProgramForm.month,
-      year: jointProgramForm.year,
-      congregation: jointProgramForm.congregation,
-      isJointProgram: true,
-    });
+  const handleSubmitJointProgram = async () => {
+    try {
+      const dataStore = getDataStore();
 
-    // Update local state
-    setAttendanceRecords((prev) => [...prev, newJointProgram]);
+      const jointProgramData = {
+        date: jointProgramForm.date,
+        programTitle: jointProgramForm.programTitle,
+        location: jointProgramForm.location,
+        loggedBy: jointProgramForm.loggedBy,
+        position: jointProgramForm.position,
+        week: jointProgramForm.week,
+        month: jointProgramForm.month,
+        year: jointProgramForm.year,
+        congregation: jointProgramForm.congregation,
+        isJointProgram: true,
+      };
 
-    if (typeof window !== "undefined" && window.showToast) {
-      window.showToast("Joint program logged successfully!", "success");
-    } else {
-      console.log("Joint program logged successfully!");
+      // Use the API endpoint
+      const newJointProgram =
+        await dataStore.addAttendanceRecord(jointProgramData);
+
+      // Update local state
+      setAttendanceRecords((prev) => [...prev, newJointProgram]);
+
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Joint program logged successfully!", "success");
+      } else {
+        // Fallback for when toast is not available
+      }
+      handleCloseJointProgramModal();
+    } catch (error) {
+      // Error logging joint program
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast(
+          "Error logging joint program. Please try again.",
+          "error"
+        );
+      }
     }
-    handleCloseJointProgramModal();
   };
 
   // Function to get CSRF token from cookies
@@ -592,6 +510,20 @@ export default function LocalAttendancePage() {
     if (parts.length === 2) return parts.pop().split(";").shift();
     return "";
   };
+
+  if (!mounted) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <LocalDashboardLayout currentPage="Attendance">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </LocalDashboardLayout>
+    );
+  }
 
   return (
     <LocalDashboardLayout currentPage="Attendance">
@@ -641,12 +573,12 @@ export default function LocalAttendancePage() {
           handleLogAttendance={handleLogAttendance}
           handleJointProgram={handleJointProgram}
           onFilterChange={(filters) => {
-            console.log("Filter changed:", filters);
             // Handle filter changes here if needed
           }}
         />
         <AttendanceForDayCard
           selectedDate={selectedDate}
+          attendanceData={selectedDateAttendance}
           onEdit={() => {
             setPendingEditAction("day");
             setShowPinModal(true);

@@ -10,59 +10,38 @@ export default function AnnualWinners({ year = 2024 }) {
     const fetchAnnualData = async () => {
       setLoading(true);
 
-      // Mock data - this will be replaced with actual API calls
-      const mockData = {
+      try {
+        // Fetch real data from API
+        const response = await fetch("http://localhost:8000/api/home-stats/");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            // Use real data from API
+            const realData = {
+              year: year,
+              congregations: data.data.leaderboardTop || [],
+              totalCongregations: data.data.totalCongregations || 0,
+              totalMonths: 12,
+            };
+            setAnnualData(realData);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching annual data:", error);
+      }
+
+      // Fallback to empty data if API fails
+      const emptyData = {
         year: year,
-        winners: [
-          {
-            congregation: "Emmanuel Congregation Ahinsan",
-            wins: 4,
-            months: ["January", "March", "July", "November"],
-            total_attendance: 1247,
-            rank: 1,
-          },
-          {
-            congregation: "Peniel Congregation Esreso No1",
-            wins: 3,
-            months: ["February", "May", "September"],
-            total_attendance: 1189,
-            rank: 2,
-          },
-          {
-            congregation: "Mizpah Congregation Odagya No1",
-            wins: 2,
-            months: ["April", "August"],
-            total_attendance: 1156,
-            rank: 3,
-          },
-          {
-            congregation: "Christ Congregation Ahinsan Estate",
-            wins: 1,
-            months: ["June"],
-            total_attendance: 1098,
-            rank: 4,
-          },
-          {
-            congregation: "Ebenezer Congregation Dompoase Aprabo",
-            wins: 1,
-            months: ["October"],
-            total_attendance: 1076,
-            rank: 5,
-          },
-          {
-            congregation: "Favour Congregation Esreso No2",
-            wins: 1,
-            months: ["December"],
-            total_attendance: 1054,
-            rank: 6,
-          },
-        ],
-        totalCongregations: 10,
+        congregations: [],
+        totalCongregations: 0,
         totalMonths: 12,
       };
 
       setTimeout(() => {
-        setAnnualData(mockData);
+        setAnnualData(emptyData);
         setLoading(false);
       }, 1000);
     };
@@ -157,7 +136,7 @@ export default function AnnualWinners({ year = 2024 }) {
 
       {/* Winners List */}
       <div className="space-y-4">
-        {annualData.winners.map((winner, index) => (
+        {annualData.congregations.map((winner, index) => (
           <div
             key={winner.congregation}
             className={`p-4 sm:p-6 rounded-lg border-2 ${

@@ -119,11 +119,11 @@ export default function BulkAddForm({
 
   const handleSubmitSingle = async () => {
     try {
-      const response = await fetch('/api/members/add/', {
-        method: 'POST',
+      const response = await fetch("/api/members/add/", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': getCookie('csrftoken'),
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
         },
         body: JSON.stringify(currentMember),
       });
@@ -137,7 +137,6 @@ export default function BulkAddForm({
         onSubmitSingle(errorData.message || "Error adding member", "error");
       }
     } catch (error) {
-      console.error("Error submitting single member:", error);
       onSubmitSingle("Error adding member. Please try again.", "error");
     }
   };
@@ -146,8 +145,8 @@ export default function BulkAddForm({
   const getCookie = (name) => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return '';
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
   };
 
   return (

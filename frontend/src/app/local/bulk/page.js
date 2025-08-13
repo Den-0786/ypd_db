@@ -56,7 +56,6 @@ export default function LocalBulkAddPage() {
         showToast(errorData.message || "Error submitting members", "error");
       }
     } catch (error) {
-      console.error("Error submitting members:", error);
       showToast("Error submitting members. Please try again.", "error");
     }
   };

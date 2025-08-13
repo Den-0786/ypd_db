@@ -65,6 +65,70 @@ class Role(models.Model):
         return self.name
 
 
+class UserProfile(models.Model):
+    """Extended user profile information"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    phone_number = models.CharField(max_length=20, blank=True)
+    role = models.CharField(max_length=100, default='Local Executive')
+    congregation = models.ForeignKey(Congregation, on_delete=models.CASCADE, null=True, blank=True)
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    bio = models.TextField(blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    address = models.TextField(blank=True)
+    emergency_contact = models.CharField(max_length=20, blank=True)
+    emergency_contact_name = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Profile"
+
+    def get_full_name(self):
+        return self.user.get_full_name() or self.user.username
+
+    def get_email(self):
+        return self.user.email
+
+    def get_phone(self):
+        return self.phone_number
+
+    def get_role(self):
+        return self.role
+
+
+class LoginAttempt(models.Model):
+    """Track login attempts to prevent brute force attacks"""
+    ip_address = models.GenericIPAddressField()
+    username = models.CharField(max_length=150)
+    attempt_count = models.IntegerField(default=0)
+    first_attempt = models.DateTimeField(auto_now_add=True)
+    last_attempt = models.DateTimeField(auto_now=True)
+    is_blocked = models.BooleanField(default=False)
+    blocked_until = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['ip_address', 'username']
+
+    def __str__(self):
+        return f"{self.username} from {self.ip_address}"
+
+    def is_blocked_now(self):
+        """Check if the user is currently blocked"""
+        if not self.is_blocked or not self.blocked_until:
+            return False
+        return timezone.now() < self.blocked_until
+
+    def get_remaining_block_time(self):
+        """Get remaining block time in hours and minutes"""
+        if not self.is_blocked_now():
+            return 0, 0
+        
+        remaining = self.blocked_until - timezone.now()
+        hours = int(remaining.total_seconds() // 3600)
+        minutes = int((remaining.total_seconds() % 3600) // 60)
+        return hours, minutes
+
+
 class Guilder(models.Model):
     # Section A – Personal Information
     first_name = models.CharField(max_length=100)
@@ -378,52 +442,4 @@ class QuizSubmission(models.Model):
         super().save(*args, **kwargs)
 
 
-class YStoreItem(models.Model):
-    """Model for storing Y-Store items"""
-    name = models.CharField(max_length=200)
-    description = models.TextField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    image = models.ImageField(upload_to='ystore/', null=True, blank=True)
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
-    stock = models.IntegerField(default=0)
-    is_out_of_stock = models.BooleanField(default=False)
-    category = models.CharField(max_length=50, choices=[
-        ('Sash', 'Sash'),
-        ('Plague', 'Plague'),
-        ('Cloth', 'Cloth'),
-        ('T-Shirt', 'T-Shirt'),
-        ('Hymn Book', 'Hymn Book'),
-        ('Bible', 'Bible'),
-        ('Church Cloth', 'Church Cloth'),
-    ])
-    tags = models.CharField(max_length=500, blank=True)
-    treasurer_info = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    dashboard_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "Y-Store Item"
-        verbose_name_plural = "Y-Store Items"
-
-
-class BranchPresident(models.Model):
-    congregation = models.CharField(max_length=200)
-    location = models.CharField(max_length=200)
-    president_name = models.CharField(max_length=200)
-    phone_number = models.CharField(max_length=20)
-    email = models.EmailField()
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.president_name} - {self.congregation}"
-
-    class Meta:
-        verbose_name = "Branch President"
-        verbose_name_plural = "Branch Presidents"

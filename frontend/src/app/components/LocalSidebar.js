@@ -35,7 +35,6 @@ export default function LocalSidebar({
         try {
           setUserInfo(JSON.parse(user));
         } catch (e) {
-          // Silently handle parsing error - use default values
           setUserInfo({
             username: "Local Admin",
             congregationName: "Local Executive",
@@ -45,10 +44,8 @@ export default function LocalSidebar({
     }
   }, []);
 
-  // Handle click outside to close dropdowns and sidebar
   useEffect(() => {
     function handleClickOutside(event) {
-      // Close user menu if clicking outside
       if (userMenuOpen) {
         const userMenuElement = document.getElementById("user-menu-dropdown");
         const userMenuButton = event.target.closest("[data-user-menu-button]");
@@ -78,7 +75,6 @@ export default function LocalSidebar({
         }
       }
 
-      // Close sidebar if clicking outside (only on mobile/tablet)
       if (sidebarOpen && window.innerWidth < 1024) {
         const sidebarElement = document.querySelector("[data-sidebar]");
         const sidebarToggleButton = event.target.closest(
@@ -94,10 +90,7 @@ export default function LocalSidebar({
       }
     }
 
-    // Add event listener
     document.addEventListener("mousedown", handleClickOutside);
-
-    // Cleanup
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -110,20 +103,137 @@ export default function LocalSidebar({
     setSidebarOpen,
   ]);
 
-  const notifications = [
-    {
-      id: 1,
-      message: "New member registration pending approval",
-      time: "2 min ago",
-      type: "info",
-    },
-    {
-      id: 2,
-      message: "Weekly attendance report is ready",
-      time: "1 hour ago",
-      type: "success",
-    },
-  ];
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const congregationName = localStorage.getItem("congregationName");
+
+      let url = "http://localhost:8000/api/notifications/";
+      if (congregationName && congregationName !== "District Admin") {
+        url += `?congregation=${encodeURIComponent(congregationName)}`;
+      }
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.notifications) {
+          const transformedNotifications = data.notifications.map(
+            (notification) => ({
+              id: notification.id,
+              message: notification.message,
+              time: notification.created_at,
+              type: notification.type,
+              title: notification.title,
+              is_read: notification.is_read,
+              sender: notification.sender,
+              congregation: notification.congregation,
+            })
+          );
+          setNotifications(transformedNotifications);
+        }
+      }
+    } catch (error) {
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      const congregationName = localStorage.getItem("congregationName");
+      let body = `id=${notificationId}`;
+      if (congregationName && congregationName !== "District Admin") {
+        body += `&congregation=${encodeURIComponent(congregationName)}`;
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/notifications/mark-read/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        }
+      );
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notif) =>
+            notif.id === notificationId ? { ...notif, is_read: true } : notif
+          )
+        );
+      }
+    } catch (error) {}
+  };
+
+  const clearAllNotifications = async () => {
+    try {
+      const congregationName = localStorage.getItem("congregationName");
+      let body = "";
+      if (congregationName && congregationName !== "District Admin") {
+        body = `congregation=${encodeURIComponent(congregationName)}`;
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/notifications/clear/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        }
+      );
+
+      if (response.ok) {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Error clearing notifications:", error);
+    }
+  };
+
+  const createTestNotifications = async () => {
+    try {
+      const congregationName = localStorage.getItem("congregationName");
+
+      if (!congregationName || congregationName === "District Admin") {
+        console.error("No congregation selected");
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:8000/api/notifications/create-test/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            congregation: congregationName,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(data.message);
+        fetchNotifications();
+      }
+    } catch (error) {
+      console.error("Error creating test notifications:", error);
+    }
+  };
   const links = [
     {
       href: "/local/dashboard",
@@ -239,9 +349,7 @@ export default function LocalSidebar({
                     : "Switch to Light Mode"
                 }
               >
-                {/* Toggle Track */}
                 <div className="relative w-full h-full rounded-full bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 shadow-inner">
-                  {/* Toggle Handle */}
                   <div
                     className={`absolute top-0.5 w-5 h-5 bg-white dark:bg-gray-600 rounded-full shadow-lg transition-all duration-300 transform ${
                       mounted && theme === "dark"
@@ -249,14 +357,11 @@ export default function LocalSidebar({
                         : "translate-x-0"
                     }`}
                   >
-                    {/* Moon Icon for Dark Mode */}
                     {mounted && theme === "dark" && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-2.5 h-2.5 bg-cyan-400 rounded-full shadow-lg animate-pulse" />
                       </div>
                     )}
-
-                    {/* Sun Icon for Light Mode */}
                     {mounted && theme === "light" && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-2.5 h-2.5 bg-yellow-400 rounded-full shadow-lg" />
@@ -264,7 +369,6 @@ export default function LocalSidebar({
                     )}
                   </div>
 
-                  {/* Glow Effect */}
                   <div
                     className={`absolute inset-0 rounded-full transition-all duration-300 ${
                       mounted && theme === "dark"
@@ -298,9 +402,9 @@ export default function LocalSidebar({
                     Notifications
                   </span>
                 )}
-                {notifications.length > 0 && (
+                {notifications.filter((n) => !n.is_read).length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center flex-shrink-0">
-                    {notifications.length}
+                    {notifications.filter((n) => !n.is_read).length}
                   </span>
                 )}
               </button>
@@ -311,36 +415,119 @@ export default function LocalSidebar({
                   className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-20 max-h-48 overflow-y-auto min-w-0"
                 >
                   <div className="p-2 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                      Notifications
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                        Notifications
+                      </h3>
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={clearAllNotifications}
+                          className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                          title="Clear all notifications"
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-32 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="p-2 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        <div className="flex items-start space-x-2 min-w-0">
-                          <div
-                            className={`flex-shrink-0 w-2 h-2 rounded-full mt-1 ${notification.type === "success" ? "bg-green-500" : notification.type === "warning" ? "bg-yellow-500" : notification.type === "error" ? "bg-red-500" : "bg-blue-500"}`}
-                          ></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-900 dark:text-white truncate">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                              {notification.time}
-                            </p>
+                    {notificationsLoading ? (
+                      <div className="p-2 text-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Loading...
+                        </p>
+                      </div>
+                    ) : notifications.length > 0 ? (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          onClick={() =>
+                            !notification.is_read &&
+                            markNotificationAsRead(notification.id)
+                          }
+                          className={`p-2 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
+                            !notification.is_read
+                              ? "bg-blue-50 dark:bg-blue-900/20"
+                              : ""
+                          }`}
+                        >
+                          <div className="flex items-start space-x-2 min-w-0">
+                            <div
+                              className={`flex-shrink-0 w-2 h-2 rounded-full mt-1 ${
+                                notification.type === "success"
+                                  ? "bg-green-500"
+                                  : notification.type === "warning"
+                                    ? "bg-yellow-500"
+                                    : notification.type === "error"
+                                      ? "bg-red-500"
+                                      : notification.type === "birthday"
+                                        ? "bg-pink-500"
+                                        : notification.type === "new_member"
+                                          ? "bg-blue-500"
+                                          : notification.type === "attendance"
+                                            ? "bg-purple-500"
+                                            : notification.type === "system"
+                                              ? "bg-gray-500"
+                                              : "bg-blue-500"
+                              }`}
+                            ></div>
+                            <div className="flex-1 min-w-0">
+                              {notification.title && (
+                                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                  {notification.title}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-900 dark:text-white truncate">
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                  {notification.time}
+                                </p>
+                                {notification.sender &&
+                                  notification.sender !== "System" && (
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 truncate ml-2">
+                                      by {notification.sender}
+                                    </p>
+                                  )}
+                              </div>
+                            </div>
+                            {!notification.is_read && (
+                              <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1"></div>
+                            )}
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="p-2 text-center">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          No notifications
+                        </p>
                       </div>
-                    ))}
+                    )}
                   </div>
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                    <button className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate">
-                      View all notifications
-                    </button>
+                    <div className="flex justify-between items-center">
+                      <button
+                        onClick={fetchNotifications}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate"
+                      >
+                        {notificationsLoading
+                          ? "Refreshing..."
+                          : "Refresh notifications"}
+                      </button>
+                      {/* Test button for development */}
+                      {process.env.NODE_ENV === "development" && (
+                        <button
+                          onClick={createTestNotifications}
+                          className="text-xs text-green-600 dark:text-green-400 hover:underline truncate ml-2"
+                          title="Create test notifications"
+                        >
+                          Test
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -398,7 +585,6 @@ export default function LocalSidebar({
                     </button>
                     <button
                       onClick={() => {
-                        // Clear localStorage
                         localStorage.removeItem("authToken");
                         sessionStorage.removeItem("authToken");
                         localStorage.removeItem("user");
@@ -406,7 +592,6 @@ export default function LocalSidebar({
                         localStorage.removeItem("congregationId");
                         localStorage.removeItem("congregationName");
 
-                        // Clear autoLogout timers if available
                         if (
                           typeof window !== "undefined" &&
                           window.autoLogout
@@ -414,10 +599,7 @@ export default function LocalSidebar({
                           window.autoLogout.destroy();
                         }
 
-                        // Show success message
                         showSuccess("Logged out successfully!");
-
-                        // Create a visible notification that stays on screen
                         const notification = document.createElement("div");
                         notification.innerHTML = `
                           <div style="

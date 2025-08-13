@@ -16,105 +16,44 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
         const dataStore = getDataStore();
         const data = dataStore.getLeaderboardData(type);
 
-        if (data && data.length > 0) {
-          // Transform data to match expected format
-          const transformedData = {
-            currentWinners: data.map((item, index) => ({
-              congregation: item.congregation,
-              male_count: item.male_count,
-              female_count: item.female_count,
-              total_count: item.total_count,
-              rank: index + 1,
-            })),
-            previousWinner: null, // Will be implemented when we have historical data
-            showComparison: false,
-            period: type === "weekly" ? "This Week" : "This Month",
-            date:
-              type === "weekly"
-                ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
-                : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
-          };
-
-          setLeaderboardData(transformedData);
-        } else {
-          // Fallback to mock data if no real data exists
-          const mockData = {
-            currentWinners: [
-              {
-                congregation: "Emmanuel Congregation Ahinsan",
-                male_count: 45,
-                female_count: 52,
-                total_count: 97,
-                rank: 1,
-              },
-              {
-                congregation: "Peniel Congregation Esreso No1",
-                male_count: 38,
-                female_count: 44,
-                total_count: 82,
-                rank: 2,
-              },
-              {
-                congregation: "Mizpah Congregation Odagya No1",
-                male_count: 32,
-                female_count: 39,
-                total_count: 71,
-                rank: 3,
-              },
-            ],
-            previousWinner: {
-              congregation: "Christ Congregation Ahinsan Estate",
-              male_count: 42,
-              female_count: 48,
-              total_count: 90,
-              period: type === "weekly" ? "Last Week" : "Last Month",
-            },
-            showComparison: type === "weekly" ? true : true, // Will be controlled by backend
-            period: type === "weekly" ? "This Week" : "This Month",
-            date: type === "weekly" ? "Dec 15-21, 2024" : "December 2024",
-          };
-
-          setLeaderboardData(mockData);
-        }
-      } catch (error) {
-        // Fallback to mock data on error
-        const mockData = {
-          currentWinners: [
-            {
-              congregation: "Emmanuel Congregation Ahinsan",
-              male_count: 45,
-              female_count: 52,
-              total_count: 97,
-              rank: 1,
-            },
-            {
-              congregation: "Peniel Congregation Esreso No1",
-              male_count: 38,
-              female_count: 44,
-              total_count: 82,
-              rank: 2,
-            },
-            {
-              congregation: "Mizpah Congregation Odagya No1",
-              male_count: 32,
-              female_count: 39,
-              total_count: 71,
-              rank: 3,
-            },
-          ],
-          previousWinner: {
-            congregation: "Christ Congregation Ahinsan Estate",
-            male_count: 42,
-            female_count: 48,
-            total_count: 90,
-            period: type === "weekly" ? "Last Week" : "Last Month",
-          },
-          showComparison: type === "weekly" ? true : true,
+        // Transform data to match expected format (even if empty)
+        const transformedData = {
+          currentWinners:
+            data && data.length > 0
+              ? data.map((item, index) => ({
+                  congregation: item.congregation,
+                  male_count: item.male_count,
+                  female_count: item.female_count,
+                  total_count: item.total_count,
+                  rank: index + 1,
+                }))
+              : [],
+          previousWinner: null, // Will be implemented when we have historical data
+          showComparison: false,
           period: type === "weekly" ? "This Week" : "This Month",
-          date: type === "weekly" ? "Dec 15-21, 2024" : "December 2024",
+          date:
+            type === "weekly"
+              ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
+              : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
         };
 
-        setLeaderboardData(mockData);
+        setLeaderboardData(transformedData);
+      } catch (error) {
+        console.error("Error fetching leaderboard data:", error);
+
+        // Show empty data instead of mock data
+        const emptyData = {
+          currentWinners: [],
+          previousWinner: null,
+          showComparison: false,
+          period: type === "weekly" ? "This Week" : "This Month",
+          date:
+            type === "weekly"
+              ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
+              : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
+        };
+
+        setLeaderboardData(emptyData);
       }
 
       setTimeout(() => {

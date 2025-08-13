@@ -34,13 +34,13 @@ export default function SelectCongregationPage() {
   const handleCongregationSelect = (congregation) => {
     setSelectedCongregation(congregation);
     
-    // Store congregation info in localStorage
+
     localStorage.setItem("congregationId", congregation.id);
     localStorage.setItem("congregationName", congregation.name);
     
     showToast(`${congregation.name} selected successfully!`, "success");
     
-    // Redirect to congregation dashboard after a short delay
+    
     setTimeout(() => {
       router.push(`/local/congregation/${congregation.id}`);
     }, 1000);

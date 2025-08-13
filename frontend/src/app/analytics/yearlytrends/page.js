@@ -22,12 +22,12 @@ export default function YearlyTrendsPage() {
       const mockData = {
         sundayAttendance: {
           yearlyTrend: [
-            { year: "2019", male: 1000, female: 1200, total: 2200 },
-            { year: "2020", male: 1050, female: 1250, total: 2300 },
-            { year: "2021", male: 1100, female: 1300, total: 2400 },
-            { year: "2022", male: 1150, female: 1350, total: 2500 },
-            { year: "2023", male: 1200, female: 1400, total: 2600 },
-            { year: "2024", male: 1250, female: 1450, total: 2700 },
+            { year: "2025", male: 1000, female: 1200, total: 2200 },
+            { year: "2026", male: 1050, female: 1250, total: 2300 },
+            { year: "2027", male: 1100, female: 1300, total: 2400 },
+            { year: "2028", male: 1150, female: 1350, total: 2500 },
+            { year: "2029", male: 1200, female: 1400, total: 2600 },
+            { year: "2030", male: 1250, female: 1450, total: 2700 },
           ],
         },
       };
@@ -96,7 +96,7 @@ export default function YearlyTrendsPage() {
                       Yearly Attendance Overview
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      2019-2024 - 6 Year Analysis
+                      2025-2031 - 6 Year Analysis
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">

@@ -9,10 +9,7 @@ class DataStore {
     this.analyticsData = this.loadFromStorage("analyticsData") || {};
     this.leaderboardData = this.loadFromStorage("leaderboardData") || {};
 
-    // Initialize with sample data if empty (only in browser)
-    if (this.isClient) {
-      this.initializeSampleData();
-    }
+    // Initialize with empty data - will be populated from API
   }
 
   // Storage utilities
@@ -43,20 +40,96 @@ class DataStore {
   }
 
   // Attendance Records Management
-  addAttendanceRecord(record) {
-    const newRecord = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      ...record,
-    };
-    this.attendanceRecords.push(newRecord);
-    this.saveToStorage("attendanceRecords", this.attendanceRecords);
-    this.updateAnalytics();
-    this.updateLeaderboard();
-    return newRecord;
+  async addAttendanceRecord(record) {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/attendance/log/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date: record.date,
+            male_count: record.male,
+            female_count: record.female,
+            congregation: record.congregation,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Also add to local storage for immediate UI updates
+        const newRecord = {
+          id: data.attendance_id,
+          timestamp: new Date().toISOString(),
+          ...record,
+        };
+        this.attendanceRecords.push(newRecord);
+        this.saveToStorage("attendanceRecords", this.attendanceRecords);
+        this.updateAnalytics();
+        this.updateLeaderboard();
+        return newRecord;
+      } else {
+        throw new Error(data.error || "Failed to log attendance");
+      }
+    } catch (error) {
+      console.error("Error logging attendance:", error);
+      throw error;
+    }
   }
 
-  getAttendanceRecords(filters = {}) {
+  async getAttendanceRecords(filters = {}) {
+    try {
+      // Try to get from API first
+      let url = "http://localhost:8000/api/attendance/records/";
+      const params = new URLSearchParams();
+
+      if (filters.congregation) {
+        params.append("congregation", filters.congregation);
+      }
+      if (filters.date_from) {
+        params.append("date_from", filters.date_from);
+      }
+      if (filters.date_to) {
+        params.append("date_to", filters.date_to);
+      }
+
+      if (params.toString()) {
+        url += "?" + params.toString();
+      }
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local storage with API data
+        this.attendanceRecords = data.records.map((record) => ({
+          id: record.id,
+          date: record.date,
+          male: record.male_count,
+          female: record.female_count,
+          total: record.total_count,
+          congregation: record.congregation,
+          timestamp: record.created_at || new Date().toISOString(),
+        }));
+        this.saveToStorage("attendanceRecords", this.attendanceRecords);
+        return this.attendanceRecords;
+      } else {
+        // Fallback to local storage
+        console.warn("API failed, using local data:", data.error);
+        return this.getLocalAttendanceRecords(filters);
+      }
+    } catch (error) {
+      console.error("Error fetching attendance records:", error);
+      // Fallback to local storage
+      return this.getLocalAttendanceRecords(filters);
+    }
+  }
+
+  getLocalAttendanceRecords(filters = {}) {
     let records = [...this.attendanceRecords];
 
     if (filters.congregation) {
@@ -83,34 +156,132 @@ class DataStore {
   }
 
   // Members Data Management
-  addMember(member) {
-    const newMember = {
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      ...member,
-    };
-    this.membersData.push(newMember);
-    this.saveToStorage("membersData", this.membersData);
-    this.updateAnalytics();
-    return newMember;
-  }
+  async addMember(member) {
+    try {
+      const requestData = {
+        first_name: member.name.split(" ")[0],
+        last_name: member.name.split(" ").slice(1).join(" ") || "",
+        phone_number: member.phone_number || member.phone,
+        email: member.email || "",
+        gender: member.gender,
+        congregation: member.congregation,
+        membership_status:
+          member.membership_status || member.status || "Active",
+        is_executive: member.is_executive || false,
+        executive_position: member.is_executive ? member.position : "",
+        executive_level: member.is_executive ? "local" : "",
+        date_of_birth: member.date_of_birth || "1990-01-01",
+        place_of_residence: member.place_of_residence || "Accra",
+        residential_address:
+          member.residential_address || "123 Main Street, Accra",
+        hometown: member.hometown || "Accra",
+      };
 
-  updateMember(memberId, updates) {
-    const index = this.membersData.findIndex((m) => m.id === memberId);
-    if (index !== -1) {
-      this.membersData[index] = { ...this.membersData[index], ...updates };
+      const response = await fetch("http://localhost:8000/api/members/add/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Also add to local storage for immediate UI updates
+        const newMember = {
+          id: data.member_id,
+          timestamp: new Date().toISOString(),
+          ...member,
+        };
+        this.membersData.push(newMember);
+        this.saveToStorage("membersData", this.membersData);
+        this.updateAnalytics();
+        return newMember;
+      } else {
+        // API Error occurred
+        throw new Error(data.error || data.errors || "Failed to add member");
+      }
+    } catch (error) {
+      console.error(
+        "Error adding member via API, falling back to local storage:",
+        error
+      );
+
+      // Fallback to local storage if API fails
+      const newMember = {
+        id: Date.now(), // Generate a temporary ID
+        timestamp: new Date().toISOString(),
+        ...member,
+      };
+      this.membersData.push(newMember);
       this.saveToStorage("membersData", this.membersData);
       this.updateAnalytics();
+      return newMember;
     }
   }
 
-  deleteMember(memberId) {
-    this.membersData = this.membersData.filter((m) => m.id !== memberId);
-    this.saveToStorage("membersData", this.membersData);
-    this.updateAnalytics();
+  async getMembers(filters = {}) {
+    try {
+      // Try to get from API first
+      let url = "http://localhost:8000/api/members/";
+      const params = new URLSearchParams();
+
+      // Note: API expects congregation_id, but we're sending congregation name
+      // For now, we'll get all members and filter on the frontend
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
+
+      if (params.toString()) {
+        url += "?" + params.toString();
+      }
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.members) {
+        // Update local storage with API data
+        let members = data.members.map((member) => ({
+          id: member.id,
+          name: `${member.first_name} ${member.last_name}`,
+          phone: member.phone_number,
+          email: member.email || "",
+          gender: member.gender || "Male",
+          congregation: member.congregation,
+          status: member.membership_status || "Active",
+          is_executive: false, // Would need to be determined from executive fields
+          timestamp: new Date().toISOString(),
+        }));
+
+        // Filter by congregation name on the frontend
+        if (filters.congregation) {
+          members = members.filter(
+            (m) => m.congregation === filters.congregation
+          );
+        }
+
+        this.membersData = members;
+        this.saveToStorage("membersData", this.membersData);
+        return this.membersData;
+      } else {
+        // Fallback to local storage
+        console.warn("API failed, using local data");
+        return this.getLocalMembers(filters);
+      }
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      // Fallback to local storage
+      return this.getLocalMembers(filters);
+    }
   }
 
-  getMembers(filters = {}) {
+  getLocalMembers(filters = {}) {
     let members = [...this.membersData];
 
     if (filters.congregation) {
@@ -412,277 +583,11 @@ class DataStore {
       if (data.success) {
         return data.data;
       } else {
-        console.error("Failed to fetch home stats:", data.error);
         return null;
       }
     } catch (error) {
-      console.error("Error fetching home stats:", error);
       return null;
     }
-  }
-
-  // Initialize sample data for demonstration
-  initializeSampleData() {
-    // Only initialize if no data exists
-    if (this.membersData.length === 0) {
-      const sampleMembers = [
-        {
-          id: 1,
-          name: "John Doe",
-          gender: "Male",
-          congregation: "Emmanuel Congregation Ahinsan",
-          is_executive: true,
-          status: "Active",
-          phone: "0201234567",
-          email: "john.doe@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 2,
-          name: "Jane Smith",
-          gender: "Female",
-          congregation: "Emmanuel Congregation Ahinsan",
-          is_executive: false,
-          status: "Active",
-          phone: "0202345678",
-          email: "jane.smith@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 3,
-          name: "Mike Johnson",
-          gender: "Male",
-          congregation: "Peniel Congregation Esreso No1",
-          is_executive: true,
-          status: "Active",
-          phone: "0203456789",
-          email: "mike.johnson@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 4,
-          name: "Sarah Wilson",
-          gender: "Female",
-          congregation: "Mizpah Congregation Odagya No1",
-          is_executive: false,
-          status: "Active",
-          phone: "0204567890",
-          email: "sarah.wilson@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 5,
-          name: "David Brown",
-          gender: "Male",
-          congregation: "Christ Congregation Ahinsan Estate",
-          is_executive: false,
-          status: "Active",
-          phone: "0205678901",
-          email: "david.brown@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 6,
-          name: "Mary Johnson",
-          gender: "Female",
-          congregation: "Ebenezer Congregation Dompoase Aprabo",
-          is_executive: true,
-          status: "Active",
-          phone: "0206789012",
-          email: "mary.johnson@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 7,
-          name: "James Wilson",
-          gender: "Male",
-          congregation: "Favour Congregation Esreso No2",
-          is_executive: false,
-          status: "Active",
-          phone: "0207890123",
-          email: "james.wilson@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 8,
-          name: "Sarah Davis",
-          gender: "Female",
-          congregation: "Liberty Congregation Esreso High Tension",
-          is_executive: true,
-          status: "Active",
-          phone: "0208901234",
-          email: "sarah.davis@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 9,
-          name: "Robert Miller",
-          gender: "Male",
-          congregation: "Odagya No2",
-          is_executive: false,
-          status: "Active",
-          phone: "0209012345",
-          email: "robert.miller@example.com",
-          timestamp: new Date().toISOString(),
-        },
-        {
-          id: 10,
-          name: "Lisa Garcia",
-          gender: "Female",
-          congregation: "NOM",
-          is_executive: true,
-          status: "Active",
-          phone: "0200123456",
-          email: "lisa.garcia@example.com",
-          timestamp: new Date().toISOString(),
-        },
-      ];
-
-      this.membersData = sampleMembers;
-      this.saveToStorage("membersData", this.membersData);
-    }
-
-    // Initialize sample attendance records if empty
-    if (this.attendanceRecords.length === 0) {
-      const currentDate = new Date();
-      const congregations = [
-        "Emmanuel Congregation Ahinsan",
-        "Peniel Congregation Esreso No1",
-        "Mizpah Congregation Odagya No1",
-        "Christ Congregation Ahinsan Estate",
-        "Ebenezer Congregation Dompoase Aprabo",
-        "Favour Congregation Esreso No2",
-        "Liberty Congregation Esreso High Tension",
-        "Odagya No2",
-        "NOM",
-        "Kokobriko",
-      ];
-
-      const sampleAttendance = [];
-      let recordId = 1;
-
-      // Generate data for each congregation for the current month (4 weeks)
-      congregations.forEach((congregation, index) => {
-        for (let week = 1; week <= 4; week++) {
-          const maleCount = 30 + Math.floor(Math.random() * 20) + index * 2; // Vary by congregation
-          const femaleCount = 25 + Math.floor(Math.random() * 15) + index * 2;
-          const total = maleCount + femaleCount;
-
-          // Calculate current Sunday and past Sundays
-          const today = new Date();
-          const day = today.getDay();
-          const diff = today.getDate() - day + (day === 0 ? 0 : 7);
-          const currentSunday = new Date(today.setDate(diff));
-
-          // Generate dates for past weeks including current Sunday
-          const recordDate = new Date(currentSunday);
-          recordDate.setDate(currentSunday.getDate() - (week - 1) * 7);
-
-          sampleAttendance.push({
-            id: recordId++,
-            date: recordDate.toISOString().split("T")[0],
-            congregation: congregation,
-            male: maleCount,
-            female: femaleCount,
-            total: total,
-            week: week,
-            month: currentDate.toLocaleString("default", { month: "long" }),
-            year: currentDate.getFullYear(),
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Generate data for previous month (4 weeks)
-        for (let week = 1; week <= 4; week++) {
-          const maleCount = 28 + Math.floor(Math.random() * 18) + index * 2;
-          const femaleCount = 23 + Math.floor(Math.random() * 14) + index * 2;
-          const total = maleCount + femaleCount;
-
-          // Calculate Sundays for previous month
-          const prevMonthDate = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth() - 1,
-            1
-          );
-          const prevMonthDay = prevMonthDate.getDay();
-          const prevMonthDiff =
-            prevMonthDate.getDate() -
-            prevMonthDay +
-            (prevMonthDay === 0 ? 0 : 7);
-          const prevMonthSunday = new Date(
-            prevMonthDate.setDate(prevMonthDiff)
-          );
-
-          // Generate dates for previous month weeks
-          const recordDate = new Date(prevMonthSunday);
-          recordDate.setDate(prevMonthSunday.getDate() - (week - 1) * 7);
-
-          sampleAttendance.push({
-            id: recordId++,
-            date: recordDate.toISOString().split("T")[0],
-            congregation: congregation,
-            male: maleCount,
-            female: femaleCount,
-            total: total,
-            week: week,
-            month: new Date(
-              currentDate.getFullYear(),
-              currentDate.getMonth() - 1
-            ).toLocaleString("default", { month: "long" }),
-            year: currentDate.getFullYear(),
-            timestamp: new Date().toISOString(),
-          });
-        }
-
-        // Generate data for 2 months ago (4 weeks)
-        for (let week = 1; week <= 4; week++) {
-          const maleCount = 26 + Math.floor(Math.random() * 16) + index * 2;
-          const femaleCount = 21 + Math.floor(Math.random() * 13) + index * 2;
-          const total = maleCount + femaleCount;
-
-          // Calculate Sundays for 2 months ago
-          const twoMonthsAgoDate = new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth() - 2,
-            1
-          );
-          const twoMonthsAgoDay = twoMonthsAgoDate.getDay();
-          const twoMonthsAgoDiff =
-            twoMonthsAgoDate.getDate() -
-            twoMonthsAgoDay +
-            (twoMonthsAgoDay === 0 ? 0 : 7);
-          const twoMonthsAgoSunday = new Date(
-            twoMonthsAgoDate.setDate(twoMonthsAgoDiff)
-          );
-
-          // Generate dates for 2 months ago weeks
-          const recordDate = new Date(twoMonthsAgoSunday);
-          recordDate.setDate(twoMonthsAgoSunday.getDate() - (week - 1) * 7);
-
-          sampleAttendance.push({
-            id: recordId++,
-            date: recordDate.toISOString().split("T")[0],
-            congregation: congregation,
-            male: maleCount,
-            female: femaleCount,
-            total: total,
-            week: week,
-            month: new Date(
-              currentDate.getFullYear(),
-              currentDate.getMonth() - 2
-            ).toLocaleString("default", { month: "long" }),
-            year: currentDate.getFullYear(),
-            timestamp: new Date().toISOString(),
-          });
-        }
-      });
-
-      this.attendanceRecords = sampleAttendance;
-      this.saveToStorage("attendanceRecords", this.attendanceRecords);
-    }
-
-    // Update analytics with sample data
-    this.updateAnalytics();
   }
 
   // Clear all data (for testing)
@@ -692,16 +597,6 @@ class DataStore {
     this.analyticsData = {};
     this.leaderboardData = {};
     localStorage.clear();
-  }
-
-  // Force regenerate mockup data
-  regenerateMockupData() {
-    localStorage.clear();
-    this.attendanceRecords = [];
-    this.membersData = [];
-    this.analyticsData = {};
-    this.leaderboardData = {};
-    this.initializeSampleData();
   }
 }
 
@@ -726,7 +621,6 @@ const getDataStore = () => {
       deleteMember: () => {},
       updateAnalytics: () => {},
       clearAllData: () => {},
-      regenerateMockupData: () => {},
     };
   }
 

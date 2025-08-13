@@ -19,30 +19,49 @@ export default function MonthlyTrendsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      const mockData = {
-        sundayAttendance: {
-          monthlyTrend: [
-            { month: "Jan", male: 105, female: 135, total: 240 },
-            { month: "Feb", male: 110, female: 143, total: 253 },
-            { month: "Mar", male: 98, female: 128, total: 226 },
-            { month: "Apr", male: 115, female: 145, total: 260 },
-            { month: "May", male: 108, female: 138, total: 246 },
-            { month: "Jun", male: 112, female: 142, total: 254 },
-            { month: "Jul", male: 118, female: 148, total: 266 },
-            { month: "Aug", male: 125, female: 155, total: 280 },
-            { month: "Sep", male: 132, female: 162, total: 294 },
-            { month: "Oct", male: 140, female: 170, total: 310 },
-            { month: "Nov", male: 145, female: 175, total: 320 },
-            { month: "Dec", male: 150, female: 180, total: 330 },
-          ],
-        },
-      };
-      setChartData(mockData);
-      setLoading(false);
+      // Try to fetch real data from API first
+      const response = await fetch(
+        "http://localhost:8000/api/analytics/detailed/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Use real data from API
+          const realData = {
+            sundayAttendance: {
+              monthlyTrend: data.data.monthlyTrend || [],
+            },
+          };
+          setChartData(realData);
+          setLoading(false);
+          return;
+        }
+      }
     } catch (error) {
       console.error("Error fetching analytics data:", error);
-      setLoading(false);
     }
+
+    // Fallback to mock data if API fails
+    const mockData = {
+      sundayAttendance: {
+        monthlyTrend: [
+          { month: "Jan", male: 105, female: 135, total: 240 },
+          { month: "Feb", male: 110, female: 143, total: 253 },
+          { month: "Mar", male: 98, female: 128, total: 226 },
+          { month: "Apr", male: 115, female: 145, total: 260 },
+          { month: "May", male: 108, female: 138, total: 246 },
+          { month: "Jun", male: 112, female: 142, total: 254 },
+          { month: "Jul", male: 118, female: 148, total: 266 },
+          { month: "Aug", male: 125, female: 155, total: 280 },
+          { month: "Sep", male: 132, female: 162, total: 294 },
+          { month: "Oct", male: 140, female: 170, total: 310 },
+          { month: "Nov", male: 145, female: 175, total: 320 },
+          { month: "Dec", male: 150, female: 180, total: 330 },
+        ],
+      },
+    };
+    setChartData(mockData);
+    setLoading(false);
   };
 
   if (loading) {

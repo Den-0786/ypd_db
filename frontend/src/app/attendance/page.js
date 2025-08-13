@@ -87,14 +87,6 @@ export default function AttendancePage() {
 
   useEffect(() => {
     fetchAttendanceRecords();
-
-    // Force regenerate mockup data if no records exist
-    const dataStore = getDataStore();
-    const records = dataStore.getAttendanceRecords();
-    if (records.length === 0) {
-      dataStore.regenerateMockupData();
-      fetchAttendanceRecords();
-    }
   }, []);
 
   // Click outside handlers for dropdowns
@@ -115,7 +107,7 @@ export default function AttendancePage() {
 
       // Get records from data store
       const dataStore = getDataStore();
-      const records = dataStore.getAttendanceRecords();
+      const records = await dataStore.getAttendanceRecords();
 
       // Transform records to match expected format
       const transformedRecords = records.map((record) => ({
@@ -850,31 +842,6 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Temporary Mockup Data Button */}
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-yellow-800 dark:text-yellow-200 font-semibold">
-                Mockup Data
-              </h3>
-              <p className="text-yellow-600 dark:text-yellow-300 text-sm">
-                Click to regenerate sample data for all congregations
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                const dataStore = getDataStore();
-                dataStore.regenerateMockupData();
-                fetchAttendanceRecords();
-                showToast("Mockup data regenerated!", "success");
-              }}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              Regenerate Data
-            </button>
           </div>
         </div>
 

@@ -26,7 +26,7 @@ export default function Sidebar({
     }
   }, [mounted, showSuccess]);
 
-  // Get user information from localStorage
+
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function Sidebar({
       if (user) {
         try {
           const parsedUser = JSON.parse(user);
-          // For district view, show district-specific info
+          
           if (parsedUser.congregationId === "district") {
             setUserInfo({
               username: "District Admin",
@@ -45,7 +45,7 @@ export default function Sidebar({
             setUserInfo(parsedUser);
           }
         } catch (e) {
-          // Silently handle parsing error - use default values
+          
           setUserInfo({
             username: "District Admin",
             congregationName: "District Executive",
@@ -55,10 +55,10 @@ export default function Sidebar({
     }
   }, []);
 
-  // Handle click outside to close dropdowns
+
   useEffect(() => {
     function handleClickOutside(event) {
-      // Close user menu if clicking outside
+
       if (userMenuOpen) {
         const userMenuElement = document.getElementById("user-menu-dropdown");
         const userMenuButton = event.target.closest("[data-user-menu-button]");
@@ -71,7 +71,7 @@ export default function Sidebar({
         }
       }
 
-      // Close notifications if clicking outside
+     
       if (notificationsOpen) {
         const notificationsElement = document.getElementById(
           "notifications-dropdown"
@@ -88,7 +88,7 @@ export default function Sidebar({
         }
       }
 
-      // Close sidebar if clicking outside (only on mobile/tablet)
+      
       if (sidebarOpen && window.innerWidth < 1024) {
         const sidebarElement = document.querySelector("[data-sidebar]");
         const sidebarToggleButton = event.target.closest(
@@ -104,10 +104,10 @@ export default function Sidebar({
       }
     }
 
-    // Add event listener
+
     document.addEventListener("mousedown", handleClickOutside);
 
-    // Cleanup
+    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -120,7 +120,7 @@ export default function Sidebar({
     setSidebarOpen,
   ]);
 
-  // Toggle theme
+  
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);

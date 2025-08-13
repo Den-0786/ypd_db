@@ -43,32 +43,28 @@ export default function LocalDashboardPage() {
     }
   }, []);
 
-  // Fetch real data from API for the specific congregation
   useEffect(() => {
     if (congregationName && mounted) {
       fetchCongregationData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [congregationName, mounted]);
 
   const fetchCongregationData = async () => {
     try {
       setLoading(true);
+      const dataStore = getDataStore();
+
       const response = await fetch("http://localhost:8000/api/home-stats/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
-          // Filter data for the specific congregation
-          const congregationData = data.data;
-
-          // For now, we'll use the local dataStore for congregation-specific data
-          // as the API returns district-wide data
-          const dataStore = getDataStore();
-          const members = dataStore
-            .getMembers()
-            .filter((member) => member.congregation === congregationName);
-          const attendance = dataStore
-            .getAttendanceRecords()
-            .filter((record) => record.congregation === congregationName);
+          const members = await dataStore.getMembers({
+            congregation: congregationName,
+          });
+          const attendance = await dataStore.getAttendanceRecords({
+            congregation: congregationName,
+          });
 
           // Calculate this week's attendance
           const currentDate = new Date();
@@ -101,125 +97,46 @@ export default function LocalDashboardPage() {
             })
             .reduce((sum, r) => sum + (r.total || 0), 0);
 
+          // Calculate new members this month
+          const currentMonth = currentDate.getMonth();
+          const currentYear = currentDate.getFullYear();
+          const newMembersThisMonth = members.filter((m) => {
+            const memberDate = new Date(m.timestamp);
+            return (
+              memberDate.getMonth() === currentMonth &&
+              memberDate.getFullYear() === currentYear
+            );
+          }).length;
+
+          // Count executives
+          const numberOfExecutives = members.filter(
+            (m) => m.is_executive
+          ).length;
+
           setStats({
             totalMembers: members.length,
             thisWeeksAttendance: thisWeekAttendance,
-            newMembersThisMonth: members.filter((m) => {
-              const joinDate = new Date(m.dateJoined || "2024-01-01");
-              return (
-                joinDate.getMonth() === currentDate.getMonth() &&
-                joinDate.getFullYear() === currentDate.getFullYear()
-              );
-            }).length,
-            numberOfExecutives: members.filter((m) => m.is_executive).length,
+            newMembersThisMonth: newMembersThisMonth,
+            numberOfExecutives: numberOfExecutives,
           });
         }
       } else {
-        // Fallback to local dataStore if API fails
-        const dataStore = getDataStore();
-        const members = dataStore
-          .getMembers()
-          .filter((member) => member.congregation === congregationName);
-        const attendance = dataStore
-          .getAttendanceRecords()
-          .filter((record) => record.congregation === congregationName);
-
-        // Calculate this week's attendance
-        const currentDate = new Date();
-        const currentWeek = Math.ceil(
-          (currentDate.getDate() +
-            new Date(
-              currentDate.getFullYear(),
-              currentDate.getMonth(),
-              1
-            ).getDay()) /
-            7
-        );
-        const thisWeekAttendance = attendance
-          .filter((r) => {
-            const recordDate = new Date(r.date);
-            const recordWeek = Math.ceil(
-              (recordDate.getDate() +
-                new Date(
-                  recordDate.getFullYear(),
-                  recordDate.getMonth(),
-                  1
-                ).getDay()) /
-                7
-            );
-            return (
-              recordDate.getFullYear() === currentDate.getFullYear() &&
-              recordDate.getMonth() === currentDate.getMonth() &&
-              recordWeek === currentWeek
-            );
-          })
-          .reduce((sum, r) => sum + (r.total || 0), 0);
-
+        // Use fallback data
         setStats({
-          totalMembers: members.length,
-          thisWeeksAttendance: thisWeekAttendance,
-          newMembersThisMonth: members.filter((m) => {
-            const joinDate = new Date(m.dateJoined || "2024-01-01");
-            return (
-              joinDate.getMonth() === currentDate.getMonth() &&
-              joinDate.getFullYear() === currentDate.getFullYear()
-            );
-          }).length,
-          numberOfExecutives: members.filter((m) => m.is_executive).length,
+          totalMembers: 0,
+          thisWeeksAttendance: 0,
+          newMembersThisMonth: 0,
+          numberOfExecutives: 0,
         });
       }
     } catch (error) {
-      // Fallback to local dataStore if API fails
-      const dataStore = getDataStore();
-      const members = dataStore
-        .getMembers()
-        .filter((member) => member.congregation === congregationName);
-      const attendance = dataStore
-        .getAttendanceRecords()
-        .filter((record) => record.congregation === congregationName);
-
-      // Calculate this week's attendance
-      const currentDate = new Date();
-      const currentWeek = Math.ceil(
-        (currentDate.getDate() +
-          new Date(
-            currentDate.getFullYear(),
-            currentDate.getMonth(),
-            1
-          ).getDay()) /
-          7
-      );
-      const thisWeekAttendance = attendance
-        .filter((r) => {
-          const recordDate = new Date(r.date);
-          const recordWeek = Math.ceil(
-            (recordDate.getDate() +
-              new Date(
-                recordDate.getFullYear(),
-                recordDate.getMonth(),
-                1
-              ).getDay()) /
-              7
-          );
-          return (
-            recordDate.getFullYear() === currentDate.getFullYear() &&
-            recordDate.getMonth() === currentDate.getMonth() &&
-            recordWeek === currentWeek
-          );
-        })
-        .reduce((sum, r) => sum + (r.total || 0), 0);
-
+      console.error("Error fetching congregation data:", error);
+      // Use fallback data
       setStats({
-        totalMembers: members.length,
-        thisWeeksAttendance: thisWeekAttendance,
-        newMembersThisMonth: members.filter((m) => {
-          const joinDate = new Date(m.dateJoined || "2024-01-01");
-          return (
-            joinDate.getMonth() === currentDate.getMonth() &&
-            joinDate.getFullYear() === currentDate.getFullYear()
-          );
-        }).length,
-        numberOfExecutives: members.filter((m) => m.is_executive).length,
+        totalMembers: 0,
+        thisWeeksAttendance: 0,
+        newMembersThisMonth: 0,
+        numberOfExecutives: 0,
       });
     } finally {
       setLoading(false);

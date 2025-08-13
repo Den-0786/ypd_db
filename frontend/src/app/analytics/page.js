@@ -82,29 +82,114 @@ export default function AnalyticsPage() {
     try {
       setLoading(true);
 
-      // Get analytics data from data store
-      const dataStore = getDataStore();
-      const analyticsData = dataStore.getAnalyticsData();
+      // Fetch detailed analytics data from new API endpoint
+      const analyticsResponse = await fetch(
+        "http://localhost:8000/api/analytics/detailed/"
+      );
+      const homeStatsResponse = await fetch(
+        "http://localhost:8000/api/home-stats/"
+      );
 
-      if (analyticsData && Object.keys(analyticsData).length > 0) {
-        setChartData(analyticsData);
-      } else {
-        // Fallback to mock data if no real data exists
+      let analyticsData = null;
+      let homeStatsData = null;
+
+      if (analyticsResponse.ok) {
+        const analyticsResult = await analyticsResponse.json();
+        if (analyticsResult.success) {
+          analyticsData = analyticsResult.data;
+        }
+      }
+
+      if (homeStatsResponse.ok) {
+        const homeStatsResult = await homeStatsResponse.json();
+        if (homeStatsResult.success) {
+          homeStatsData = homeStatsResult.data;
+        }
+      }
+
+      if (analyticsData && homeStatsData) {
+        // Use real data from API
+        const realData = {
+          sundayAttendance: {
+            totalAttendance: homeStatsData.sundayAttendance || 0,
+            averageAttendance: homeStatsData.sundayAttendance || 0,
+            congregationsCount: homeStatsData.totalCongregations || 0,
+            growth: homeStatsData.growthRate || 0,
+            weeklyTrend: analyticsData.weeklyTrend || [],
+            monthlyTrend: analyticsData.monthlyTrend || [],
+            yearlyTrend: analyticsData.yearlyTrend || [],
+          },
+          membersDatabase: {
+            totalMembers: homeStatsData.totalMembers || 0,
+            congregations: analyticsData.congregations || [],
+            genderDistribution: analyticsData.genderDistribution || [],
+          },
+        };
+        setChartData(realData);
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error fetching analytics data:", error);
+    }
+
+    // Fallback to mock data if API fails
         const mockData = {
           sundayAttendance: {
-            totalAttendance: 3456,
-            averageAttendance: 81.7,
-            congregationsCount: 3,
+        totalAttendance: 1250,
+        averageAttendance: 125,
+        congregationsCount: 0, // Will be populated from API
             growth: 12.5,
             weeklyTrend: [
-              { date: "2024-01-07", male: 125, female: 150, total: 275 },
-              { date: "2024-01-14", male: 128, female: 152, total: 280 },
-              { date: "2024-01-21", male: 122, female: 155, total: 277 },
-              { date: "2024-01-28", male: 130, female: 158, total: 288 },
-              { date: "2024-02-04", male: 126, female: 154, total: 280 },
-              { date: "2024-02-11", male: 129, female: 157, total: 286 },
-              { date: "2024-02-18", male: 124, female: 153, total: 277 },
-              { date: "2024-02-25", male: 131, female: 159, total: 290 },
+          {
+            date: "2024-01-01",
+            male: 45,
+            female: 52,
+            total: 97,
+            congregation: "Emmanuel Congregation Ahinsan",
+          },
+          {
+            date: "2024-01-08",
+            male: 48,
+            female: 55,
+            total: 103,
+            congregation: "Peniel Congregation Esreso No1",
+          },
+          {
+            date: "2024-01-15",
+            male: 42,
+            female: 49,
+            total: 91,
+            congregation: "Mizpah Congregation Odagya No1",
+          },
+          {
+            date: "2024-01-22",
+            male: 50,
+            female: 58,
+            total: 108,
+            congregation: "Christ Congregation Ahinsan Estate",
+          },
+          {
+            date: "2024-01-29",
+            male: 47,
+            female: 54,
+            total: 101,
+            congregation: "Ebenezer Congregation Dompoase Aprabo",
+          },
+          {
+            date: "2024-02-05",
+            male: 44,
+            female: 51,
+            total: 95,
+            congregation: "Favour Congregation Esreso No2",
+          },
+          {
+            date: "2024-02-11",
+            male: 129,
+            female: 157,
+            total: 286,
+            congregation: "Liberty Congregation Esreso High Tension",
+          },
             ],
             monthlyTrend: [
               { month: "Jan", male: 505, female: 635, total: 1140 },
@@ -116,111 +201,73 @@ export default function AnalyticsPage() {
               { month: "Jul", male: 518, female: 648, total: 1166 },
               { month: "Aug", male: 525, female: 655, total: 1180 },
               { month: "Sep", male: 532, female: 662, total: 1194 },
-              { month: "Oct", male: 540, female: 670, total: 1210 },
-              { month: "Nov", male: 545, female: 675, total: 1220 },
-              { month: "Dec", male: 550, female: 680, total: 1230 },
             ],
             yearlyTrend: [
-              { year: "2019", male: 6000, female: 7200, total: 13200 },
-              { year: "2020", male: 6300, female: 7500, total: 13800 },
-              { year: "2021", male: 6600, female: 7800, total: 14400 },
-              { year: "2022", male: 6900, female: 8100, total: 15000 },
-              { year: "2023", male: 7200, female: 8400, total: 15600 },
-              { year: "2024", male: 7500, female: 8700, total: 16200 },
+          { year: "2020", male: 4800, female: 6000, total: 10800 },
+          { year: "2021", male: 5100, female: 6400, total: 11500 },
+          { year: "2022", male: 5400, female: 6800, total: 12200 },
+          { year: "2023", male: 5700, female: 7200, total: 12900 },
+          { year: "2024", male: 6000, female: 7600, total: 13600 },
             ],
           },
           membersDatabase: {
-            totalMembers: 127,
+        totalMembers: 850,
             congregations: [
-              {
-                name: "Emmanuel Congregation Ahinsan",
-                count: 45,
-                color: "#3B82F6",
-              },
-              {
-                name: "Peniel Congregation Esreso No1",
-                count: 32,
-                color: "#10B981",
-              },
-              {
-                name: "Mizpah Congregation Odagya No1",
-                count: 28,
-                color: "#F59E0B",
-              },
-              {
-                name: "Christ Congregation Ahinsan Estate",
-                count: 22,
-                color: "#EF4444",
-              },
-              {
-                name: "Ebenezer Congregation Dompoase Aprabo",
-                count: 18,
-                color: "#8B5CF6",
-              },
-              {
-                name: "Favour Congregation Esreso No2",
-                count: 15,
-                color: "#06B6D4",
-              },
-              {
-                name: "Liberty Congregation Esreso High Tension",
-                count: 12,
-                color: "#F97316",
-              },
-              { name: "Odagya No2", count: 10, color: "#EC4899" },
-              { name: "NOM", count: 8, color: "#84CC16" },
-              { name: "Kokobriko", count: 6, color: "#F472B6" },
+          { name: "Emmanuel Congregation Ahinsan", count: 0 },
+          { name: "Peniel Congregation Esreso No1", count: 0 },
+          { name: "Mizpah Congregation Odagya No1", count: 0 },
+          { name: "Christ Congregation Ahinsan Estate", count: 0 },
+          { name: "Ebenezer Congregation Dompoase Aprabo", count: 0 },
+          { name: "Favour Congregation Esreso No2", count: 0 },
+          { name: "Liberty Congregation Esreso High Tension", count: 0 },
+          { name: "Odagya No2", count: 0 },
+          { name: "NOM", count: 0 },
+          { name: "Kokobriko", count: 0 },
             ],
             genderDistribution: [
               {
                 congregation: "Emmanuel Congregation Ahinsan",
-                male: 22,
-                female: 23,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Peniel Congregation Esreso No1",
-                male: 16,
-                female: 16,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Mizpah Congregation Odagya No1",
-                male: 14,
-                female: 14,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Christ Congregation Ahinsan Estate",
-                male: 11,
-                female: 11,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Ebenezer Congregation Dompoase Aprabo",
-                male: 9,
-                female: 9,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Favour Congregation Esreso No2",
-                male: 8,
-                female: 7,
+            male: 0,
+            female: 0,
               },
               {
                 congregation: "Liberty Congregation Esreso High Tension",
-                male: 6,
-                female: 6,
-              },
-              { congregation: "Odagya No2", male: 5, female: 5 },
-              { congregation: "NOM", male: 4, female: 4 },
-              { congregation: "Kokobriko", male: 3, female: 3 },
+            male: 0,
+            female: 0,
+          },
+          { congregation: "Odagya No2", male: 0, female: 0 },
+          { congregation: "NOM", male: 0, female: 0 },
+          { congregation: "Kokobriko", male: 0, female: 0 },
             ],
           },
         };
         setChartData(mockData);
-      }
-
       setLoading(false);
-    } catch (error) {
-      console.error("Error fetching analytics data:", error);
-      setLoading(false);
-    }
   };
 
   if (loading) {
@@ -240,19 +287,8 @@ export default function AnalyticsPage() {
     !filtered.sundayAttendance?.monthlyTrend?.length &&
     !filtered.sundayAttendance?.yearlyTrend?.length
   ) {
-    return (
-      <DashboardLayout currentPage="Analytics">
-        <div className="flex flex-col items-center justify-center h-96">
-          <i className="fas fa-folder-open text-5xl text-gray-300 mb-4"></i>
-          <div className="text-xl font-semibold text-gray-500 mb-2">
-            No analytics data found
-          </div>
-          <div className="text-gray-400">
-            Try adjusting your filters or date range.
-          </div>
-        </div>
-      </DashboardLayout>
-    );
+    // Don't show empty state - show the cards with zero data instead
+    console.log("No trend data found, but showing cards with zero values");
   }
 
   return (

@@ -26,6 +26,21 @@ export default function LocalMembersPage() {
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
   const [deleteConfirmConfig, setDeleteConfirmConfig] = useState({});
   const { toasts, showSuccess, showError, removeToast } = useToast();
+
+  // State for real data
+  const [members, setMembers] = useState([]);
+  const [executives, setExecutives] = useState([]);
+  const [stats, setStats] = useState({
+    totalMembers: 0,
+    totalMale: 0,
+    totalFemale: 0,
+    communicant: 0,
+    confirmed: 0,
+    baptism: 0,
+    activeGuilders: 0,
+    distantGuilders: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [editForm, setEditForm] = useState({
     first_name: "",
     last_name: "",
@@ -49,364 +64,79 @@ export default function LocalMembersPage() {
     executive_level: "",
   });
 
-  // Filter data by congregation
+  // Fetch data for congregation
   useEffect(() => {
-    if (congregationName) {
-      // Filter members by congregation
-      const dataStore = getDataStore();
-      const allMembers = dataStore.getMembers();
-      const congregationMembers = allMembers.filter(
-        (member) => member.congregation === congregationName
-      );
-      // Update the members data to show only congregation-specific data
-      // This will be used in the existing members display logic
-    }
+    const fetchMembers = async () => {
+      if (congregationName) {
+        try {
+          setLoading(true);
+          // Get members for this congregation
+          const dataStore = getDataStore();
+          const allMembers = await dataStore.getMembers({
+            congregation: congregationName,
+          });
+
+          if (Array.isArray(allMembers)) {
+            // Set members data
+            setMembers(allMembers);
+
+            // Separate executives from regular members
+            const executivesList = allMembers.filter(
+              (member) => member.is_executive
+            );
+            setExecutives(executivesList);
+
+            // Calculate statistics
+            const totalMembers = allMembers.length;
+            const totalMale = allMembers.filter(
+              (m) => m.gender === "Male"
+            ).length;
+            const totalFemale = allMembers.filter(
+              (m) => m.gender === "Female"
+            ).length;
+            const communicant = allMembers.filter(
+              (m) => m.communicant === "Yes"
+            ).length;
+            const confirmed = allMembers.filter(
+              (m) => m.confirmant === "Yes"
+            ).length;
+            const baptism = allMembers.filter(
+              (m) => m.baptism === "Yes"
+            ).length;
+            const activeGuilders = allMembers.filter(
+              (m) => m.status === "Active"
+            ).length;
+            const distantGuilders = allMembers.filter(
+              (m) => m.status === "Inactive"
+            ).length;
+
+            setStats({
+              totalMembers,
+              totalMale,
+              totalFemale,
+              communicant,
+              confirmed,
+              baptism,
+              activeGuilders,
+              distantGuilders,
+            });
+          } else {
+            console.error("getMembers did not return an array:", allMembers);
+            setMembers([]);
+            setExecutives([]);
+          }
+        } catch (error) {
+          console.error("Error fetching members:", error);
+          setMembers([]);
+          setExecutives([]);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchMembers();
   }, [congregationName]);
-
-  // Mock data for statistics
-  const stats = {
-    totalMembers: 1247,
-    totalMale: 678,
-    totalFemale: 569,
-    communicant: 892,
-    confirmed: 756,
-    baptism: 634,
-    activeGuilders: 1150,
-    distantGuilders: 97,
-  };
-
-  // Mock data for executives
-  const executives = [
-    {
-      id: 1,
-      name: "John Doe",
-      phone: "+233 24 123 4567",
-      position: "President",
-      communicant: "Yes",
-      email: "john.doe@example.com",
-      hometown: "Accra",
-      residentialAddress: "123 Main Street, Accra",
-      residence: "Accra",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Male",
-      status: "Active",
-      dateOfBirth: "1990-05-15",
-      phoneNumber: "+233 24 123 4567",
-      emailAddress: "john.doe@example.com",
-      emergencyContact: "Jane Doe",
-      emergencyPhone: "+233 24 987 6543",
-      occupation: "Software Engineer",
-      education: "Bachelor's Degree",
-      maritalStatus: "Married",
-      spouseName: "Jane Doe",
-      children: "2",
-      dateJoined: "2020-01-15",
-      previousChurch: "None",
-      skills: "Leadership, Public Speaking",
-      interests: "Music, Reading",
-      notes: "Dedicated member with strong leadership skills",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      phone: "+233 20 987 6543",
-      position: "Vice President",
-      communicant: "Yes",
-      email: "jane.smith@example.com",
-      hometown: "Kumasi",
-      residentialAddress: "456 Oak Avenue, Kumasi",
-      residence: "Kumasi",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Female",
-      status: "Active",
-      dateOfBirth: "1988-12-03",
-      phoneNumber: "+233 20 987 6543",
-      emailAddress: "jane.smith@example.com",
-      emergencyContact: "John Smith",
-      emergencyPhone: "+233 20 123 4567",
-      occupation: "Teacher",
-      education: "Master's Degree",
-      maritalStatus: "Married",
-      spouseName: "John Smith",
-      children: "1",
-      dateJoined: "2019-06-20",
-      previousChurch: "Methodist Church",
-      skills: "Teaching, Counseling",
-      interests: "Cooking, Traveling",
-      notes: "Excellent teacher and mentor",
-    },
-    {
-      id: 3,
-      name: "Michael Johnson",
-      phone: "+233 26 555 1234",
-      position: "Secretary",
-      communicant: "No",
-      email: "michael.johnson@example.com",
-      hometown: "Tamale",
-      residentialAddress: "789 Pine Street, Tamale",
-      residence: "Tamale",
-      confirmant: "No",
-      baptism: "No",
-      gender: "Male",
-      status: "Active",
-      dateOfBirth: "1995-08-22",
-      phoneNumber: "+233 26 555 1234",
-      emailAddress: "michael.johnson@example.com",
-      emergencyContact: "Sarah Johnson",
-      emergencyPhone: "+233 26 444 5678",
-      occupation: "Accountant",
-      education: "Bachelor's Degree",
-      maritalStatus: "Single",
-      spouseName: "",
-      children: "0",
-      dateJoined: "2021-03-10",
-      previousChurch: "Presbyterian Church",
-      skills: "Accounting, Organization",
-      interests: "Sports, Photography",
-      notes: "New member showing great potential",
-    },
-    {
-      id: 4,
-      name: "Sarah Wilson",
-      phone: "+233 27 777 8888",
-      position: "Treasurer",
-      communicant: "Yes",
-      email: "sarah.wilson@example.com",
-      hometown: "Cape Coast",
-      residentialAddress: "321 Beach Road, Cape Coast",
-      residence: "Cape Coast",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Female",
-      status: "Active",
-      dateOfBirth: "1985-03-10",
-      phoneNumber: "+233 27 777 8888",
-      emailAddress: "sarah.wilson@example.com",
-      emergencyContact: "David Wilson",
-      emergencyPhone: "+233 27 666 9999",
-      occupation: "Banker",
-      education: "Bachelor's Degree",
-      maritalStatus: "Married",
-      spouseName: "David Wilson",
-      children: "3",
-      dateJoined: "2018-09-15",
-      previousChurch: "Anglican Church",
-      skills: "Financial Management, Planning",
-      interests: "Reading, Gardening",
-      notes: "Excellent financial management skills",
-    },
-  ];
-
-  // Mock data for members
-  const members = [
-    {
-      id: 1,
-      name: "David Brown",
-      phone: "+233 24 111 2222",
-      communicant: "Yes",
-      email: "david.brown@example.com",
-      hometown: "Accra",
-      residentialAddress: "123 Church Street, Accra",
-      residence: "Accra",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Male",
-      status: "Active",
-      dateOfBirth: "1992-07-15",
-      phoneNumber: "+233 24 111 2222",
-      emailAddress: "david.brown@example.com",
-      emergencyContact: "Mary Brown",
-      emergencyPhone: "+233 24 333 4444",
-      occupation: "Engineer",
-      education: "Bachelor's Degree",
-      maritalStatus: "Married",
-      spouseName: "Mary Brown",
-      children: "1",
-      dateJoined: "2020-03-15",
-      previousChurch: "None",
-      skills: "Technical Skills, Problem Solving",
-      interests: "Technology, Music",
-      notes: "Active member with technical expertise",
-    },
-    {
-      id: 2,
-      name: "Emily Davis",
-      phone: "+233 20 555 6666",
-      communicant: "No",
-      email: "emily.davis@example.com",
-      hometown: "Kumasi",
-      residentialAddress: "456 Faith Avenue, Kumasi",
-      residence: "Kumasi",
-      confirmant: "No",
-      baptism: "No",
-      gender: "Female",
-      status: "Active",
-      dateOfBirth: "1998-11-20",
-      phoneNumber: "+233 20 555 6666",
-      emailAddress: "emily.davis@example.com",
-      emergencyContact: "Robert Davis",
-      emergencyPhone: "+233 20 777 8888",
-      occupation: "Student",
-      education: "High School",
-      maritalStatus: "Single",
-      spouseName: "",
-      children: "0",
-      dateJoined: "2022-01-10",
-      previousChurch: "None",
-      skills: "Learning, Adaptability",
-      interests: "Reading, Art",
-      notes: "Young member eager to learn",
-    },
-    {
-      id: 3,
-      name: "Robert Wilson",
-      phone: "+233 26 999 0000",
-      communicant: "Yes",
-      email: "robert.wilson@example.com",
-      hometown: "Tamale",
-      residentialAddress: "789 Hope Street, Tamale",
-      residence: "Tamale",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Male",
-      status: "Active",
-      dateOfBirth: "1987-04-12",
-      phoneNumber: "+233 26 999 0000",
-      emailAddress: "robert.wilson@example.com",
-      emergencyContact: "Lisa Wilson",
-      emergencyPhone: "+233 26 111 2222",
-      occupation: "Doctor",
-      education: "Medical Degree",
-      maritalStatus: "Married",
-      spouseName: "Lisa Wilson",
-      children: "2",
-      dateJoined: "2019-08-25",
-      previousChurch: "Catholic Church",
-      skills: "Medical, Communication",
-      interests: "Healthcare, Travel",
-      notes: "Dedicated medical professional",
-    },
-    {
-      id: 4,
-      name: "Lisa Anderson",
-      phone: "+233 27 333 4444",
-      communicant: "Yes",
-      email: "lisa.anderson@example.com",
-      hometown: "Cape Coast",
-      residentialAddress: "321 Grace Road, Cape Coast",
-      residence: "Cape Coast",
-      confirmant: "Yes",
-      baptism: "Yes",
-      gender: "Female",
-      status: "Active",
-      dateOfBirth: "1990-09-08",
-      phoneNumber: "+233 27 333 4444",
-      emailAddress: "lisa.anderson@example.com",
-      emergencyContact: "Robert Anderson",
-      emergencyPhone: "+233 27 555 6666",
-      occupation: "Nurse",
-      education: "Nursing Degree",
-      maritalStatus: "Married",
-      spouseName: "Robert Anderson",
-      children: "1",
-      dateJoined: "2021-05-12",
-      previousChurch: "Methodist Church",
-      skills: "Nursing, Care",
-      interests: "Healthcare, Cooking",
-      notes: "Compassionate healthcare worker",
-    },
-    {
-      id: 5,
-      name: "James Taylor",
-      phone: "+233 24 777 8888",
-      communicant: "No",
-      email: "james.taylor@example.com",
-      hometown: "Accra",
-      residentialAddress: "654 Peace Street, Accra",
-      residence: "Accra",
-      confirmant: "No",
-      baptism: "No",
-      gender: "Male",
-      status: "Active",
-      dateOfBirth: "1995-12-25",
-      phoneNumber: "+233 24 777 8888",
-      emailAddress: "james.taylor@example.com",
-      emergencyContact: "Sarah Taylor",
-      emergencyPhone: "+233 24 999 0000",
-      occupation: "Teacher",
-      education: "Education Degree",
-      maritalStatus: "Single",
-      spouseName: "",
-      children: "0",
-      dateJoined: "2022-03-20",
-      previousChurch: "None",
-      skills: "Teaching, Communication",
-      interests: "Education, Sports",
-      notes: "New member with teaching background",
-    },
-    {
-      id: 10,
-      name: "Emma Wilson",
-      phone: "+233 25 111 2222",
-      position: "",
-      communicant: "No",
-      email: "emma.wilson@example.com",
-      hometown: "Kumasi",
-      residentialAddress: "789 Distant Road, Kumasi",
-      residence: "Kumasi",
-      confirmant: "No",
-      baptism: "No",
-      gender: "Female",
-      status: "Distant",
-      dateOfBirth: "1992-07-15",
-      phoneNumber: "+233 25 111 2222",
-      emailAddress: "emma.wilson@example.com",
-      emergencyContact: "John Wilson",
-      emergencyPhone: "+233 25 333 4444",
-      occupation: "Student",
-      education: "University",
-      maritalStatus: "Single",
-      spouseName: "",
-      children: "0",
-      dateJoined: "2023-01-10",
-      previousChurch: "None",
-      skills: "Studying",
-      interests: "Reading, Traveling",
-      notes: "Distant member studying abroad",
-    },
-    {
-      id: 11,
-      name: "Michael Brown",
-      phone: "+233 26 555 6666",
-      position: "",
-      communicant: "No",
-      email: "michael.brown@example.com",
-      hometown: "Tamale",
-      residentialAddress: "456 Remote Street, Tamale",
-      residence: "Tamale",
-      confirmant: "No",
-      baptism: "No",
-      gender: "Male",
-      status: "Distant",
-      dateOfBirth: "1988-11-30",
-      phoneNumber: "+233 26 555 6666",
-      emailAddress: "michael.brown@example.com",
-      emergencyContact: "Sarah Brown",
-      emergencyPhone: "+233 26 777 8888",
-      occupation: "Engineer",
-      education: "Master's Degree",
-      maritalStatus: "Married",
-      spouseName: "Sarah Brown",
-      children: "1",
-      dateJoined: "2022-08-15",
-      previousChurch: "Methodist Church",
-      skills: "Engineering, Problem Solving",
-      interests: "Technology, Sports",
-      notes: "Distant member working in different city",
-    },
-  ];
 
   const [selectedMember, setSelectedMember] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -768,6 +498,16 @@ export default function LocalMembersPage() {
     return null;
   }
 
+  if (loading) {
+    return (
+      <LocalDashboardLayout currentPage="Members">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      </LocalDashboardLayout>
+    );
+  }
+
   return (
     <LocalDashboardLayout
       currentPage="Members"
@@ -789,7 +529,7 @@ export default function LocalMembersPage() {
                 <div className="flex items-center mb-2">
                   <i className="fas fa-church text-white text-2xl lg:text-3xl mr-3"></i>
                   <h1 className="text-xl lg:text-3xl font-bold text-white">
-                    {congregation.name}
+                    {congregationName || "Local Congregation"}
                   </h1>
                   <button
                     onClick={handleEditClick}
@@ -800,21 +540,20 @@ export default function LocalMembersPage() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-4 text-white/90 text-sm lg:text-base">
-                  <div className="flex items-center">
-                    <i className="fas fa-map-marker-alt mr-2"></i>
-                    <span>{congregation.location}</span>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-300 rounded-full"></div>
+                    <span>System Active</span>
                   </div>
                   <div className="flex items-center">
-                    <i className="fas fa-calendar-alt mr-2"></i>
-                    <span>Est. {congregation.established}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <i className="fas fa-user-tie mr-2"></i>
-                    <span>{congregation.pastor}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <i className="fas fa-phone mr-2"></i>
-                    <span>{congregation.contact}</span>
+                    <i className="fas fa-calendar mr-2"></i>
+                    <span>
+                      {new Date().toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
                   </div>
                 </div>
               </div>

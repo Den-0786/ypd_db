@@ -1,5 +1,11 @@
 "use client";
-export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete }) {
+export default function AttendanceForDayCard({
+  selectedDate,
+  onEdit,
+  onDelete,
+  attendanceData = { male: 0, female: 0, total: 0 },
+  serviceTime = "9:00 AM",
+}) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -41,7 +47,7 @@ export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete })
                       Male
                     </div>
                     <div className="text-gray-900 dark:text-white text-xl font-bold">
-                      45
+                      {attendanceData.male || 0}
                     </div>
                   </div>
                 </div>
@@ -64,7 +70,7 @@ export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete })
                       Female
                     </div>
                     <div className="text-gray-900 dark:text-white text-xl font-bold">
-                      67
+                      {attendanceData.female || 0}
                     </div>
                   </div>
                 </div>
@@ -87,7 +93,7 @@ export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete })
                       Total
                     </div>
                     <div className="text-gray-900 dark:text-white text-xl font-bold">
-                      112
+                      {attendanceData.total || 0}
                     </div>
                   </div>
                 </div>
@@ -104,7 +110,7 @@ export default function AttendanceForDayCard({ selectedDate, onEdit, onDelete })
           <div className="text-gray-600 dark:text-gray-400 text-sm">
             <div className="flex items-center justify-center">
               <i className="fas fa-clock mr-2 text-blue-500"></i>
-              <span>Service Time: 9:00 AM</span>
+              <span>Service Time: {serviceTime}</span>
             </div>
           </div>
         </div>

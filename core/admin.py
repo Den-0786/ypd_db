@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (BirthdayMessageLog, BulkProfileCart, Congregation,
-                     Guilder, Role, SundayAttendance, Notification, SystemSettings, Quiz, QuizSubmission)
+                     Guilder, Role, SundayAttendance, Notification, SystemSettings, Quiz, QuizSubmission, UserProfile, LoginAttempt)
 
 
 @admin.register(Congregation)
@@ -14,6 +14,51 @@ class CongregationAdmin(admin.ModelAdmin):
 class RoleAdmin(admin.ModelAdmin):
     list_display = ("name", "description")
     search_fields = ("name",)
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "role", "congregation", "phone_number", "created_at")
+    list_filter = ("role", "congregation", "created_at")
+    search_fields = ("user__username", "user__first_name", "user__last_name", "user__email")
+    readonly_fields = ("created_at", "updated_at")
+    
+    fieldsets = (
+        ("User Information", {
+            "fields": ("user", "role", "congregation"),
+        }),
+        ("Contact Information", {
+            "fields": ("phone_number", "emergency_contact", "emergency_contact_name"),
+        }),
+        ("Personal Information", {
+            "fields": ("bio", "address", "date_of_birth", "avatar"),
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
+    )
+
+
+@admin.register(LoginAttempt)
+class LoginAttemptAdmin(admin.ModelAdmin):
+    list_display = ("username", "ip_address", "attempt_count", "is_blocked", "last_attempt")
+    list_filter = ("is_blocked", "last_attempt")
+    search_fields = ("username", "ip_address")
+    readonly_fields = ("first_attempt", "last_attempt")
+    
+    fieldsets = (
+        ("Login Information", {
+            "fields": ("username", "ip_address"),
+        }),
+        ("Attempt Tracking", {
+            "fields": ("attempt_count", "is_blocked", "blocked_until"),
+        }),
+        ("Timestamps", {
+            "fields": ("first_attempt", "last_attempt"),
+            "classes": ("collapse",)
+        }),
+    )
 
 
 @admin.register(Guilder)

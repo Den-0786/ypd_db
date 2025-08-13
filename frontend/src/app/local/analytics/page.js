@@ -64,64 +64,71 @@ export default function LocalAnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      const mockData = {
-        sundayAttendance: {
-          totalAttendance: 3456,
-          averageAttendance: 81.7,
-          congregationsCount: 3,
-          growth: 12.5,
-          weeklyTrend: [
-            { date: "2024-01-07", male: 25, female: 30, total: 55 },
-            { date: "2024-01-14", male: 28, female: 32, total: 60 },
-            { date: "2024-01-21", male: 22, female: 35, total: 57 },
-            { date: "2024-01-28", male: 30, female: 38, total: 68 },
-            { date: "2024-02-04", male: 26, female: 34, total: 60 },
-            { date: "2024-02-11", male: 29, female: 37, total: 66 },
-            { date: "2024-02-18", male: 24, female: 33, total: 57 },
-            { date: "2024-02-25", male: 31, female: 39, total: 70 },
-          ],
-          monthlyTrend: [
-            { month: "Jan", male: 105, female: 135, total: 240 },
-            { month: "Feb", male: 110, female: 143, total: 253 },
-            { month: "Mar", male: 98, female: 128, total: 226 },
-            { month: "Apr", male: 115, female: 145, total: 260 },
-            { month: "May", male: 108, female: 138, total: 246 },
-            { month: "Jun", male: 112, female: 142, total: 254 },
-            { month: "Jul", male: 118, female: 148, total: 266 },
-            { month: "Aug", male: 125, female: 155, total: 280 },
-            { month: "Sep", male: 132, female: 162, total: 294 },
-            { month: "Oct", male: 140, female: 170, total: 310 },
-            { month: "Nov", male: 145, female: 175, total: 320 },
-            { month: "Dec", male: 150, female: 180, total: 330 },
-          ],
-          yearlyTrend: [
-            { year: "2019", male: 1000, female: 1200, total: 2200 },
-            { year: "2020", male: 1050, female: 1250, total: 2300 },
-            { year: "2021", male: 1100, female: 1300, total: 2400 },
-            { year: "2022", male: 1150, female: 1350, total: 2500 },
-            { year: "2023", male: 1200, female: 1400, total: 2600 },
-            { year: "2024", male: 1250, female: 1450, total: 2700 },
-          ],
-        },
-        membersDatabase: {
-          congregations: [
-            { name: "Central", count: 1200 },
-            { name: "North", count: 800 },
-            { name: "South", count: 1456 },
-          ],
-          genderDistribution: [
-            { congregation: "Central", male: 580, female: 620 },
-            { congregation: "North", male: 380, female: 420 },
-            { congregation: "South", male: 680, female: 776 },
-          ],
-        },
-      };
-      setChartData(mockData);
-      setLoading(false);
+      // Try to fetch real data from API first
+      const response = await fetch(
+        "http://localhost:8000/api/analytics/detailed/"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          // Use real data from API
+          const realData = {
+            sundayAttendance: {
+              totalAttendance: data.data.weeklyTrend.reduce(
+                (sum, week) => sum + week.total,
+                0
+              ),
+              averageAttendance:
+                data.data.weeklyTrend.length > 0
+                  ? data.data.weeklyTrend.reduce(
+                      (sum, week) => sum + week.total,
+                      0
+                    ) / data.data.weeklyTrend.length
+                  : 0,
+              congregationsCount: data.data.congregations.length,
+              growth: 0, // Would need to calculate from trend data
+              weeklyTrend: data.data.weeklyTrend || [],
+              monthlyTrend: data.data.monthlyTrend || [],
+              yearlyTrend: data.data.yearlyTrend || [],
+            },
+            membersDatabase: {
+              totalMembers: data.data.congregations.reduce(
+                (sum, cong) => sum + cong.members,
+                0
+              ),
+              congregations: data.data.congregations || [],
+              genderDistribution: data.data.genderDistribution || [],
+            },
+          };
+          setChartData(realData);
+          setLoading(false);
+          return;
+        }
+      }
     } catch (error) {
-      console.error("Error fetching analytics data:", error);
-      setLoading(false);
+      // Show toast message instead of console.log
+      if (typeof window !== "undefined" && window.showToast) {
+        window.showToast("Failed to fetch analytics data", "error");
+      }
     }
+
+    // Set empty data if API fails
+    setChartData({
+      sundayAttendance: {
+        totalAttendance: 0,
+        averageAttendance: 0,
+        congregationsCount: 0,
+        growth: 0,
+        weeklyTrend: [],
+        monthlyTrend: [],
+        yearlyTrend: [],
+      },
+      membersDatabase: {
+        congregations: [],
+        genderDistribution: [],
+      },
+    });
+    setLoading(false);
   };
 
   if (loading) {
@@ -416,8 +423,8 @@ export default function LocalAnalyticsPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Explore monthly attendance trends with detailed analytics and
-                    visualizations
+                    Explore monthly attendance trends with detailed analytics
+                    and visualizations
                   </p>
                   <a
                     href="/local/monthlytrends"
@@ -444,7 +451,8 @@ export default function LocalAnalyticsPage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                    Analyze yearly attendance patterns and long-term growth trends
+                    Analyze yearly attendance patterns and long-term growth
+                    trends
                   </p>
                   <a
                     href="/local/yearlytreds"
@@ -546,8 +554,6 @@ export default function LocalAnalyticsPage() {
                 </div>
               </div>
             </div>
-
-            
           </div>
         </div>
 
@@ -558,175 +564,197 @@ export default function LocalAnalyticsPage() {
             Members Database Analytics
           </h2>
 
-                     {/* Members Key Metrics */}
-           <div className="mb-8">
-             {/* Large screens - Grid layout */}
-             <div className="hidden lg:grid grid-cols-6 gap-3">
-               <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
-                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
-                 <div className="relative z-10 flex items-center justify-between">
-                   <div>
-                     <p className="text-xs opacity-90">Total Members</p>
-                     <p className="text-lg font-bold">
-                       {chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0}
-                     </p>
-                   </div>
-                   <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                 </div>
-               </div>
-               <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
-                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
-                 <div className="relative z-10 flex items-center justify-between">
-                   <div>
-                     <p className="text-xs opacity-90">Male Members</p>
-                     <p className="text-lg font-bold">
-                       {chartData.membersDatabase?.genderDistribution?.reduce(
-                         (sum, item) => sum + item.male,
-                         0
-                       ) || 0}
-                     </p>
-                   </div>
-                   <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                 </div>
-               </div>
-               <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
-                 <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
-                 <div className="relative z-10 flex items-center justify-between">
-                   <div>
-                     <p className="text-xs opacity-90">Female Members</p>
-                     <p className="text-lg font-bold">
-                       {chartData.membersDatabase?.genderDistribution?.reduce(
-                         (sum, item) => sum + item.female,
-                         0
-                       ) || 0}
-                     </p>
-                   </div>
-                   <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                 </div>
-               </div>
-                               <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs opacity-90">Active Guilders</p>
-                      <p className="text-lg font-bold">
-                        {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.85)}
-                      </p>
+          {/* Members Key Metrics */}
+          <div className="mb-8">
+            {/* Large screens - Grid layout */}
+            <div className="hidden lg:grid grid-cols-6 gap-3">
+              <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Total Members</p>
+                    <p className="text-lg font-bold">
+                      {chartData.membersDatabase?.congregations?.reduce(
+                        (sum, c) => sum + c.count,
+                        0
+                      ) || 0}
+                    </p>
+                  </div>
+                  <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Male Members</p>
+                    <p className="text-lg font-bold">
+                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                        (sum, item) => sum + item.male,
+                        0
+                      ) || 0}
+                    </p>
+                  </div>
+                  <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Female Members</p>
+                    <p className="text-lg font-bold">
+                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                        (sum, item) => sum + item.female,
+                        0
+                      ) || 0}
+                    </p>
+                  </div>
+                  <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Active Guilders</p>
+                    <p className="text-lg font-bold">
+                      {Math.floor(
+                        (chartData.membersDatabase?.congregations?.reduce(
+                          (sum, c) => sum + c.count,
+                          0
+                        ) || 0) * 0.85
+                      )}
+                    </p>
+                  </div>
+                  <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Inactive Guilders</p>
+                    <p className="text-lg font-bold">
+                      {Math.floor(
+                        (chartData.membersDatabase?.congregations?.reduce(
+                          (sum, c) => sum + c.count,
+                          0
+                        ) || 0) * 0.15
+                      )}
+                    </p>
+                  </div>
+                  <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Growth</p>
+                    <p className="text-lg font-bold">+12.5%</p>
+                  </div>
+                  <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+            </div>
+            {/* Small screens - Horizontal scrollable layout */}
+            <div className="lg:hidden">
+              <div className="overflow-x-auto">
+                <div className="flex space-x-3 min-w-max pb-2">
+                  <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Total Members</p>
+                        <p className="text-lg font-bold">
+                          {chartData.membersDatabase?.congregations?.reduce(
+                            (sum, c) => sum + c.count,
+                            0
+                          ) || 0}
+                        </p>
+                      </div>
+                      <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
-                    <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                  </div>
+                  <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Male Members</p>
+                        <p className="text-lg font-bold">
+                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                            (sum, item) => sum + item.male,
+                            0
+                          ) || 0}
+                        </p>
+                      </div>
+                      <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Female Members</p>
+                        <p className="text-lg font-bold">
+                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                            (sum, item) => sum + item.female,
+                            0
+                          ) || 0}
+                        </p>
+                      </div>
+                      <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Active Guilders</p>
+                        <p className="text-lg font-bold">
+                          {Math.floor(
+                            (chartData.membersDatabase?.congregations?.reduce(
+                              (sum, c) => sum + c.count,
+                              0
+                            ) || 0) * 0.85
+                          )}
+                        </p>
+                      </div>
+                      <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Inactive Guilders</p>
+                        <p className="text-lg font-bold">
+                          {Math.floor(
+                            (chartData.membersDatabase?.congregations?.reduce(
+                              (sum, c) => sum + c.count,
+                              0
+                            ) || 0) * 0.15
+                          )}
+                        </p>
+                      </div>
+                      <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Growth</p>
+                        <p className="text-lg font-bold">+12.5%</p>
+                      </div>
+                      <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs opacity-90">Inactive Guilders</p>
-                      <p className="text-lg font-bold">
-                        {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.15)}
-                      </p>
-                    </div>
-                    <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                  </div>
-                </div>
-                <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs opacity-90">Growth</p>
-                      <p className="text-lg font-bold">
-                        +12.5%
-                      </p>
-                    </div>
-                    <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                  </div>
-                </div>
-             </div>
-             {/* Small screens - Horizontal scrollable layout */}
-             <div className="lg:hidden">
-               <div className="overflow-x-auto">
-                 <div className="flex space-x-3 min-w-max pb-2">
-                   <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                     <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
-                     <div className="relative z-10 flex items-center justify-between">
-                       <div>
-                         <p className="text-xs opacity-90">Total Members</p>
-                         <p className="text-lg font-bold">
-                           {chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0}
-                         </p>
-                       </div>
-                       <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                     </div>
-                   </div>
-                   <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
-                     <div className="relative z-10 flex items-center justify-between">
-                       <div>
-                         <p className="text-xs opacity-90">Male Members</p>
-                         <p className="text-lg font-bold">
-                           {chartData.membersDatabase?.genderDistribution?.reduce(
-                             (sum, item) => sum + item.male,
-                             0
-                           ) || 0}
-                         </p>
-                       </div>
-                       <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                     </div>
-                   </div>
-                   <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                     <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
-                     <div className="relative z-10 flex items-center justify-between">
-                       <div>
-                         <p className="text-xs opacity-90">Female Members</p>
-                         <p className="text-lg font-bold">
-                           {chartData.membersDatabase?.genderDistribution?.reduce(
-                             (sum, item) => sum + item.female,
-                             0
-                           ) || 0}
-                         </p>
-                       </div>
-                       <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                     </div>
-                   </div>
-                                       <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                      <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
-                      <div className="relative z-10 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs opacity-90">Active Guilders</p>
-                          <p className="text-lg font-bold">
-                            {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.85)}
-                          </p>
-                        </div>
-                        <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                      </div>
-                    </div>
-                    <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                      <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
-                      <div className="relative z-10 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs opacity-90">Inactive Guilders</p>
-                          <p className="text-lg font-bold">
-                            {Math.floor((chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 0) * 0.15)}
-                          </p>
-                        </div>
-                        <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                      </div>
-                    </div>
-                    <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
-                      <div className="relative z-10 flex items-center justify-between">
-                        <div>
-                          <p className="text-xs opacity-90">Growth</p>
-                          <p className="text-lg font-bold">
-                            +12.5%
-                          </p>
-                        </div>
-                        <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
-                      </div>
-                    </div>
-                 </div>
-               </div>
-             </div>
-           </div>
+              </div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 lg:p-4 lg:max-h-[50rem]">
@@ -750,7 +778,7 @@ export default function LocalAnalyticsPage() {
                     <div
                       className="h-2 rounded-full bg-blue-500"
                       style={{
-                        width: `${(chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.male, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1) * 100}%`,
+                        width: `${((chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.male, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1)) * 100}%`,
                       }}
                     ></div>
                   </div>
@@ -771,7 +799,7 @@ export default function LocalAnalyticsPage() {
                     <div
                       className="h-2 rounded-full bg-pink-500"
                       style={{
-                        width: `${(chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.female, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1) * 100}%`,
+                        width: `${((chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.female, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1)) * 100}%`,
                       }}
                     ></div>
                   </div>

@@ -60,7 +60,7 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
     fetchActiveQuiz();
-  },[]);
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -358,7 +358,9 @@ export default function DashboardPage() {
               <p className="text-blue-100 text-lg mb-4">
                 Grace and leadership go hand in hand. You&apos;re logged in as a
                 District Admin. View, manage and check the trends of the
-                district guild across the 10 congregations in the district
+                district guild across the{" "}
+                {loading ? "..." : dashboardStats.totalCongregations}{" "}
+                congregations in the district
               </p>
               <div className="flex items-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
