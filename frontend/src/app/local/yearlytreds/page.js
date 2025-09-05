@@ -30,9 +30,7 @@ export default function YearlyTrendsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/analytics/detailed/"
-      );
+      const response = await fetch("/api/analytics/detailed/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {

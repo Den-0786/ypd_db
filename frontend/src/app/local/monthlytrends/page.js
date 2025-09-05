@@ -31,9 +31,7 @@ export default function MonthlyTrendsPage() {
   const fetchAnalyticsData = async () => {
     try {
       // Try to fetch real data from API first
-      const response = await fetch(
-        "http://localhost:8000/api/analytics/detailed/"
-      );
+      const response = await fetch("/api/analytics/detailed/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {

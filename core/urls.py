@@ -90,11 +90,11 @@ urlpatterns = [
     path("api/dashboard-stats/", views.api_dashboard_stats, name="api_dashboard_stats"),
     path("api/home-stats/", views.api_home_stats, name="api_home_stats"),
     # Notification API URLs
-path("api/notifications/", views.api_notifications, name="api_notifications"),
-path("api/notifications/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
-path("api/notifications/clear/", views.api_clear_notifications, name="api_clear_notifications"),
-path("api/notifications/send/", views.api_send_manual_notification, name="api_send_manual_notification"),
-path("api/notifications/create-test/", views.api_create_test_notifications, name="api_create_test_notifications"),
+    path("api/notifications/", views.api_notifications, name="api_notifications"),
+    path("api/notifications/mark-read/", views.api_mark_notification_read, name="api_mark_notification_read"),
+    path("api/notifications/clear/", views.api_clear_notifications, name="api_clear_notifications"),
+    path("api/notifications/send/", views.api_send_manual_notification, name="api_send_manual_notification"),
+    path("api/notifications/create-test/", views.api_create_test_notifications, name="api_create_test_notifications"),
     # Birthday SMS URLs
     path("birthdays/", views.birthday_dashboard, name="birthday_dashboard"),
     path(

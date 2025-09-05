@@ -6,31 +6,32 @@ class AutoLogout {
     this.lastActivity = Date.now();
     this.isLoggedIn = false;
     this.warningShown = false;
-    
+
     // 10 minutes in milliseconds
     this.LOGOUT_TIME = 10 * 60 * 1000;
     // 1 minute warning before logout
     this.WARNING_TIME = 9 * 60 * 1000;
-    
+
     this.init();
   }
 
   init() {
     // Check if user is logged in
     this.checkLoginStatus();
-    
+
     // Set up activity listeners
     this.setupActivityListeners();
-    
+
     // Start the timer
     this.startTimer();
   }
 
   checkLoginStatus() {
-    // Check if user is logged in by looking for auth token or session
+    // Check if user is logged in by looking for user data
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      this.isLoggedIn = !!token;
+      const user = localStorage.getItem("user");
+      const congregationId = localStorage.getItem("congregationId");
+      this.isLoggedIn = !!(user && congregationId);
     } else {
       this.isLoggedIn = false;
     }
@@ -38,17 +39,28 @@ class AutoLogout {
 
   setupActivityListeners() {
     if (typeof window === "undefined") return;
-    
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
-    events.forEach(event => {
-      document.addEventListener(event, () => {
-        this.resetTimer();
-      }, true);
+
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    events.forEach((event) => {
+      document.addEventListener(
+        event,
+        () => {
+          this.resetTimer();
+        },
+        true
+      );
     });
 
     // Also listen for visibility change
-    document.addEventListener('visibilitychange', () => {
+    document.addEventListener("visibilitychange", () => {
       if (!document.hidden) {
         this.resetTimer();
       }
@@ -57,10 +69,10 @@ class AutoLogout {
 
   resetTimer() {
     if (!this.isLoggedIn) return;
-    
+
     this.lastActivity = Date.now();
     this.warningShown = false;
-    
+
     // Clear existing timeouts
     if (this.timeout) {
       clearTimeout(this.timeout);
@@ -68,19 +80,19 @@ class AutoLogout {
     if (this.warningTimeout) {
       clearTimeout(this.warningTimeout);
     }
-    
+
     // Start new timer
     this.startTimer();
   }
 
   startTimer() {
     if (!this.isLoggedIn) return;
-    
+
     // Set warning timeout (9 minutes)
     this.warningTimeout = setTimeout(() => {
       this.showWarning();
     }, this.WARNING_TIME);
-    
+
     // Set logout timeout (10 minutes)
     this.timeout = setTimeout(() => {
       this.logout();
@@ -89,9 +101,9 @@ class AutoLogout {
 
   showWarning() {
     if (!this.isLoggedIn || this.warningShown) return;
-    
+
     this.warningShown = true;
-    
+
     // Show toast warning
     if (typeof window !== "undefined" && window.showToast) {
       window.showToast(
@@ -100,15 +112,15 @@ class AutoLogout {
         60000 // Show for 1 minute
       );
     }
-    
+
     // Add visual indicator
     this.addWarningIndicator();
   }
 
   addWarningIndicator() {
     // Create warning overlay
-    const warningDiv = document.createElement('div');
-    warningDiv.id = 'auto-logout-warning';
+    const warningDiv = document.createElement("div");
+    warningDiv.id = "auto-logout-warning";
     warningDiv.innerHTML = `
       <div style="
         position: fixed;
@@ -140,22 +152,22 @@ class AutoLogout {
         </div>
       </div>
     `;
-    
+
     document.body.appendChild(warningDiv);
-    
+
     // Remove warning when user interacts
     const removeWarning = () => {
-      const warning = document.getElementById('auto-logout-warning');
+      const warning = document.getElementById("auto-logout-warning");
       if (warning) {
         warning.remove();
       }
       this.warningShown = false;
       this.resetTimer();
     };
-    
+
     // Add event listeners to remove warning
-    document.addEventListener('click', removeWarning, { once: true });
-    document.addEventListener('keydown', removeWarning, { once: true });
+    document.addEventListener("click", removeWarning, { once: true });
+    document.addEventListener("keydown", removeWarning, { once: true });
   }
 
   logout() {
@@ -166,26 +178,30 @@ class AutoLogout {
     if (this.warningTimeout) {
       clearTimeout(this.warningTimeout);
     }
-    
+
     // Remove warning indicator if present
     if (typeof window !== "undefined") {
-      const warning = document.getElementById('auto-logout-warning');
+      const warning = document.getElementById("auto-logout-warning");
       if (warning) {
         warning.remove();
       }
-      
+
       // Clear auth data
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     }
-    
+
     // Show logout toast
     if (typeof window !== "undefined" && window.showToast) {
-      window.showToast("You have been logged out due to inactivity.", "info", 3000);
+      window.showToast(
+        "You have been logged out due to inactivity.",
+        "info",
+        3000
+      );
     }
-    
+
     // Redirect to home page
     if (typeof window !== "undefined") {
       setTimeout(() => {
@@ -203,26 +219,30 @@ class AutoLogout {
     if (this.warningTimeout) {
       clearTimeout(this.warningTimeout);
     }
-    
+
     // Remove warning indicator if present
     if (typeof window !== "undefined") {
-      const warning = document.getElementById('auto-logout-warning');
+      const warning = document.getElementById("auto-logout-warning");
       if (warning) {
         warning.remove();
       }
-      
+
       // Clear auth data
-      localStorage.removeItem('authToken');
-      sessionStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-      sessionStorage.removeItem('user');
+      localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
+      localStorage.removeItem("user");
+      sessionStorage.removeItem("user");
     }
-    
+
     // Show logout toast
     if (typeof window !== "undefined" && window.showToast) {
-      window.showToast("You have been logged out successfully.", "success", 3000);
+      window.showToast(
+        "You have been logged out successfully.",
+        "success",
+        3000
+      );
     }
-    
+
     // Redirect to home page
     if (typeof window !== "undefined") {
       setTimeout(() => {
@@ -255,9 +275,9 @@ class AutoLogout {
     if (this.warningTimeout) {
       clearTimeout(this.warningTimeout);
     }
-    
+
     if (typeof window !== "undefined") {
-      const warning = document.getElementById('auto-logout-warning');
+      const warning = document.getElementById("auto-logout-warning");
       if (warning) {
         warning.remove();
       }
@@ -268,4 +288,4 @@ class AutoLogout {
 // Create singleton instance
 const autoLogout = new AutoLogout();
 
-export default autoLogout; 
+export default autoLogout;

@@ -9,7 +9,104 @@ class DataStore {
     this.analyticsData = this.loadFromStorage("analyticsData") || {};
     this.leaderboardData = this.loadFromStorage("leaderboardData") || {};
 
-    // Initialize with empty data - will be populated from API
+    // Initialize with some mock data if no data exists
+    if (this.membersData.length === 0) {
+      this.initializeMockData();
+    }
+  }
+
+  // Initialize with mock data for demonstration
+  initializeMockData() {
+    this.membersData = [
+      {
+        id: 1,
+        name: "John Doe",
+        phone: "+233123456789",
+        email: "john@example.com",
+        gender: "Male",
+        congregation: "Ahinsan Central",
+        status: "Active",
+        is_executive: true,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        name: "Jane Smith",
+        phone: "+233987654321",
+        email: "jane@example.com",
+        gender: "Female",
+        congregation: "Ahinsan Central",
+        status: "Active",
+        is_executive: false,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 3,
+        name: "Michael Johnson",
+        phone: "+233555666777",
+        email: "michael@example.com",
+        gender: "Male",
+        congregation: "Ahinsan North",
+        status: "Active",
+        is_executive: true,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 4,
+        name: "Sarah Wilson",
+        phone: "+233444555666",
+        email: "sarah@example.com",
+        gender: "Female",
+        congregation: "Ahinsan South",
+        status: "Active",
+        is_executive: false,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 5,
+        name: "David Brown",
+        phone: "+233777888999",
+        email: "david@example.com",
+        gender: "Male",
+        congregation: "Ahinsan East",
+        status: "Active",
+        is_executive: true,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    this.attendanceRecords = [
+      {
+        id: 1,
+        date: "2024-01-07",
+        male: 25,
+        female: 30,
+        total: 55,
+        congregation: "Ahinsan Central",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        date: "2024-01-14",
+        male: 28,
+        female: 32,
+        total: 60,
+        congregation: "Ahinsan Central",
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: 3,
+        date: "2024-01-21",
+        male: 30,
+        female: 35,
+        total: 65,
+        congregation: "Ahinsan Central",
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    this.saveToStorage("membersData", this.membersData);
+    this.saveToStorage("attendanceRecords", this.attendanceRecords);
   }
 
   // Storage utilities
@@ -42,21 +139,18 @@ class DataStore {
   // Attendance Records Management
   async addAttendanceRecord(record) {
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/attendance/log/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            date: record.date,
-            male_count: record.male,
-            female_count: record.female,
-            congregation: record.congregation,
-          }),
-        }
-      );
+      const response = await fetch("/api/attendance/log/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: record.date,
+          male_count: record.male,
+          female_count: record.female,
+          congregation: record.congregation,
+        }),
+      });
 
       const data = await response.json();
 
@@ -84,7 +178,7 @@ class DataStore {
   async getAttendanceRecords(filters = {}) {
     try {
       // Try to get from API first
-      let url = "http://localhost:8000/api/attendance/records/";
+      let url = "http://localhost:8001/api/attendance/records/";
       const params = new URLSearchParams();
 
       if (filters.congregation) {
@@ -102,9 +196,17 @@ class DataStore {
       }
 
       const response = await fetch(url);
+
+      if (!response.ok) {
+        console.warn(
+          `Attendance records API request failed with status ${response.status}, using local data`
+        );
+        return this.getLocalAttendanceRecords(filters);
+      }
+
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.records && Array.isArray(data.records)) {
         // Update local storage with API data
         this.attendanceRecords = data.records.map((record) => ({
           id: record.id,
@@ -119,11 +221,17 @@ class DataStore {
         return this.attendanceRecords;
       } else {
         // Fallback to local storage
-        console.warn("API failed, using local data:", data.error);
+        console.warn(
+          "API returned invalid data, using local data:",
+          data.error
+        );
         return this.getLocalAttendanceRecords(filters);
       }
     } catch (error) {
-      console.error("Error fetching attendance records:", error);
+      console.warn(
+        "Error fetching attendance records from API, using local data:",
+        error.message
+      );
       // Fallback to local storage
       return this.getLocalAttendanceRecords(filters);
     }
@@ -177,7 +285,7 @@ class DataStore {
         hometown: member.hometown || "Accra",
       };
 
-      const response = await fetch("http://localhost:8000/api/members/add/", {
+      const response = await fetch("/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -224,7 +332,7 @@ class DataStore {
   async getMembers(filters = {}) {
     try {
       // Try to get from API first
-      let url = "http://localhost:8000/api/members/";
+      let url = "http://localhost:8001/api/members/";
       const params = new URLSearchParams();
 
       // Note: API expects congregation_id, but we're sending congregation name
@@ -240,12 +348,15 @@ class DataStore {
       const response = await fetch(url);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.warn(
+          `API request failed with status ${response.status}, falling back to local data`
+        );
+        return this.getLocalMembers(filters);
       }
 
       const data = await response.json();
 
-      if (data.members) {
+      if (data.members && Array.isArray(data.members)) {
         // Update local storage with API data
         let members = data.members.map((member) => ({
           id: member.id,
@@ -271,11 +382,14 @@ class DataStore {
         return this.membersData;
       } else {
         // Fallback to local storage
-        console.warn("API failed, using local data");
+        console.warn("API returned invalid data, using local data");
         return this.getLocalMembers(filters);
       }
     } catch (error) {
-      console.error("Error fetching members:", error);
+      console.warn(
+        "Error fetching members from API, using local data:",
+        error.message
+      );
       // Fallback to local storage
       return this.getLocalMembers(filters);
     }
@@ -576,16 +690,26 @@ class DataStore {
     }
 
     try {
-      // Use the Django backend URL - adjust the port if needed
-      const response = await fetch("http://localhost:8000/api/home-stats/");
+      // Use the Django backend URL directly
+      const response = await fetch("http://localhost:8001/api/home-stats/");
+
+      if (!response.ok) {
+        console.warn(
+          `Home stats API request failed with status ${response.status}`
+        );
+        return null;
+      }
+
       const data = await response.json();
 
-      if (data.success) {
+      if (data.success && data.data) {
         return data.data;
       } else {
+        console.warn("Home stats API returned invalid data");
         return null;
       }
     } catch (error) {
+      console.warn("Error fetching home stats from API:", error.message);
       return null;
     }
   }

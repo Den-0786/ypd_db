@@ -19,11 +19,19 @@ echo "📦 Installing dependencies..."
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Set production environment variables
-echo "⚙️ Setting production environment variables..."
-export DEBUG=False
-export ALLOWED_HOSTS="your-domain.com,www.your-domain.com"
-export CORS_ALLOWED_ORIGINS="https://your-domain.com,https://www.your-domain.com"
+# Load .env if present
+if [ -f .env ]; then
+    echo "🔐 Loading environment from .env..."
+    set -a
+    . ./.env
+    set +a
+fi
+
+# Set minimal production environment variables if not provided
+echo "⚙️ Ensuring production environment variables..."
+export DEBUG=${DEBUG:-False}
+export ALLOWED_HOSTS=${ALLOWED_HOSTS:-"your-domain.com,www.your-domain.com"}
+export CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-"https://your-domain.com,https://www.your-domain.com"}
 
 # Run database migrations
 echo "🗄️ Running database migrations..."

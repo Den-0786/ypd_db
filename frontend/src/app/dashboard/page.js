@@ -41,9 +41,9 @@ export default function DashboardPage() {
   // Initialize auto-logout when component mounts
   useEffect(() => {
     // Check if user is logged in
-    const token =
-      localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    if (token) {
+    const user = localStorage.getItem("user");
+    const congregationId = localStorage.getItem("congregationId");
+    if (user && congregationId) {
       autoLogout.updateLoginStatus(true);
     } else {
       // If not logged in, redirect to login
@@ -65,7 +65,7 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8000/api/home-stats/");
+      const response = await fetch("http://localhost:8001/api/home-stats/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
@@ -88,7 +88,7 @@ export default function DashboardPage() {
 
   const fetchActiveQuiz = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/quizzes/active/");
+      const response = await fetch("http://localhost:8001/api/quizzes/active/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.quiz) {
@@ -158,7 +158,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/quizzes/create/",
+        "http://localhost:8001/api/quizzes/create/",
         {
           method: "POST",
           headers: {
@@ -227,7 +227,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/quizzes/${activeQuiz.id}/end/`,
+        `http://localhost:8001/api/quizzes/${activeQuiz.id}/end/`,
         {
           method: "POST",
           headers: {
@@ -254,7 +254,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/quizzes/${activeQuiz.id}/delete/`,
+        `http://localhost:8001/api/quizzes/${activeQuiz.id}/delete/`,
         {
           method: "DELETE",
           headers: {
@@ -291,7 +291,7 @@ export default function DashboardPage() {
   const handleQuizSubmission = async (submission) => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/quizzes/submit/",
+        "http://localhost:8001/api/quizzes/submit/",
         {
           method: "POST",
           headers: {

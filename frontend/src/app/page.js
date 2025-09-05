@@ -126,22 +126,36 @@ export default function HomePage() {
         });
       } else {
         // Fallback to local dataStore if API fails
-        const members = dataStore.getMembers();
-        const attendanceRecords = dataStore.getAttendanceRecords();
+        const members = await dataStore.getMembers();
+        const attendanceRecords = await dataStore.getAttendanceRecords();
         const analytics = dataStore.getAnalyticsData();
         const leaderboard = dataStore.getLeaderboardData("weekly");
 
+        // Ensure we have arrays
+        const membersArray = Array.isArray(members) ? members : [];
+        const attendanceArray = Array.isArray(attendanceRecords)
+          ? attendanceRecords
+          : [];
+
         // Calculate statistics from local data
-        const totalMembers = members.length;
-        const activeMembers = members.filter(
+        const totalMembers = membersArray.length;
+        const activeMembers = membersArray.filter(
           (m) => m.status !== "Inactive"
         ).length;
-        const totalMale = members.filter((m) => m.gender === "Male").length;
-        const totalFemale = members.filter((m) => m.gender === "Female").length;
-        const executiveMembers = members.filter((m) => m.is_executive).length;
+        const totalMale = membersArray.filter(
+          (m) => m.gender === "Male"
+        ).length;
+        const totalFemale = membersArray.filter(
+          (m) => m.gender === "Female"
+        ).length;
+        const executiveMembers = membersArray.filter(
+          (m) => m.is_executive
+        ).length;
 
         // Get unique congregations
-        const congregations = [...new Set(members.map((m) => m.congregation))];
+        const congregations = [
+          ...new Set(membersArray.map((m) => m.congregation)),
+        ];
         const totalCongregations = congregations.length;
 
         // Calculate attendance statistics
@@ -155,7 +169,7 @@ export default function HomePage() {
         );
 
         // This week's attendance
-        const thisWeekRecords = attendanceRecords.filter((r) => {
+        const thisWeekRecords = attendanceArray.filter((r) => {
           const recordDate = new Date(r.date);
           const recordWeek = Math.ceil(
             (recordDate.getDate() +
@@ -178,7 +192,7 @@ export default function HomePage() {
         );
 
         // This month's attendance
-        const thisMonthRecords = attendanceRecords.filter((r) => {
+        const thisMonthRecords = attendanceArray.filter((r) => {
           const recordDate = new Date(r.date);
           return (
             recordDate.getFullYear() === currentYear &&
@@ -192,13 +206,13 @@ export default function HomePage() {
 
         // Average attendance
         const averageAttendance =
-          attendanceRecords.length > 0
-            ? attendanceRecords.reduce((sum, r) => sum + (r.total || 0), 0) /
-              attendanceRecords.length
+          attendanceArray.length > 0
+            ? attendanceArray.reduce((sum, r) => sum + (r.total || 0), 0) /
+              attendanceArray.length
             : 0;
 
         // Growth rate calculation
-        const recentRecords = attendanceRecords
+        const recentRecords = attendanceArray
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 2);
 

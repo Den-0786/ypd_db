@@ -110,7 +110,7 @@ export default function LocalSidebar({
       setNotificationsLoading(true);
       const congregationName = localStorage.getItem("congregationName");
 
-      let url = "http://localhost:8000/api/notifications/";
+      let url = "/api/notifications/";
       if (congregationName && congregationName !== "District Admin") {
         url += `?congregation=${encodeURIComponent(congregationName)}`;
       }
@@ -155,16 +155,13 @@ export default function LocalSidebar({
         body += `&congregation=${encodeURIComponent(congregationName)}`;
       }
 
-      const response = await fetch(
-        "http://localhost:8000/api/notifications/mark-read/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: body,
-        }
-      );
+      const response = await fetch("/api/notifications/mark-read/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body,
+      });
 
       if (response.ok) {
         setNotifications((prev) =>
@@ -184,16 +181,13 @@ export default function LocalSidebar({
         body = `congregation=${encodeURIComponent(congregationName)}`;
       }
 
-      const response = await fetch(
-        "http://localhost:8000/api/notifications/clear/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: body,
-        }
-      );
+      const response = await fetch("/api/notifications/clear/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body,
+      });
 
       if (response.ok) {
         setNotifications([]);
@@ -212,18 +206,15 @@ export default function LocalSidebar({
         return;
       }
 
-      const response = await fetch(
-        "http://localhost:8000/api/notifications/create-test/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            congregation: congregationName,
-          }),
-        }
-      );
+      const response = await fetch("/api/notifications/create-test/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          congregation: congregationName,
+        }),
+      });
 
       if (response.ok) {
         const data = await response.json();

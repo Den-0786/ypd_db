@@ -84,10 +84,10 @@ export default function AnalyticsPage() {
 
       // Fetch detailed analytics data from new API endpoint
       const analyticsResponse = await fetch(
-        "http://localhost:8000/api/analytics/detailed/"
+        "http://localhost:8001/api/analytics/detailed/"
       );
       const homeStatsResponse = await fetch(
-        "http://localhost:8000/api/home-stats/"
+        "http://localhost:8001/api/home-stats/"
       );
 
       let analyticsData = null;
@@ -134,13 +134,13 @@ export default function AnalyticsPage() {
     }
 
     // Fallback to mock data if API fails
-        const mockData = {
-          sundayAttendance: {
+    const mockData = {
+      sundayAttendance: {
         totalAttendance: 1250,
         averageAttendance: 125,
         congregationsCount: 0, // Will be populated from API
-            growth: 12.5,
-            weeklyTrend: [
+        growth: 12.5,
+        weeklyTrend: [
           {
             date: "2024-01-01",
             male: 45,
@@ -190,29 +190,29 @@ export default function AnalyticsPage() {
             total: 286,
             congregation: "Liberty Congregation Esreso High Tension",
           },
-            ],
-            monthlyTrend: [
-              { month: "Jan", male: 505, female: 635, total: 1140 },
-              { month: "Feb", male: 510, female: 643, total: 1153 },
-              { month: "Mar", male: 498, female: 628, total: 1126 },
-              { month: "Apr", male: 515, female: 645, total: 1160 },
-              { month: "May", male: 508, female: 638, total: 1146 },
-              { month: "Jun", male: 512, female: 642, total: 1154 },
-              { month: "Jul", male: 518, female: 648, total: 1166 },
-              { month: "Aug", male: 525, female: 655, total: 1180 },
-              { month: "Sep", male: 532, female: 662, total: 1194 },
-            ],
-            yearlyTrend: [
+        ],
+        monthlyTrend: [
+          { month: "Jan", male: 505, female: 635, total: 1140 },
+          { month: "Feb", male: 510, female: 643, total: 1153 },
+          { month: "Mar", male: 498, female: 628, total: 1126 },
+          { month: "Apr", male: 515, female: 645, total: 1160 },
+          { month: "May", male: 508, female: 638, total: 1146 },
+          { month: "Jun", male: 512, female: 642, total: 1154 },
+          { month: "Jul", male: 518, female: 648, total: 1166 },
+          { month: "Aug", male: 525, female: 655, total: 1180 },
+          { month: "Sep", male: 532, female: 662, total: 1194 },
+        ],
+        yearlyTrend: [
           { year: "2020", male: 4800, female: 6000, total: 10800 },
           { year: "2021", male: 5100, female: 6400, total: 11500 },
           { year: "2022", male: 5400, female: 6800, total: 12200 },
           { year: "2023", male: 5700, female: 7200, total: 12900 },
           { year: "2024", male: 6000, female: 7600, total: 13600 },
-            ],
-          },
-          membersDatabase: {
+        ],
+      },
+      membersDatabase: {
         totalMembers: 850,
-            congregations: [
+        congregations: [
           { name: "Emmanuel Congregation Ahinsan", count: 0 },
           { name: "Peniel Congregation Esreso No1", count: 0 },
           { name: "Mizpah Congregation Odagya No1", count: 0 },
@@ -223,51 +223,51 @@ export default function AnalyticsPage() {
           { name: "Odagya No2", count: 0 },
           { name: "NOM", count: 0 },
           { name: "Kokobriko", count: 0 },
-            ],
-            genderDistribution: [
-              {
-                congregation: "Emmanuel Congregation Ahinsan",
+        ],
+        genderDistribution: [
+          {
+            congregation: "Emmanuel Congregation Ahinsan",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Peniel Congregation Esreso No1",
+          },
+          {
+            congregation: "Peniel Congregation Esreso No1",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Mizpah Congregation Odagya No1",
+          },
+          {
+            congregation: "Mizpah Congregation Odagya No1",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Christ Congregation Ahinsan Estate",
+          },
+          {
+            congregation: "Christ Congregation Ahinsan Estate",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Ebenezer Congregation Dompoase Aprabo",
+          },
+          {
+            congregation: "Ebenezer Congregation Dompoase Aprabo",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Favour Congregation Esreso No2",
+          },
+          {
+            congregation: "Favour Congregation Esreso No2",
             male: 0,
             female: 0,
-              },
-              {
-                congregation: "Liberty Congregation Esreso High Tension",
+          },
+          {
+            congregation: "Liberty Congregation Esreso High Tension",
             male: 0,
             female: 0,
           },
           { congregation: "Odagya No2", male: 0, female: 0 },
           { congregation: "NOM", male: 0, female: 0 },
           { congregation: "Kokobriko", male: 0, female: 0 },
-            ],
-          },
-        };
-        setChartData(mockData);
-      setLoading(false);
+        ],
+      },
+    };
+    setChartData(mockData);
+    setLoading(false);
   };
 
   if (loading) {

@@ -445,7 +445,7 @@ export default function LocalDashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/profile/"
+        "http://localhost:8001/api/settings/profile/"
       );
       if (response.ok) {
         const data = await response.json();
@@ -474,7 +474,7 @@ export default function LocalDashboardLayout({
     try {
       setProfileSaving(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/profile/",
+        "http://localhost:8001/api/settings/profile/",
         {
           method: "PUT",
           headers: {
@@ -521,7 +521,7 @@ export default function LocalDashboardLayout({
     try {
       setSecurityLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/"
+        "http://localhost:8001/api/settings/security/"
       );
       if (response.ok) {
         const data = await response.json();
@@ -563,7 +563,7 @@ export default function LocalDashboardLayout({
 
       setSecuritySaving(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/",
+        "http://localhost:8001/api/settings/security/",
         {
           method: "PUT",
           headers: {
@@ -631,7 +631,7 @@ export default function LocalDashboardLayout({
 
       setSecuritySaving(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/",
+        "http://localhost:8001/api/settings/security/",
         {
           method: "PUT",
           headers: {
@@ -704,7 +704,7 @@ export default function LocalDashboardLayout({
 
       setSecuritySaving(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/",
+        "http://localhost:8001/api/settings/security/",
         {
           method: "PUT",
           headers: {
@@ -754,7 +754,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        `http://localhost:8000/api/data/export/${format}/`,
+        `http://localhost:8001/api/data/export/${format}/`,
         {
           method: "POST",
           headers: {
@@ -802,7 +802,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        "http://localhost:8000/api/data/backup/create/",
+        "http://localhost:8001/api/data/backup/create/",
         {
           method: "POST",
           headers: {
@@ -834,7 +834,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        "http://localhost:8000/api/data/backup/restore/",
+        "http://localhost:8001/api/data/backup/restore/",
         {
           method: "POST",
           headers: {
@@ -873,7 +873,7 @@ export default function LocalDashboardLayout({
     try {
       setDataManagementLoading(true);
 
-      const response = await fetch("http://localhost:8000/api/data/clear/", {
+      const response = await fetch("http://localhost:8001/api/data/clear/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -908,7 +908,6 @@ export default function LocalDashboardLayout({
     }, 1000);
   };
 
-  
   useEffect(() => {
     if (settingsOpen && activeSettingsTab === "profile") {
       fetchProfile();
@@ -935,7 +934,6 @@ export default function LocalDashboardLayout({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      
       window.showToast = (message, type = "success", duration = 3000) => {
         if (type === "success") {
           showSuccess(message);
@@ -965,21 +963,18 @@ export default function LocalDashboardLayout({
     }
   }, [showSuccess, showError]);
 
-
   const [notifications, setNotifications] = useState([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
-
 
   const fetchNotifications = async () => {
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8000/api/notifications/");
+      const response = await fetch("http://localhost:8001/api/notifications/");
 
       if (response.ok) {
         const data = await response.json();
         if (data.notifications) {
-          
           const transformedNotifications = data.notifications.map(
             (notification) => ({
               id: notification.id,
@@ -1010,10 +1005,8 @@ export default function LocalDashboardLayout({
     }
   };
 
-
   useEffect(() => {
     fetchNotifications();
-
 
     const interval = setInterval(fetchNotifications, 30000);
 
@@ -1890,12 +1883,12 @@ export default function LocalDashboardLayout({
                             Description
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Ahinsan District YPG Database Management System is a comprehensive
-                            solution for managing Young People&apos;s Guild
-                            data, attendance tracking, and analytics. Built with
-                            modern web technologies to provide a seamless
-                            experience for church administrators and youth
-                            leaders.
+                            Ahinsan District YPG Database Management System is a
+                            comprehensive solution for managing Young
+                            People&apos;s Guild data, attendance tracking, and
+                            analytics. Built with modern web technologies to
+                            provide a seamless experience for church
+                            administrators and youth leaders.
                           </p>
                         </div>
                         <div>

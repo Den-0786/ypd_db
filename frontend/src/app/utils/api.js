@@ -1,6 +1,6 @@
 // API Configuration and utility functions for Dashboard
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8001";
 
 // Generic API request function with error handling
 export const apiRequest = async (endpoint, options = {}) => {

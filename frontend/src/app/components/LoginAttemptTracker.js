@@ -26,9 +26,7 @@ const LoginAttemptTracker = ({ onLoginSuccess }) => {
 
     try {
       const endpoint =
-        loginType === "password"
-          ? "http://localhost:8000/api/auth/login/"
-          : "http://localhost:8000/api/auth/pin-login/";
+        loginType === "password" ? "/api/auth/login/" : "/api/auth/pin-login/";
 
       const requestBody =
         loginType === "password"
@@ -88,7 +86,7 @@ const LoginAttemptTracker = ({ onLoginSuccess }) => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/auth/logout/", {
+      const response = await fetch("/api/auth/logout/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

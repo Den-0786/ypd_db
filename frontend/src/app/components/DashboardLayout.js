@@ -34,11 +34,11 @@ export default function DashboardLayout({
       message_template:
         "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!",
       is_active: true,
-      target_congregations: "all", 
+      target_congregations: "all",
       selected_congregations: [],
     },
     birthday_message: {
-      title: "Birthday Message", 
+      title: "Birthday Message",
       message_template:
         "Happy Birthday {name}! May God bless you abundantly. - YPG",
       is_active: true,
@@ -70,7 +70,7 @@ export default function DashboardLayout({
   useEffect(() => {
     const fetchCongregations = async () => {
       try {
-        const response = await fetch("http://localhost:8000/api/home-stats/");
+        const response = await fetch("http://localhost:8001/api/home-stats/");
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data && data.data.congregations) {
@@ -78,15 +78,15 @@ export default function DashboardLayout({
           } else {
             // Fallback to default congregations if API doesn't return congregation list
             setAvailableCongregations([
-    "Emmanuel Congregation Ahinsan",
-    "Peniel Congregation Esreso No1",
-    "Mizpah Congregation Odagya No1",
-    "Christ Congregation Ahinsan Estate",
-    "Ebenezer Congregation Dompoase Aprabo",
-    "Favour Congregation Esreso No2",
-    "Liberty Congregation Esreso High Tension",
-    "Odagya No2",
-    "NOM",
+              "Emmanuel Congregation Ahinsan",
+              "Peniel Congregation Esreso No1",
+              "Mizpah Congregation Odagya No1",
+              "Christ Congregation Ahinsan Estate",
+              "Ebenezer Congregation Dompoase Aprabo",
+              "Favour Congregation Esreso No2",
+              "Liberty Congregation Esreso High Tension",
+              "Odagya No2",
+              "NOM",
               "Kokobriko",
             ]);
           }
@@ -117,7 +117,7 @@ export default function DashboardLayout({
     const fetchReminderSettings = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8000/api/reminder-settings/"
+          "http://localhost:8001/api/reminder-settings/"
         );
         if (response.ok) {
           const data = await response.json();
@@ -266,7 +266,7 @@ export default function DashboardLayout({
     try {
       setSecurityLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/"
+        "http://localhost:8001/api/settings/security/"
       );
       if (response.ok) {
         const data = await response.json();
@@ -295,7 +295,7 @@ export default function DashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/profile/"
+        "http://localhost:8001/api/settings/profile/"
       );
       if (response.ok) {
         const data = await response.json();
@@ -320,7 +320,7 @@ export default function DashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8000/api/settings/profile/",
+        "http://localhost:8001/api/settings/profile/",
         {
           method: "PUT",
           headers: {
@@ -333,7 +333,7 @@ export default function DashboardLayout({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-    showSuccess("Profile updated successfully!");
+          showSuccess("Profile updated successfully!");
           // Update the profile data with the response data
           if (data.profile) {
             setProfileData(data.profile);
@@ -378,7 +378,7 @@ export default function DashboardLayout({
       }
 
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/",
+        "http://localhost:8001/api/settings/security/",
         {
           method: "PUT",
           headers: {
@@ -446,7 +446,7 @@ export default function DashboardLayout({
       }
 
       const response = await fetch(
-        "http://localhost:8000/api/settings/security/",
+        "http://localhost:8001/api/settings/security/",
         {
           method: "PUT",
           headers: {
@@ -502,7 +502,7 @@ export default function DashboardLayout({
       sessionStorage.removeItem("authToken");
       localStorage.removeItem("user");
       sessionStorage.removeItem("user");
-      
+
       showSuccess("Logged out successfully!");
       setTimeout(() => {
         window.location.href = "/";
@@ -523,7 +523,7 @@ export default function DashboardLayout({
   const handleSaveReminderSettings = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/reminder-settings/",
+        "http://localhost:8001/api/reminder-settings/",
         {
           method: "POST",
           headers: {
@@ -536,7 +536,7 @@ export default function DashboardLayout({
       const data = await response.json();
 
       if (data.success) {
-    showSuccess("Reminder settings saved successfully!");
+        showSuccess("Reminder settings saved successfully!");
       } else {
         showError(data.error || "Failed to save reminder settings");
       }
@@ -550,7 +550,7 @@ export default function DashboardLayout({
   const handleExportData = async (format, type = "all") => {
     try {
       const response = await fetch(
-        `http://localhost:8000/api/data/export/${format}/`,
+        `http://localhost:8001/api/data/export/${format}/`,
         {
           method: "POST",
           headers: {
@@ -590,7 +590,7 @@ export default function DashboardLayout({
   const handleCreateBackup = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/data/backup/create/",
+        "http://localhost:8001/api/data/backup/create/",
         {
           method: "POST",
           headers: {
@@ -617,7 +617,7 @@ export default function DashboardLayout({
   const handleRestoreBackup = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/data/backup/restore/",
+        "http://localhost:8001/api/data/backup/restore/",
         {
           method: "POST",
           headers: {
@@ -648,7 +648,7 @@ export default function DashboardLayout({
 
     if (confirmation === "DELETE_ALL_DATA") {
       try {
-        const response = await fetch("http://localhost:8000/api/data/clear/", {
+        const response = await fetch("http://localhost:8001/api/data/clear/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -674,7 +674,7 @@ export default function DashboardLayout({
 
   const handleSendReminder = async (settingType) => {
     const setting = reminderSettings[settingType];
-    
+
     if (!setting.is_active) {
       showError(
         "This message type is currently disabled. Please enable it first."
@@ -683,7 +683,7 @@ export default function DashboardLayout({
     }
 
     let targetCongregations = [];
-    
+
     switch (setting.target_congregations) {
       case "all":
         targetCongregations = availableCongregations;
@@ -709,7 +709,7 @@ export default function DashboardLayout({
     // Send to backend API
     try {
       // Process message template with real data
-    const message = setting.message_template
+      const message = setting.message_template
         .replace(/{congregation}/g, targetCongregations.join(", "))
         .replace(/{date}/g, new Date().toLocaleDateString())
         .replace(
@@ -720,7 +720,7 @@ export default function DashboardLayout({
         .replace(/{location}/g, "Main Hall");
 
       const response = await fetch(
-        "http://localhost:8000/api/notifications/send/",
+        "http://localhost:8001/api/notifications/send/",
         {
           method: "POST",
           headers: {
@@ -764,7 +764,7 @@ export default function DashboardLayout({
       .replace("{day}", "Sunday")
       .replace("{name}", "John Doe")
       .replace("{location}", "Main Hall");
-    
+
     showSuccess(`Test message: ${testMessage}`);
   };
 
@@ -775,7 +775,7 @@ export default function DashboardLayout({
     )
       ? setting.selected_congregations.filter((c) => c !== congregation)
       : [...setting.selected_congregations, congregation];
-    
+
     handleReminderSettingChange(
       settingType,
       "selected_congregations",
@@ -799,7 +799,7 @@ export default function DashboardLayout({
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8000/api/notifications/");
+      const response = await fetch("http://localhost:8001/api/notifications/");
 
       if (response.ok) {
         const data = await response.json();
@@ -1226,7 +1226,7 @@ export default function DashboardLayout({
                               New Password
                             </label>
                             <div className="relative">
-                            <input
+                              <input
                                 type={showNewPassword ? "text" : "password"}
                                 value={securityData.newPassword}
                                 onChange={(e) =>
@@ -1289,7 +1289,7 @@ export default function DashboardLayout({
                               Confirm New Password
                             </label>
                             <div className="relative">
-                            <input
+                              <input
                                 type={showConfirmPassword ? "text" : "password"}
                                 value={securityData.confirmPassword}
                                 onChange={(e) =>
@@ -1399,9 +1399,9 @@ export default function DashboardLayout({
                               Current PIN
                             </label>
                             <div className="relative">
-                            <input
+                              <input
                                 type={showCurrentPin ? "text" : "password"}
-                              maxLength="6"
+                                maxLength="6"
                                 value={securityData.currentPin}
                                 onChange={(e) =>
                                   setSecurityData((prev) => ({
@@ -1409,7 +1409,7 @@ export default function DashboardLayout({
                                     currentPin: e.target.value,
                                   }))
                                 }
-                              placeholder="Enter 4-6 digit PIN"
+                                placeholder="Enter 4-6 digit PIN"
                                 className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                 disabled={securityLoading}
                               />
@@ -1464,9 +1464,9 @@ export default function DashboardLayout({
                               New PIN
                             </label>
                             <div className="relative">
-                            <input
+                              <input
                                 type={showNewPin ? "text" : "password"}
-                              maxLength="6"
+                                maxLength="6"
                                 value={securityData.newPin}
                                 onChange={(e) =>
                                   setSecurityData((prev) => ({
@@ -1474,7 +1474,7 @@ export default function DashboardLayout({
                                     newPin: e.target.value,
                                   }))
                                 }
-                              placeholder="Enter 4-6 digit PIN"
+                                placeholder="Enter 4-6 digit PIN"
                                 className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                 disabled={securityLoading}
                               />
@@ -1527,9 +1527,9 @@ export default function DashboardLayout({
                               Confirm New PIN
                             </label>
                             <div className="relative">
-                            <input
+                              <input
                                 type={showConfirmPin ? "text" : "password"}
-                              maxLength="6"
+                                maxLength="6"
                                 value={securityData.confirmPin}
                                 onChange={(e) =>
                                   setSecurityData((prev) => ({
@@ -1537,7 +1537,7 @@ export default function DashboardLayout({
                                     confirmPin: e.target.value,
                                   }))
                                 }
-                              placeholder="Confirm 4-6 digit PIN"
+                                placeholder="Confirm 4-6 digit PIN"
                                 className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                 disabled={securityLoading}
                               />
@@ -1858,12 +1858,12 @@ export default function DashboardLayout({
                             Description
                           </h4>
                           <p className="text-xs text-gray-600 dark:text-gray-400">
-                            Ahinsan District YPG Database Management System is a comprehensive
-                            solution for managing Young People&apos;s Guild
-                            data, attendance tracking, and analytics. Built with
-                            modern web technologies to provide a seamless
-                            experience for church administrators and youth
-                            leaders.
+                            Ahinsan District YPG Database Management System is a
+                            comprehensive solution for managing Young
+                            People&apos;s Guild data, attendance tracking, and
+                            analytics. Built with modern web technologies to
+                            provide a seamless experience for church
+                            administrators and youth leaders.
                           </p>
                         </div>
                         <div>
@@ -1992,16 +1992,16 @@ export default function DashboardLayout({
                               </p>
                             </div>
                             <div>
-                               <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                 Target Congregations
-                               </label>
-                               <div className="space-y-2">
-                                 <div className="flex items-center space-x-3">
-                                   <label className="flex items-center">
-                                     <input
-                                       type="radio"
-                                       name="attendance_target"
-                                       value="all"
+                              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                Target Congregations
+                              </label>
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-3">
+                                  <label className="flex items-center">
+                                    <input
+                                      type="radio"
+                                      name="attendance_target"
+                                      value="all"
                                       checked={
                                         reminderSettings.attendance_reminder
                                           .target_congregations === "all"
@@ -2012,17 +2012,17 @@ export default function DashboardLayout({
                                           e.target.value
                                         )
                                       }
-                                       className="mr-2"
-                                     />
+                                      className="mr-2"
+                                    />
                                     <span className="text-xs text-gray-700 dark:text-gray-300">
                                       All Congregations
                                     </span>
-                                   </label>
-                                   <label className="flex items-center">
-                                     <input
-                                       type="radio"
-                                       name="attendance_target"
-                                       value="specific"
+                                  </label>
+                                  <label className="flex items-center">
+                                    <input
+                                      type="radio"
+                                      name="attendance_target"
+                                      value="specific"
                                       checked={
                                         reminderSettings.attendance_reminder
                                           .target_congregations === "specific"
@@ -2033,17 +2033,17 @@ export default function DashboardLayout({
                                           e.target.value
                                         )
                                       }
-                                       className="mr-2"
-                                     />
+                                      className="mr-2"
+                                    />
                                     <span className="text-xs text-gray-700 dark:text-gray-300">
                                       Specific Congregations
                                     </span>
-                                   </label>
-                                   <label className="flex items-center">
-                                     <input
-                                       type="radio"
-                                       name="attendance_target"
-                                       value="non_submitting"
+                                  </label>
+                                  <label className="flex items-center">
+                                    <input
+                                      type="radio"
+                                      name="attendance_target"
+                                      value="non_submitting"
                                       checked={
                                         reminderSettings.attendance_reminder
                                           .target_congregations ===
@@ -2055,25 +2055,25 @@ export default function DashboardLayout({
                                           e.target.value
                                         )
                                       }
-                                       className="mr-2"
-                                     />
+                                      className="mr-2"
+                                    />
                                     <span className="text-xs text-gray-700 dark:text-gray-300">
                                       Non-submitting Only
                                     </span>
-                                   </label>
-                                 </div>
+                                  </label>
+                                </div>
                                 {reminderSettings.attendance_reminder
                                   .target_congregations === "specific" && (
-                                   <div className="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
-                                     <div className="grid grid-cols-2 gap-1">
+                                  <div className="max-h-32 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-md p-2">
+                                    <div className="grid grid-cols-2 gap-1">
                                       {availableCongregations.map(
                                         (congregation) => (
                                           <label
                                             key={congregation}
                                             className="flex items-center text-xs"
                                           >
-                                           <input
-                                             type="checkbox"
+                                            <input
+                                              type="checkbox"
                                               checked={reminderSettings.attendance_reminder.selected_congregations.includes(
                                                 congregation
                                               )}
@@ -2083,40 +2083,40 @@ export default function DashboardLayout({
                                                   congregation
                                                 )
                                               }
-                                             className="mr-1"
-                                           />
+                                              className="mr-1"
+                                            />
                                             <span className="truncate">
                                               {congregation}
                                             </span>
-                                         </label>
+                                          </label>
                                         )
                                       )}
-                                     </div>
-                                   </div>
-                                 )}
-                               </div>
-                             </div>
-                             <div className="flex space-x-2">
-                               <button
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
                                 onClick={() =>
                                   handleTestReminder("attendance_reminder")
                                 }
-                                 className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                               >
-                                 <i className="fas fa-play mr-1"></i>Test Message
-                               </button>
-                               <button
+                                className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                              >
+                                <i className="fas fa-play mr-1"></i>Test Message
+                              </button>
+                              <button
                                 onClick={() =>
                                   handleSendReminder("attendance_reminder")
                                 }
-                                 className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                               >
+                                className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                              >
                                 <i className="fas fa-paper-plane mr-1"></i>Send
                                 Message
-                               </button>
-                             </div>
-                           </div>
-                         </div>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Birthday Message */}
                         <div className="bg-white dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">

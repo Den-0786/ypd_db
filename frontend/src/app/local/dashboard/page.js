@@ -55,7 +55,7 @@ export default function LocalDashboardPage() {
       setLoading(true);
       const dataStore = getDataStore();
 
-      const response = await fetch("http://localhost:8000/api/home-stats/");
+      const response = await fetch("http://localhost:8001/api/home-stats/");
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
