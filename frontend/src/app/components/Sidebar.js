@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
 import { useToast } from "./Toast";
 
@@ -16,6 +17,7 @@ export default function Sidebar({
 }) {
   const { theme, setTheme, mounted } = useTheme();
   const { showSuccess } = useToast();
+  const pathname = usePathname();
 
   // Test toast on mount
   useEffect(() => {
@@ -26,7 +28,6 @@ export default function Sidebar({
     }
   }, [mounted, showSuccess]);
 
-
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function Sidebar({
       if (user) {
         try {
           const parsedUser = JSON.parse(user);
-          
+
           if (parsedUser.congregationId === "district") {
             setUserInfo({
               username: "District Admin",
@@ -45,7 +46,6 @@ export default function Sidebar({
             setUserInfo(parsedUser);
           }
         } catch (e) {
-          
           setUserInfo({
             username: "District Admin",
             congregationName: "District Executive",
@@ -55,10 +55,8 @@ export default function Sidebar({
     }
   }, []);
 
-
   useEffect(() => {
     function handleClickOutside(event) {
-
       if (userMenuOpen) {
         const userMenuElement = document.getElementById("user-menu-dropdown");
         const userMenuButton = event.target.closest("[data-user-menu-button]");
@@ -71,7 +69,6 @@ export default function Sidebar({
         }
       }
 
-     
       if (notificationsOpen) {
         const notificationsElement = document.getElementById(
           "notifications-dropdown"
@@ -88,7 +85,6 @@ export default function Sidebar({
         }
       }
 
-      
       if (sidebarOpen && window.innerWidth < 1024) {
         const sidebarElement = document.querySelector("[data-sidebar]");
         const sidebarToggleButton = event.target.closest(
@@ -104,10 +100,8 @@ export default function Sidebar({
       }
     }
 
-
     document.addEventListener("mousedown", handleClickOutside);
 
-    
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -120,7 +114,6 @@ export default function Sidebar({
     setSidebarOpen,
   ]);
 
-  
   const toggleTheme = () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setTheme(newTheme);
@@ -168,78 +161,176 @@ export default function Sidebar({
           <nav className={`${sidebarOpen ? "p-4" : "p-2"} space-y-2`}>
             <Link
               href="/dashboard"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/dashboard"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Dashboard"
             >
-              <i className="fas fa-tachometer-alt text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-tachometer-alt text-lg flex-shrink-0 ${pathname === "/dashboard" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Dashboard</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/dashboard" ? "text-white" : ""}`}
+                >
+                  Dashboard
+                </span>
               )}
             </Link>
 
             <Link
               href="/"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Home"
             >
-              <i className="fas fa-home text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-home text-lg flex-shrink-0 ${pathname === "/" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Home</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/" ? "text-white" : ""}`}
+                >
+                  Home
+                </span>
               )}
             </Link>
 
             <Link
               href="/members"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/members"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Members"
             >
-              <i className="fas fa-users text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-users text-lg flex-shrink-0 ${pathname === "/members" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Members</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/members" ? "text-white" : ""}`}
+                >
+                  Members
+                </span>
               )}
             </Link>
 
             <Link
               href="/attendance"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/attendance"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Attendance"
             >
-              <i className="fas fa-calendar-check text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-calendar-check text-lg flex-shrink-0 ${pathname === "/attendance" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Attendance</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/attendance" ? "text-white" : ""}`}
+                >
+                  Attendance
+                </span>
               )}
             </Link>
 
             <Link
               href="/analytics"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/analytics"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Analytics"
             >
-              <i className="fas fa-chart-bar text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-chart-bar text-lg flex-shrink-0 ${pathname === "/analytics" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Analytics</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/analytics" ? "text-white" : ""}`}
+                >
+                  Analytics
+                </span>
               )}
             </Link>
 
             <Link
               href="/bulk"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
-              title="Bulk Add"
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/bulk"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
+              title="Add Member"
             >
-              <i className="fas fa-user-plus text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-user-plus text-lg flex-shrink-0 ${pathname === "/bulk" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Bulk Add</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/bulk" ? "text-white" : ""}`}
+                >
+                  Add Member
+                </span>
               )}
             </Link>
 
             <Link
               href="/leaderboard"
-              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
+              className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                pathname === "/leaderboard"
+                  ? mounted && theme === "dark"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-blue-500 text-white shadow-lg"
+                  : mounted && theme === "dark"
+                    ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+              }`}
               title="Leaderboard"
             >
-              <i className="fas fa-trophy text-lg flex-shrink-0"></i>
+              <i
+                className={`fas fa-trophy text-lg flex-shrink-0 ${pathname === "/leaderboard" ? "text-white" : ""}`}
+              ></i>
               {sidebarOpen && (
-                <span className="font-medium truncate">Leaderboard</span>
+                <span
+                  className={`font-medium truncate ${pathname === "/leaderboard" ? "text-white" : ""}`}
+                >
+                  Leaderboard
+                </span>
               )}
             </Link>
 

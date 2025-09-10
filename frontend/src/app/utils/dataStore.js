@@ -139,18 +139,21 @@ class DataStore {
   // Attendance Records Management
   async addAttendanceRecord(record) {
     try {
-      const response = await fetch("/api/attendance/log/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          date: record.date,
-          male_count: record.male,
-          female_count: record.female,
-          congregation: record.congregation,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/attendance/log/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            date: record.date,
+            male_count: record.male,
+            female_count: record.female,
+            congregation: record.congregation,
+          }),
+        }
+      );
 
       const data = await response.json();
 
@@ -276,16 +279,33 @@ class DataStore {
         membership_status:
           member.membership_status || member.status || "Active",
         is_executive: member.is_executive || false,
-        executive_position: member.is_executive ? member.position : "",
-        executive_level: member.is_executive ? "local" : "",
+        executive_position: member.is_executive
+          ? member.executive_position || member.position || ""
+          : "",
+        executive_level: member.is_executive
+          ? member.executive_level || "local"
+          : "",
+        local_executive_position: member.is_executive
+          ? member.local_executive_position || ""
+          : "",
+        district_executive_position: member.is_executive
+          ? member.district_executive_position || ""
+          : "",
         date_of_birth: member.date_of_birth || "1990-01-01",
         place_of_residence: member.place_of_residence || "Accra",
         residential_address:
           member.residential_address || "123 Main Street, Accra",
         hometown: member.hometown || "Accra",
+        relative_contact: member.relative_contact || "Not provided",
+        is_baptized:
+          member.is_baptized !== undefined ? member.is_baptized : true,
+        is_confirmed:
+          member.is_confirmed !== undefined ? member.is_confirmed : true,
+        is_communicant:
+          member.is_communicant !== undefined ? member.is_communicant : true,
       };
 
-      const response = await fetch("/api/members/add/", {
+      const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -335,8 +355,18 @@ class DataStore {
       let url = "http://localhost:8001/api/members/";
       const params = new URLSearchParams();
 
-      // Note: API expects congregation_id, but we're sending congregation name
-      // For now, we'll get all members and filter on the frontend
+      // API expects congregation_id, so we need to convert congregation name to ID
+      if (filters.congregation) {
+        // If congregation is a number (ID), use it directly
+        if (!isNaN(filters.congregation)) {
+          params.append("congregation", filters.congregation);
+        } else {
+          // If congregation is a name, we need to get the ID first
+          // For now, get all members and filter on frontend
+          console.warn("Congregation name provided, filtering on frontend");
+        }
+      }
+
       if (filters.search) {
         params.append("search", filters.search);
       }
@@ -355,23 +385,53 @@ class DataStore {
       }
 
       const data = await response.json();
+      console.log("API response data:", data);
+      if (data.members && data.members.length > 0) {
+        console.log("Sample member from API:", data.members[0]);
+      }
 
       if (data.members && Array.isArray(data.members)) {
         // Update local storage with API data
         let members = data.members.map((member) => ({
           id: member.id,
-          name: `${member.first_name} ${member.last_name}`,
-          phone: member.phone_number,
+          name:
+            `${member.first_name || ""} ${member.last_name || ""}`.trim() ||
+            "Unknown",
+          first_name: member.first_name || "",
+          last_name: member.last_name || "",
+          phone: member.phone_number || "",
+          phone_number: member.phone_number || "",
           email: member.email || "",
           gender: member.gender || "Male",
           congregation: member.congregation,
           status: member.membership_status || "Active",
-          is_executive: false, // Would need to be determined from executive fields
+          membership_status: member.membership_status || "Active",
+          date_of_birth: member.date_of_birth || "",
+          place_of_residence: member.place_of_residence || "",
+          residential_address: member.residential_address || "",
+          hometown: member.hometown || "",
+          relative_contact: member.relative_contact || "",
+          profession: member.profession || "",
+          position: member.position || "",
+          is_executive: member.is_executive === true,
+          executive_position: member.executive_position || "",
+          executive_level: member.executive_level || "",
+          local_executive_position: member.local_executive_position || "",
+          district_executive_position: member.district_executive_position || "",
+          // Map boolean fields to string fields for frontend compatibility
+          baptism: member.is_baptized === true ? "Yes" : "No",
+          confirmation: member.is_confirmed === true ? "Yes" : "No",
+          communicant: member.is_communicant === true ? "Yes" : "No",
+          confirmant: member.is_confirmed === true ? "Yes" : "No", // Alternative name
+          // Keep boolean fields for backend compatibility
+          is_baptized: member.is_baptized,
+          is_confirmed: member.is_confirmed,
+          is_communicant: member.is_communicant,
           timestamp: new Date().toISOString(),
         }));
 
-        // Filter by congregation name on the frontend
-        if (filters.congregation) {
+        // Filter by congregation name on the frontend (only if congregation name was provided, not ID)
+        if (filters.congregation && isNaN(filters.congregation)) {
           members = members.filter(
             (m) => m.congregation === filters.congregation
           );
@@ -379,6 +439,10 @@ class DataStore {
 
         this.membersData = members;
         this.saveToStorage("membersData", this.membersData);
+        console.log("Mapped members data:", members);
+        if (members.length > 0) {
+          console.log("Sample mapped member:", members[0]);
+        }
         return this.membersData;
       } else {
         // Fallback to local storage
@@ -399,7 +463,13 @@ class DataStore {
     let members = [...this.membersData];
 
     if (filters.congregation) {
-      members = members.filter((m) => m.congregation === filters.congregation);
+      // If congregation is a number (ID), we can't filter by name in local data
+      // This should only happen when API fails and we fall back to local data
+      if (isNaN(filters.congregation)) {
+        members = members.filter(
+          (m) => m.congregation === filters.congregation
+        );
+      }
     }
 
     if (filters.gender) {
@@ -413,6 +483,118 @@ class DataStore {
     return members;
   }
 
+  // Update member data
+  async updateMember(memberId, updatedData) {
+    try {
+      // Prepare data for API
+      const requestData = {
+        first_name:
+          updatedData.first_name || updatedData.name?.split(" ")[0] || "",
+        last_name:
+          updatedData.last_name ||
+          updatedData.name?.split(" ").slice(1).join(" ") ||
+          "",
+        phone_number: updatedData.phone_number || updatedData.phone || "",
+        email: updatedData.email || "",
+        gender: updatedData.gender || "Male",
+        congregation: updatedData.congregation || "",
+        membership_status:
+          updatedData.membership_status || updatedData.status || "Active",
+        is_executive: updatedData.is_executive || false,
+        executive_position: updatedData.is_executive
+          ? updatedData.executive_position || updatedData.position || ""
+          : "",
+        executive_level: updatedData.is_executive
+          ? updatedData.executive_level || "local"
+          : "",
+        local_executive_position: updatedData.is_executive
+          ? updatedData.local_executive_position || ""
+          : "",
+        district_executive_position: updatedData.is_executive
+          ? updatedData.district_executive_position || ""
+          : "",
+        date_of_birth:
+          updatedData.date_of_birth || updatedData.dateOfBirth || "1990-01-01",
+        place_of_residence:
+          updatedData.place_of_residence || updatedData.residence || "Accra",
+        residential_address:
+          updatedData.residential_address ||
+          updatedData.residentialAddress ||
+          "123 Main Street, Accra",
+        hometown: updatedData.hometown || "Accra",
+        relative_contact:
+          updatedData.relative_contact ||
+          updatedData.emergencyPhone ||
+          "Not provided",
+        is_baptized:
+          updatedData.is_baptized !== undefined
+            ? updatedData.is_baptized
+            : updatedData.baptism === "Yes",
+        is_confirmed:
+          updatedData.is_confirmed !== undefined
+            ? updatedData.is_confirmed
+            : updatedData.confirmation === "Yes",
+        is_communicant:
+          updatedData.is_communicant !== undefined
+            ? updatedData.is_communicant
+            : updatedData.communicant === "Yes",
+      };
+
+      const response = await fetch(
+        `http://localhost:8001/api/members/update/${memberId}/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local storage
+        const memberIndex = this.membersData.findIndex(
+          (m) => m.id === memberId
+        );
+        if (memberIndex !== -1) {
+          this.membersData[memberIndex] = {
+            ...this.membersData[memberIndex],
+            ...updatedData,
+            name: `${requestData.first_name} ${requestData.last_name}`.trim(),
+            phone: requestData.phone_number,
+            timestamp: new Date().toISOString(),
+          };
+          this.saveToStorage("membersData", this.membersData);
+          this.updateAnalytics();
+        }
+        return this.membersData[memberIndex];
+      } else {
+        throw new Error(data.error || data.errors || "Failed to update member");
+      }
+    } catch (error) {
+      console.error(
+        "Error updating member via API, falling back to local storage:",
+        error
+      );
+
+      // Fallback to local storage if API fails
+      const memberIndex = this.membersData.findIndex((m) => m.id === memberId);
+      if (memberIndex !== -1) {
+        this.membersData[memberIndex] = {
+          ...this.membersData[memberIndex],
+          ...updatedData,
+          timestamp: new Date().toISOString(),
+        };
+        this.saveToStorage("membersData", this.membersData);
+        this.updateAnalytics();
+        return this.membersData[memberIndex];
+      }
+      throw error;
+    }
+  }
+
   // Analytics Data Management
   updateAnalytics() {
     const analytics = {
@@ -423,6 +605,12 @@ class DataStore {
 
     this.analyticsData = analytics;
     this.saveToStorage("analyticsData", this.analyticsData);
+  }
+
+  updateLeaderboard() {
+    // Update leaderboard data when attendance records change
+    // This could trigger re-computation of leaderboard rankings
+    console.log("Leaderboard updated");
   }
 
   calculateAttendanceAnalytics() {
@@ -741,7 +929,7 @@ const getDataStore = () => {
       getLeaderboardData: () => ({}),
       addAttendanceRecord: () => {},
       addMember: () => {},
-      updateMember: () => {},
+      updateMember: async () => {},
       deleteMember: () => {},
       updateAnalytics: () => {},
       clearAllData: () => {},

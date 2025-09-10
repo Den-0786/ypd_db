@@ -1930,11 +1930,28 @@ def export_attendance_pdf(request):
 def api_members(request):
     congregation_id = request.GET.get("congregation")
     search = request.GET.get("search")
+    
+    print(f"api_members - congregation_id: {congregation_id}, type: {type(congregation_id)}")
+    print(f"api_members - search: {search}")
 
     members = Guilder.objects.all()
 
     if congregation_id:
+        print(f"Filtering by congregation_id: {congregation_id}")
+        
+        # Debug: Show all congregations and their IDs
+        from .models import Congregation
+        all_congregations = Congregation.objects.all()
+        print("All congregations in database:")
+        for cong in all_congregations:
+            print(f"  ID: {cong.id}, Name: {cong.name}")
+        
         members = members.filter(congregation_id=congregation_id)
+        print(f"Filtered members count: {members.count()}")
+        
+        # Debug: Show which members were found
+        for member in members:
+            print(f"  Member: {member.first_name} {member.last_name}, Congregation: {member.congregation.name} (ID: {member.congregation.id})")
 
     if search:
         members = members.filter(
@@ -1945,16 +1962,36 @@ def api_members(request):
 
     data = []
     for member in members:
-        data.append(
-            {
-                "id": member.id,
-                "first_name": member.first_name,
-                "last_name": member.last_name,
-                "phone_number": member.phone_number,
-                "congregation": member.congregation.name,
-                "membership_status": member.membership_status,
-            }
-        )
+        member_data = {
+            "id": member.id,
+            "first_name": member.first_name,
+            "last_name": member.last_name,
+            "phone_number": member.phone_number,
+            "email": member.email,
+            "gender": member.gender,
+            "congregation": member.congregation.name,
+            "membership_status": member.membership_status,
+            "position": member.position,
+            "date_of_birth": member.date_of_birth,
+            "place_of_residence": member.place_of_residence,
+            "residential_address": member.residential_address,
+            "hometown": member.hometown,
+            "relative_contact": member.relative_contact,
+            "profession": member.profession,
+            "is_baptized": member.is_baptized,
+            "is_confirmed": member.is_confirmed,
+            "is_communicant": member.is_communicant,
+            "is_executive": member.is_executive,
+            "executive_position": member.executive_position,
+            "executive_level": member.executive_level,
+            "local_executive_position": member.local_executive_position,
+            "district_executive_position": member.district_executive_position,
+        }
+        data.append(member_data)
+        
+        # Debug: Print first member's data
+        if len(data) == 1:
+            print(f"API Debug - First member data: {member_data}")
 
     return JsonResponse({"members": data})
 
@@ -1984,6 +2021,22 @@ def api_add_member(request):
     try:
         data = json.loads(request.body)
         
+        # Debug: Print the received data
+        print(f"api_add_member - Received data: {data}")
+        
+        # Handle congregation name to ID conversion
+        if data.get("congregation") and isinstance(data.get("congregation"), str):
+            try:
+                congregation = Congregation.objects.get(name=data["congregation"])
+                data["congregation"] = congregation.id
+                print(f"api_add_member - Converted congregation name to ID: {congregation.id}")
+            except Congregation.DoesNotExist:
+                print(f"api_add_member - Congregation not found: {data['congregation']}")
+                return JsonResponse({
+                    "success": False, 
+                    "error": f"Congregation '{data['congregation']}' not found"
+                }, status=400)
+        
         # Handle executive level and position mapping
         if data.get("is_executive"):
             executive_level = data.get("executive_level")
@@ -2009,6 +2062,7 @@ def api_add_member(request):
 
         if form.is_valid():
             member = form.save()
+            print(f"api_add_member - Member saved successfully with ID: {member.id}")
             return JsonResponse(
                 {
                     "success": True,
@@ -2017,6 +2071,79 @@ def api_add_member(request):
                 }
             )
         else:
+            print(f"api_add_member - Form validation failed: {form.errors}")
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def api_update_member(request, member_id):
+    try:
+        data = json.loads(request.body)
+        
+        # Debug: Print the received data
+        print(f"api_update_member - Received data for member {member_id}: {data}")
+        
+        # Get the member to update
+        try:
+            member = Guilder.objects.get(id=member_id)
+        except Guilder.DoesNotExist:
+            return JsonResponse({
+                "success": False, 
+                "error": f"Member with ID {member_id} not found"
+            }, status=404)
+        
+        # Handle congregation name to ID conversion
+        if data.get("congregation") and isinstance(data.get("congregation"), str):
+            try:
+                congregation = Congregation.objects.get(name=data["congregation"])
+                data["congregation"] = congregation.id
+                print(f"api_update_member - Converted congregation name to ID: {congregation.id}")
+            except Congregation.DoesNotExist:
+                print(f"api_update_member - Congregation not found: {data['congregation']}")
+                return JsonResponse({
+                    "success": False, 
+                    "error": f"Congregation '{data['congregation']}' not found"
+                }, status=400)
+        
+        # Handle executive level and position mapping
+        if data.get("is_executive"):
+            executive_level = data.get("executive_level")
+            
+            if executive_level == "local":
+                # Set primary position to local position
+                if data.get("local_executive_position"):
+                    data["executive_position"] = data["local_executive_position"]
+                    
+            elif executive_level == "district":
+                # Set primary position to district position
+                if data.get("district_executive_position"):
+                    data["executive_position"] = data["district_executive_position"]
+                    
+            elif executive_level == "both":
+                # Set primary position to the first available position
+                if data.get("local_executive_position"):
+                    data["executive_position"] = data["local_executive_position"]
+                elif data.get("district_executive_position"):
+                    data["executive_position"] = data["district_executive_position"]
+        
+        form = GuilderForm(data, instance=member)
+
+        if form.is_valid():
+            updated_member = form.save()
+            print(f"api_update_member - Member updated successfully with ID: {updated_member.id}")
+            return JsonResponse(
+                {
+                    "success": True,
+                    "message": "Member updated successfully",
+                    "member_id": updated_member.id,
+                }
+            )
+        else:
+            print(f"api_update_member - Form validation failed: {form.errors}")
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
 
     except json.JSONDecodeError:
@@ -3348,21 +3475,25 @@ def api_log_attendance(request):
 def api_attendance_records(request):
     """API endpoint for getting attendance records"""
     try:
-        congregation_name = request.GET.get('congregation')
+        congregation_param = request.GET.get('congregation')
         date_from = request.GET.get('date_from')
         date_to = request.GET.get('date_to')
         
         records = SundayAttendance.objects.all().order_by('-date')
         
         # Filter by congregation if specified
-        if congregation_name:
+        if congregation_param:
             try:
-                congregation = Congregation.objects.get(name=congregation_name)
+                # Try to get congregation by ID first, then by name
+                if congregation_param.isdigit():
+                    congregation = Congregation.objects.get(id=int(congregation_param))
+                else:
+                    congregation = Congregation.objects.get(name=congregation_param)
                 records = records.filter(congregation=congregation)
             except Congregation.DoesNotExist:
                 return JsonResponse({
                     'success': False,
-                    'error': f'Congregation not found: {congregation_name}'
+                    'error': f'Congregation not found: {congregation_param}'
                 }, status=404)
         
         # Filter by date range if specified
@@ -3754,13 +3885,24 @@ def api_analytics_detailed(request):
                 'total': male_count + female_count
             })
         
-        # Congregation member counts
+        # Congregation member counts with active/inactive breakdown
         congregation_data = []
         for congregation in congregations:
-            member_count = Guilder.objects.filter(congregation=congregation).count()
+            total_members = Guilder.objects.filter(congregation=congregation).count()
+            active_members = Guilder.objects.filter(
+                congregation=congregation,
+                membership_status='Active'
+            ).count()
+            inactive_members = Guilder.objects.filter(
+                congregation=congregation,
+                membership_status='Distant'
+            ).count()
+            
             congregation_data.append({
                 'name': congregation.name,
-                'members': member_count,
+                'members': total_members,
+                'active_members': active_members,
+                'inactive_members': inactive_members,
                 'color': congregation.background_color or '#4CAF50'
             })
         

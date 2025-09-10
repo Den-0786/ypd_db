@@ -119,19 +119,44 @@ export default function BulkAddForm({
 
   const handleSubmitSingle = async () => {
     try {
-      const response = await fetch("/api/members/add/", {
+      // Map frontend fields to backend model fields
+      const memberData = {
+        ...currentMember,
+        is_baptized:
+          currentMember.baptism === "Yes" || currentMember.baptism === true,
+        is_confirmed:
+          currentMember.confirmation === "Yes" ||
+          currentMember.confirmation === true,
+        is_communicant:
+          currentMember.communicant === "Yes" ||
+          currentMember.communicant === true,
+      };
+
+      // Remove the old field names to avoid validation issues
+      delete memberData.baptism;
+      delete memberData.confirmation;
+      delete memberData.communicant;
+
+      console.log("BulkAddForm - Sending member data:", memberData);
+
+      const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRFToken": getCookie("csrftoken"),
         },
-        body: JSON.stringify(currentMember),
+        body: JSON.stringify(memberData),
       });
 
       if (response.ok) {
         const result = await response.json();
         onSubmitSingle("Single member added successfully!", "success");
         resetForm();
+
+        // Redirect to local dashboard after successful addition
+        setTimeout(() => {
+          window.location.href = "/local/dashboard";
+        }, 2000);
       } else {
         const errorData = await response.json();
         onSubmitSingle(errorData.message || "Error adding member", "error");

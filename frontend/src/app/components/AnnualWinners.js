@@ -12,7 +12,7 @@ export default function AnnualWinners({ year = 2024 }) {
 
       try {
         // Fetch real data from API
-        const response = await fetch("http://localhost:8000/api/home-stats/");
+        const response = await fetch("http://localhost:8001/api/home-stats/");
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data) {

@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
 
-export default function WeeklyAttendanceCards({ currentMonthData, onDeleteWeek, onEditWeek }) {
+export default function WeeklyAttendanceCards({
+  currentMonthData,
+  onDeleteWeek,
+  onEditWeek,
+}) {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(null);
@@ -64,23 +68,26 @@ export default function WeeklyAttendanceCards({ currentMonthData, onDeleteWeek, 
               </div>
             </div>
             <div className="text-right">
-              <div className="text-gray-900 dark:text-white font-bold text-lg">
-                {currentMonthData.totalMale + currentMonthData.totalFemale}
-              </div>
-              <div className="text-gray-600 dark:text-gray-400 text-sm">
-                {currentMonthData.totalMale}M / {currentMonthData.totalFemale}F
+              <div className="flex items-center justify-end space-x-1 text-sm">
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {currentMonthData.totalMale}M
+                </span>
+                <span className="text-gray-400 dark:text-gray-500">/</span>
+                <span className="text-pink-600 dark:text-pink-400 font-semibold">
+                  {currentMonthData.totalFemale}F
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-                 {/* Weekly Cards - Horizontal scroll */}
-         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
-           <div className="flex gap-2 min-w-[1320px]">
+        {/* Weekly Cards - Horizontal scroll */}
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
+          <div className="flex gap-2 min-w-[1320px]">
             {currentMonthData.weeks.map((week, index) => (
-                             <div
-                 key={index}
-                 className={`rounded-lg p-6 border relative group w-64 flex-shrink-0 ${
+              <div
+                key={index}
+                className={`rounded-lg p-4 border relative group w-64 flex-shrink-0 ${
                   week.isJointProgram
                     ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
                     : index === 0
@@ -110,7 +117,7 @@ export default function WeeklyAttendanceCards({ currentMonthData, onDeleteWeek, 
                     >
                       {week.isJointProgram
                         ? "Joint Program"
-                        : `Week ${index + 1}`}
+                        : week.week || week.weekNumber || `Week ${index + 1}`}
                     </div>
                   </div>
 
@@ -127,27 +134,27 @@ export default function WeeklyAttendanceCards({ currentMonthData, onDeleteWeek, 
                   </div>
 
                   {/* Action Buttons - Right */}
-                  <div className="flex space-x-1">
+                  <div className="flex space-x-2">
                     <button
                       onClick={() => handleViewWeek(week, index)}
-                      className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs transition-colors"
+                      className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
                       title="View Details"
                     >
-                      <i className="fas fa-eye text-xs"></i>
+                      <i className="fas fa-eye text-sm"></i>
                     </button>
                     <button
                       onClick={() => handleEditWeek(week, index)}
-                      className="p-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs transition-colors"
+                      className="p-2 text-gray-500 hover:text-yellow-600 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors"
                       title="Edit"
                     >
-                      <i className="fas fa-edit text-xs"></i>
+                      <i className="fas fa-edit text-sm"></i>
                     </button>
                     <button
                       onClick={() => handleDeleteWeek(week, index)}
-                      className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs transition-colors"
+                      className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
                       title="Delete"
                     >
-                      <i className="fas fa-trash text-xs"></i>
+                      <i className="fas fa-trash text-sm"></i>
                     </button>
                   </div>
                 </div>

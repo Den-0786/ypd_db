@@ -131,13 +131,30 @@ export default function BulkRegistrationPage() {
 
   const handleSubmitSingle = async () => {
     try {
-      const response = await fetch("/api/members/add/", {
+      // Map frontend fields to backend model fields
+      const memberData = {
+        ...currentMember,
+        is_baptized:
+          currentMember.baptism === "Yes" || currentMember.baptism === true,
+        is_confirmed:
+          currentMember.confirmation === "Yes" ||
+          currentMember.confirmation === true,
+        is_communicant:
+          currentMember.communicant === "Yes" ||
+          currentMember.communicant === true,
+        // Remove the old field names
+        baptism: undefined,
+        confirmation: undefined,
+        communicant: undefined,
+      };
+
+      const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRFToken": getCookie("csrftoken"),
         },
-        body: JSON.stringify(currentMember),
+        body: JSON.stringify(memberData),
       });
 
       if (response.ok) {
@@ -170,7 +187,17 @@ export default function BulkRegistrationPage() {
         setCurrentSection("personal");
       } else {
         const errorData = await response.json();
-        showToast(errorData.message || "Error adding member", "error");
+        console.error("Member add error:", errorData);
+        if (errorData.errors) {
+          // Show specific validation errors
+          const errorMessages = Object.values(errorData.errors).flat();
+          showToast(`Validation errors: ${errorMessages.join(", ")}`, "error");
+        } else {
+          showToast(
+            errorData.message || errorData.error || "Error adding member",
+            "error"
+          );
+        }
       }
     } catch (error) {
       console.error("Error submitting single member:", error);
@@ -224,13 +251,27 @@ export default function BulkRegistrationPage() {
     }
 
     try {
-      const response = await fetch("/api/members/add/", {
+      // Map frontend fields to backend model fields for all members
+      const mappedMembers = members.map((member) => ({
+        ...member,
+        is_baptized: member.baptism === "Yes" || member.baptism === true,
+        is_confirmed:
+          member.confirmation === "Yes" || member.confirmation === true,
+        is_communicant:
+          member.communicant === "Yes" || member.communicant === true,
+        // Remove the old field names
+        baptism: undefined,
+        confirmation: undefined,
+        communicant: undefined,
+      }));
+
+      const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRFToken": getCookie("csrftoken"),
         },
-        body: JSON.stringify({ members: members }),
+        body: JSON.stringify({ members: mappedMembers }),
       });
 
       if (response.ok) {
@@ -239,7 +280,17 @@ export default function BulkRegistrationPage() {
         setMembers([]);
       } else {
         const errorData = await response.json();
-        showToast(errorData.message || "Error submitting members", "error");
+        console.error("Bulk member add error:", errorData);
+        if (errorData.errors) {
+          // Show specific validation errors
+          const errorMessages = Object.values(errorData.errors).flat();
+          showToast(`Validation errors: ${errorMessages.join(", ")}`, "error");
+        } else {
+          showToast(
+            errorData.message || errorData.error || "Error submitting members",
+            "error"
+          );
+        }
       }
     } catch (error) {
       console.error("Error submitting members:", error);

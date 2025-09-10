@@ -70,8 +70,13 @@ class GuilderForm(forms.ModelForm):
         phone = self.cleaned_data.get("phone_number")
         if phone:
             phone = phone.strip()
-            if not phone.startswith("+"):
-                phone = "+233" + phone.lstrip("0")
+            # Keep phone numbers in 0XXXXXXXXX format as expected by frontend
+            # Only convert if it's in +233 format to 0 format
+            if phone.startswith("+233"):
+                phone = "0" + phone[4:]  # Convert +233XXXXXXXXX to 0XXXXXXXXX
+            # Ensure it starts with 0 and is 10 digits
+            if not phone.startswith("0"):
+                phone = "0" + phone.lstrip("0")
         return phone
 
     def clean(self):

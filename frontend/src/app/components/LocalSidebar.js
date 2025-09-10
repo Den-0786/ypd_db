@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTheme } from "./ThemeProvider";
 import { useToast } from "./Toast";
 
@@ -15,6 +16,7 @@ export default function LocalSidebar({
 }) {
   const { theme, setTheme, mounted } = useTheme();
   const { showSuccess } = useToast();
+  const pathname = usePathname();
 
   // Test toast on mount
   useEffect(() => {
@@ -110,7 +112,7 @@ export default function LocalSidebar({
       setNotificationsLoading(true);
       const congregationName = localStorage.getItem("congregationName");
 
-      let url = "/api/notifications/";
+      let url = "http://localhost:8001/api/notifications/";
       if (congregationName && congregationName !== "District Admin") {
         url += `?congregation=${encodeURIComponent(congregationName)}`;
       }
@@ -155,13 +157,16 @@ export default function LocalSidebar({
         body += `&congregation=${encodeURIComponent(congregationName)}`;
       }
 
-      const response = await fetch("/api/notifications/mark-read/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body,
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/notifications/mark-read/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        }
+      );
 
       if (response.ok) {
         setNotifications((prev) =>
@@ -181,13 +186,16 @@ export default function LocalSidebar({
         body = `congregation=${encodeURIComponent(congregationName)}`;
       }
 
-      const response = await fetch("/api/notifications/clear/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: body,
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/notifications/clear/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: body,
+        }
+      );
 
       if (response.ok) {
         setNotifications([]);
@@ -206,15 +214,18 @@ export default function LocalSidebar({
         return;
       }
 
-      const response = await fetch("/api/notifications/create-test/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          congregation: congregationName,
-        }),
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/notifications/create-test/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            congregation: congregationName,
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -239,7 +250,7 @@ export default function LocalSidebar({
       label: "Attendance",
     },
     { href: "/local/analytics", icon: "fas fa-chart-bar", label: "Analytics" },
-    { href: "/local/bulk", icon: "fas fa-user-plus", label: "Bulk Add" },
+    { href: "/local/bulk", icon: "fas fa-user-plus", label: "Add Member" },
   ];
   return (
     <>
@@ -313,19 +324,36 @@ export default function LocalSidebar({
           </div>
           {/* Sidebar Navigation */}
           <nav className={`${sidebarOpen ? "p-4" : "p-2"} space-y-2`}>
-            {links.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-colors min-w-0 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"}`}
-                title={link.label}
-              >
-                <i className={`${link.icon} text-lg flex-shrink-0`}></i>
-                {sidebarOpen && (
-                  <span className="font-medium truncate">{link.label}</span>
-                )}
-              </Link>
-            ))}
+            {links.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
+                    isActive
+                      ? mounted && theme === "dark"
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : "bg-blue-500 text-white shadow-lg"
+                      : mounted && theme === "dark"
+                        ? "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-blue-600"
+                  }`}
+                  title={link.label}
+                >
+                  <i
+                    className={`${link.icon} text-lg flex-shrink-0 ${isActive ? "text-white" : ""}`}
+                  ></i>
+                  {sidebarOpen && (
+                    <span
+                      className={`font-medium truncate ${isActive ? "text-white" : ""}`}
+                    >
+                      {link.label}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
             {/* Theme Toggle */}
             <div
               className={`w-full flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 ${mounted && theme === "dark" ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"} rounded-lg transition-colors min-w-0`}
@@ -438,9 +466,9 @@ export default function LocalSidebar({
                             markNotificationAsRead(notification.id)
                           }
                           className={`p-2 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors ${
-                            !notification.is_read
-                              ? "bg-blue-50 dark:bg-blue-900/20"
-                              : ""
+                            notification.is_read
+                              ? ""
+                              : "bg-blue-50 dark:bg-blue-900/20"
                           }`}
                         >
                           <div className="flex items-start space-x-2 min-w-0">

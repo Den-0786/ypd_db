@@ -10,13 +10,16 @@ export default function ExportAnalyticsButton({
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/analytics/export", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ format }),
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/analytics/export",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ format }),
+        }
+      );
 
       if (response.ok) {
         const blob = await response.blob();

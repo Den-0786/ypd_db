@@ -213,16 +213,44 @@ export default function AnalyticsPage() {
       membersDatabase: {
         totalMembers: 850,
         congregations: [
-          { name: "Emmanuel Congregation Ahinsan", count: 0 },
-          { name: "Peniel Congregation Esreso No1", count: 0 },
-          { name: "Mizpah Congregation Odagya No1", count: 0 },
-          { name: "Christ Congregation Ahinsan Estate", count: 0 },
-          { name: "Ebenezer Congregation Dompoase Aprabo", count: 0 },
-          { name: "Favour Congregation Esreso No2", count: 0 },
-          { name: "Liberty Congregation Esreso High Tension", count: 0 },
-          { name: "Odagya No2", count: 0 },
-          { name: "NOM", count: 0 },
-          { name: "Kokobriko", count: 0 },
+          {
+            name: "Emmanuel Congregation Ahinsan",
+            members: 0,
+            color: "#4CAF50",
+          },
+          {
+            name: "Peniel Congregation Esreso No1",
+            members: 0,
+            color: "#2196F3",
+          },
+          {
+            name: "Mizpah Congregation Odagya No1",
+            members: 0,
+            color: "#FF9800",
+          },
+          {
+            name: "Christ Congregation Ahinsan Estate",
+            members: 0,
+            color: "#9C27B0",
+          },
+          {
+            name: "Ebenezer Congregation Dompoase Aprabo",
+            members: 0,
+            color: "#F44336",
+          },
+          {
+            name: "Favour Congregation Esreso No2",
+            members: 0,
+            color: "#00BCD4",
+          },
+          {
+            name: "Liberty Congregation Esreso High Tension",
+            members: 0,
+            color: "#8BC34A",
+          },
+          { name: "Odagya No2", members: 0, color: "#FFC107" },
+          { name: "NOM", members: 0, color: "#795548" },
+          { name: "Kokobriko", members: 0, color: "#607D8B" },
         ],
         genderDistribution: [
           {
@@ -751,7 +779,7 @@ export default function AnalyticsPage() {
           {/* Members Key Metrics */}
           <div className="mb-8">
             {/* Large screens - Grid layout */}
-            <div className="hidden lg:grid grid-cols-4 gap-3">
+            <div className="hidden lg:grid grid-cols-6 gap-3">
               <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
                 <div className="relative z-10 flex items-center justify-between">
@@ -794,16 +822,46 @@ export default function AnalyticsPage() {
                   <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                 </div>
               </div>
-              <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+              <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
-                    <p className="text-xs opacity-90">Congregations</p>
+                    <p className="text-xs opacity-90">Active Guilders</p>
                     <p className="text-lg font-bold">
-                      {chartData.membersDatabase?.congregations?.length || 0}
+                      {chartData.membersDatabase?.congregations?.reduce(
+                        (sum, c) => sum + (c.active_members || 0),
+                        0
+                      ) || 0}
                     </p>
                   </div>
-                  <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                  <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Inactive Guilders</p>
+                    <p className="text-lg font-bold">
+                      {chartData.membersDatabase?.congregations?.reduce(
+                        (sum, c) => sum + (c.inactive_members || 0),
+                        0
+                      ) || 0}
+                    </p>
+                  </div>
+                  <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                </div>
+              </div>
+              <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                <div className="relative z-10 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs opacity-90">Growth</p>
+                    <p className="text-lg font-bold">
+                      {chartData.sundayAttendance?.growth || 0}%
+                    </p>
+                  </div>
+                  <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                 </div>
               </div>
             </div>
@@ -853,17 +911,46 @@ export default function AnalyticsPage() {
                       <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-purple-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-purple-500/20 relative overflow-hidden group flex-shrink-0 w-40">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-purple-600/20 dark:from-purple-400/10 dark:to-purple-600/10 animate-pulse"></div>
+                  <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
-                        <p className="text-xs opacity-90">Congregations</p>
+                        <p className="text-xs opacity-90">Active Guilders</p>
                         <p className="text-lg font-bold">
-                          {chartData.membersDatabase?.congregations?.length ||
-                            0}
+                          {chartData.membersDatabase?.congregations?.reduce(
+                            (sum, c) => sum + (c.active_members || 0),
+                            0
+                          ) || 0}
                         </p>
                       </div>
-                      <i className="fas fa-church text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                      <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Inactive Guilders</p>
+                        <p className="text-lg font-bold">
+                          {chartData.membersDatabase?.congregations?.reduce(
+                            (sum, c) => sum + (c.inactive_members || 0),
+                            0
+                          ) || 0}
+                        </p>
+                      </div>
+                      <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
+                    </div>
+                  </div>
+                  <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs opacity-90">Growth</p>
+                        <p className="text-lg font-bold">
+                          {chartData.sundayAttendance?.growth || 0}%
+                        </p>
+                      </div>
+                      <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
                 </div>
@@ -888,14 +975,14 @@ export default function AnalyticsPage() {
                           {congregation.name}
                         </span>
                         <span className="text-sm font-bold text-gray-900 dark:text-white">
-                          {congregation.count}
+                          {congregation.members}
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div
                           className="h-2 rounded-full"
                           style={{
-                            width: `${(congregation.count / Math.max(...(chartData.membersDatabase?.congregations?.map((c) => c.count) || [0]))) * 100}%`,
+                            width: `${congregation.members > 0 ? Math.max((congregation.members / Math.max(...(chartData.membersDatabase?.congregations?.map((c) => c.members) || [0]))) * 100, 2) : 0}%`,
                             backgroundColor: congregation.color,
                           }}
                         ></div>

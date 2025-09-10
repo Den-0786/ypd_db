@@ -71,6 +71,18 @@ export default function MembersTable({
                 scope="col"
                 className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
               >
+                Baptism
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -89,7 +101,9 @@ export default function MembersTable({
                         checked={selectedMembers.includes(member.id)}
                         onChange={() => {
                           if (selectedMembers.includes(member.id)) {
-                            onSelect(selectedMembers.filter(id => id !== member.id));
+                            onSelect(
+                              selectedMembers.filter((id) => id !== member.id)
+                            );
                           } else {
                             onSelect([...selectedMembers, member.id]);
                           }
@@ -100,7 +114,11 @@ export default function MembersTable({
                         className={`flex-shrink-0 h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center mr-3`}
                       >
                         <span className="text-sm font-medium text-white">
-                          {member.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {member.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()}
                         </span>
                       </div>
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -120,12 +138,36 @@ export default function MembersTable({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        member.communicant === "Yes"
+                        member.communicant === "Yes" ||
+                        member.is_communicant === true
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }`}
                     >
-                      {member.communicant}
+                      {member.communicant ||
+                        (member.is_communicant ? "Yes" : "No")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        member.baptism === "Yes" || member.is_baptized === true
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      }`}
+                    >
+                      {member.baptism || (member.is_baptized ? "Yes" : "No")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        member.membership_status === "Active"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                      }`}
+                    >
+                      {member.membership_status || "Active"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

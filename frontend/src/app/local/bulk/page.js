@@ -38,19 +38,43 @@ export default function LocalBulkAddPage() {
     }
 
     try {
-      const response = await fetch("/api/members/add/", {
+      // Map frontend fields to backend model fields for all members
+      const mappedMembers = members.map((member) => {
+        const mappedMember = {
+          ...member,
+          is_baptized: member.baptism === "Yes" || member.baptism === true,
+          is_confirmed:
+            member.confirmation === "Yes" || member.confirmation === true,
+          is_communicant:
+            member.communicant === "Yes" || member.communicant === true,
+        };
+
+        // Remove the old field names to avoid validation issues
+        delete mappedMember.baptism;
+        delete mappedMember.confirmation;
+        delete mappedMember.communicant;
+
+        return mappedMember;
+      });
+
+      const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-CSRFToken": getCookie("csrftoken"),
         },
-        body: JSON.stringify({ members: members }),
+        body: JSON.stringify({ members: mappedMembers }),
       });
 
       if (response.ok) {
         const result = await response.json();
         showToast("Members submitted successfully!", "success");
         setMembers([]);
+
+        // Redirect to local dashboard after successful bulk addition
+        setTimeout(() => {
+          window.location.href = "/local/dashboard";
+        }, 2000);
       } else {
         const errorData = await response.json();
         showToast(errorData.message || "Error submitting members", "error");

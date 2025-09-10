@@ -24,8 +24,19 @@ export default function LocalDashboardPage() {
     const storedCongregationId = localStorage.getItem("congregationId");
     const storedCongregationName = localStorage.getItem("congregationName");
 
+    console.log("Local Dashboard - Loading congregation data:");
+    console.log("storedCongregationId:", storedCongregationId);
+    console.log("storedCongregationName:", storedCongregationName);
+
     setCongregationId(storedCongregationId);
     setCongregationName(storedCongregationName);
+
+    // Redirect to congregation selection if no congregation is selected
+    if (!storedCongregationId || !storedCongregationName) {
+      console.log("No congregation selected, redirecting to selection page");
+      window.location.href = "/local/select-congregation";
+      return;
+    }
 
     // Show welcome message when dashboard loads
     if (
@@ -66,6 +77,9 @@ export default function LocalDashboardPage() {
             congregation: congregationName,
           });
 
+          console.log("Dashboard - Loaded attendance data:", attendance);
+          console.log("Dashboard - Congregation name:", congregationName);
+
           // Calculate this week's attendance
           const currentDate = new Date();
           const currentWeek = Math.ceil(
@@ -97,6 +111,12 @@ export default function LocalDashboardPage() {
             })
             .reduce((sum, r) => sum + (r.total || 0), 0);
 
+          console.log(
+            "Dashboard - This week's attendance:",
+            thisWeekAttendance
+          );
+          console.log("Dashboard - Current week:", currentWeek);
+
           // Calculate new members this month
           const currentMonth = currentDate.getMonth();
           const currentYear = currentDate.getFullYear();
@@ -113,12 +133,19 @@ export default function LocalDashboardPage() {
             (m) => m.is_executive
           ).length;
 
+          // Use API data directly like district dashboard
           setStats({
-            totalMembers: members.length,
-            thisWeeksAttendance: thisWeekAttendance,
-            newMembersThisMonth: newMembersThisMonth,
-            numberOfExecutives: numberOfExecutives,
+            totalMembers: data.data.totalMembers || 0,
+            thisWeeksAttendance: data.data.thisWeekAttendance || 0,
+            newMembersThisMonth: data.data.newMembersThisMonth || 0,
+            numberOfExecutives: data.data.numberOfExecutives || 0,
           });
+
+          console.log("Dashboard - API data:", data.data);
+          console.log(
+            "Dashboard - This week's attendance from API:",
+            data.data.thisWeekAttendance
+          );
         }
       } else {
         // Use fallback data

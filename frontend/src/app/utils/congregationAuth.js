@@ -1,14 +1,14 @@
-// Congregation-specific authentication system
+// Congregation-specific authentication system (updated to match actual database IDs)
 const congregationCredentials = {
   "Emmanuel Congregation Ahinsan": {
     username: "emmanuel",
     password: "emmanuel123",
-    id: "1",
+    id: "2",
   },
   "Peniel Congregation Esreso No1": {
     username: "peniel",
     password: "peniel123",
-    id: "2",
+    id: "3",
   },
   "District Admin": {
     username: "district_admin",
@@ -18,42 +18,42 @@ const congregationCredentials = {
   "Mizpah Congregation Odagya No1": {
     username: "mizpah_odagya1",
     password: "mizpah2024",
-    id: "3",
+    id: "4",
   },
   "Christ Congregation Ahinsan Estate": {
     username: "christ_ahinsan",
     password: "christ2024",
-    id: "4",
+    id: "5",
   },
   "Ebenezer Congregation Dompoase Aprabo": {
     username: "ebenezer_dompoase",
     password: "ebenezer2024",
-    id: "5",
+    id: "6",
   },
   "Favour Congregation Esreso No2": {
     username: "favour_esreso2",
     password: "favour2024",
-    id: "6",
+    id: "7",
   },
   "Liberty Congregation Esreso High Tension": {
     username: "liberty_esreso",
     password: "liberty2024",
-    id: "7",
+    id: "8",
   },
   "Odagya No2": {
     username: "odagya2",
     password: "odagya2024",
-    id: "8",
+    id: "9",
   },
   NOM: {
     username: "nom_congregation",
     password: "nom2024",
-    id: "9",
+    id: "10",
   },
   Kokobriko: {
     username: "kokobriko",
     password: "kokobriko2024",
-    id: "10",
+    id: "11",
   },
 };
 

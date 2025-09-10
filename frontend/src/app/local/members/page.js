@@ -66,24 +66,68 @@ export default function LocalMembersPage() {
 
   // Fetch data for congregation
   useEffect(() => {
+    console.log("Local members page useEffect triggered");
+    console.log("congregationName:", congregationName);
+    console.log("congregationId:", congregationId);
+
+    // Temporary alert to verify code execution
+    if (typeof window !== "undefined") {
+      console.log("Window is available, code is executing");
+      console.log("Console.log test - this should appear in browser console");
+      // Test if console.log is working
+      try {
+        console.log("Console.log is working");
+      } catch (e) {
+        console.error("Console.log error:", e);
+      }
+    }
+
     const fetchMembers = async () => {
-      if (congregationName) {
+      console.log("fetchMembers function called");
+      if (congregationName && congregationId) {
         try {
           setLoading(true);
+          console.log(
+            "Fetching members for congregation:",
+            congregationName,
+            "ID:",
+            congregationId
+          );
           // Get members for this congregation
           const dataStore = getDataStore();
           const allMembers = await dataStore.getMembers({
-            congregation: congregationName,
+            congregation: congregationId,
           });
 
-          if (Array.isArray(allMembers)) {
-            // Set members data
-            setMembers(allMembers);
+          console.log("Local members page - received allMembers:", allMembers);
+          console.log("Sample member data:", allMembers[0]);
+          if (allMembers.length > 0) {
+            console.log("Sample member fields:", {
+              id: allMembers[0].id,
+              name: allMembers[0].name,
+              phone: allMembers[0].phone,
+              phone_number: allMembers[0].phone_number,
+              gender: allMembers[0].gender,
+              membership_status: allMembers[0].membership_status,
+              status: allMembers[0].status,
+              is_communicant: allMembers[0].is_communicant,
+              communicant: allMembers[0].communicant,
+              is_baptized: allMembers[0].is_baptized,
+              baptism: allMembers[0].baptism,
+            });
+          }
 
+          if (Array.isArray(allMembers)) {
             // Separate executives from regular members
             const executivesList = allMembers.filter(
               (member) => member.is_executive
             );
+            const regularMembers = allMembers.filter(
+              (member) => !member.is_executive
+            );
+
+            // Set members data (only non-executives)
+            setMembers(regularMembers);
             setExecutives(executivesList);
 
             // Calculate statistics
@@ -98,7 +142,7 @@ export default function LocalMembersPage() {
               (m) => m.communicant === "Yes"
             ).length;
             const confirmed = allMembers.filter(
-              (m) => m.confirmant === "Yes"
+              (m) => m.confirmation === "Yes"
             ).length;
             const baptism = allMembers.filter(
               (m) => m.baptism === "Yes"
@@ -132,11 +176,19 @@ export default function LocalMembersPage() {
         } finally {
           setLoading(false);
         }
+      } else {
+        console.log(
+          "Missing congregation data - Name:",
+          congregationName,
+          "ID:",
+          congregationId
+        );
+        setLoading(false);
       }
     };
 
     fetchMembers();
-  }, [congregationName]);
+  }, [congregationName, congregationId]);
 
   const [selectedMember, setSelectedMember] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -147,6 +199,20 @@ export default function LocalMembersPage() {
   const membersPerPage = 15;
 
   const handleViewDetails = (member) => {
+    console.log("Viewing member data:", member);
+    console.log("Member fields:", {
+      id: member.id,
+      name: member.name,
+      phone: member.phone,
+      phone_number: member.phone_number,
+      email: member.email,
+      date_of_birth: member.date_of_birth,
+      hometown: member.hometown,
+      place_of_residence: member.place_of_residence,
+      residential_address: member.residential_address,
+      profession: member.profession,
+      relative_contact: member.relative_contact,
+    });
     setSelectedMember(member);
     setShowDetailsModal(true);
   };
@@ -442,56 +508,71 @@ export default function LocalMembersPage() {
     setPinModalConfig({});
   };
 
-  const handleSaveMemberEdit = () => {
-    // Update the executives array with the edited member
-    const updatedExecutives = executives.map((member) =>
-      member.id === selectedMember.id
-        ? {
-            ...member,
-            first_name: editForm.first_name,
-            last_name: editForm.last_name,
-            name: `${editForm.first_name} ${editForm.last_name}`.trim(),
-            phone_number: editForm.phone_number,
-            phone: editForm.phone_number,
-            gender: editForm.gender,
-            email: editForm.email,
-            emailAddress: editForm.email,
-            date_of_birth: editForm.date_of_birth,
-            dateOfBirth: editForm.date_of_birth,
-            place_of_residence: editForm.place_of_residence,
-            residence: editForm.place_of_residence,
-            residential_address: editForm.residential_address,
-            residentialAddress: editForm.residential_address,
-            profession: editForm.profession,
-            occupation: editForm.profession,
-            hometown: editForm.hometown,
-            relative_contact: editForm.relative_contact,
-            emergencyPhone: editForm.relative_contact,
-            congregation: editForm.congregation,
-            position: editForm.position,
-            membership_status: editForm.membership_status,
-            status: editForm.membership_status,
-            confirmation: editForm.confirmation,
-            confirmant: editForm.confirmation,
-            baptism: editForm.baptism,
-            communicant: editForm.communicant,
-            attends_communion: editForm.communicant,
-            is_executive: editForm.is_executive,
-            executive_position: editForm.executive_position,
-            executive_level: editForm.executive_level,
-          }
-        : member
-    );
+  const handleSaveMemberEdit = async () => {
+    try {
+      setLoading(true);
 
-    // In a real app, you would update the state here
-    setShowEditModal(false);
-    showSuccess("Member updated successfully!");
+      // Get dataStore instance
+      const dataStore = getDataStore();
 
-    // Update members list
-    const updatedMembers = members.map((member) =>
-      member.id === editForm.id ? { ...member, ...editForm } : member
-    );
-    setMembers(updatedMembers);
+      // Update member in dataStore (which will also update backend)
+      await dataStore.updateMember(selectedMember.id, editForm);
+
+      // Update local state
+      const updatedExecutives = executives.map((member) =>
+        member.id === selectedMember.id
+          ? {
+              ...member,
+              first_name: editForm.first_name,
+              last_name: editForm.last_name,
+              name: `${editForm.first_name} ${editForm.last_name}`.trim(),
+              phone_number: editForm.phone_number,
+              phone: editForm.phone_number,
+              gender: editForm.gender,
+              email: editForm.email,
+              emailAddress: editForm.email,
+              date_of_birth: editForm.date_of_birth,
+              dateOfBirth: editForm.date_of_birth,
+              place_of_residence: editForm.place_of_residence,
+              residence: editForm.place_of_residence,
+              residential_address: editForm.residential_address,
+              residentialAddress: editForm.residential_address,
+              profession: editForm.profession,
+              occupation: editForm.profession,
+              hometown: editForm.hometown,
+              relative_contact: editForm.relative_contact,
+              emergencyPhone: editForm.relative_contact,
+              congregation: editForm.congregation,
+              position: editForm.position,
+              membership_status: editForm.membership_status,
+              status: editForm.membership_status,
+              confirmation: editForm.confirmation,
+              confirmant: editForm.confirmation,
+              baptism: editForm.baptism,
+              communicant: editForm.communicant,
+              attends_communion: editForm.communicant,
+              is_executive: editForm.is_executive,
+              executive_position: editForm.executive_position,
+              executive_level: editForm.executive_level,
+            }
+          : member
+      );
+
+      // Update members list
+      const updatedMembers = members.map((member) =>
+        member.id === selectedMember.id ? { ...member, ...editForm } : member
+      );
+
+      setExecutives(updatedExecutives);
+      setMembers(updatedMembers);
+      setShowEditModal(false);
+      showSuccess("Member updated successfully!");
+    } catch (error) {
+      console.error("Error updating member:", error);
+      showError("Failed to update member. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!mounted) {
@@ -834,6 +915,12 @@ export default function LocalMembersPage() {
                     scope="col"
                     className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
+                    Level
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     Gender
                   </th>
                   <th
@@ -841,6 +928,18 @@ export default function LocalMembersPage() {
                     className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
                     Communicant
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Baptism
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Status
                   </th>
                   <th
                     scope="col"
@@ -881,7 +980,24 @@ export default function LocalMembersPage() {
                         {member.phone}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {member.position}
+                        {member.executive_position || member.position || "N/A"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            member.executive_level === "local" ||
+                            member.executive_level === "Local"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                              : member.executive_level === "district" ||
+                                  member.executive_level === "District"
+                                ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                                : member.executive_level === "both"
+                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                          }`}
+                        >
+                          {member.executive_level || "N/A"}
+                        </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {member.gender}
@@ -889,12 +1005,42 @@ export default function LocalMembersPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            member.communicant === "Yes"
+                            member.communicant === "Yes" ||
+                            member.is_communicant === true
                               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                               : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                           }`}
                         >
-                          {member.communicant}
+                          {member.communicant ||
+                            (member.is_communicant ? "Yes" : "No") ||
+                            "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            member.baptism === "Yes" ||
+                            member.is_baptized === true
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}
+                        >
+                          {member.baptism ||
+                            (member.is_baptized ? "Yes" : "No") ||
+                            "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            member.membership_status === "Active"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          }`}
+                        >
+                          {member.membership_status ||
+                            member.status ||
+                            "Active"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -924,7 +1070,7 @@ export default function LocalMembersPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center">
+                    <td colSpan="9" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center">
                         <i className="fas fa-search text-gray-400 text-4xl mb-4"></i>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -1002,6 +1148,18 @@ export default function LocalMembersPage() {
                     scope="col"
                     className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                   >
+                    Baptism
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
+                    Status
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -1034,20 +1192,50 @@ export default function LocalMembersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {member.phone}
+                        {member.phone || member.phone_number || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {member.gender}
+                        {member.gender || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            member.communicant === "Yes"
+                            member.communicant === "Yes" ||
+                            member.is_communicant === true
                               ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                               : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                           }`}
                         >
-                          {member.communicant}
+                          {member.communicant ||
+                            (member.is_communicant ? "Yes" : "No") ||
+                            "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            member.baptism === "Yes" ||
+                            member.is_baptized === true
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                          }`}
+                        >
+                          {member.baptism ||
+                            (member.is_baptized ? "Yes" : "No") ||
+                            "N/A"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            member.membership_status === "Active"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          }`}
+                        >
+                          {member.membership_status ||
+                            member.status ||
+                            "Active"}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1077,15 +1265,15 @@ export default function LocalMembersPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center">
-                        <i className="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                    <td colSpan="7" className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center justify-center">
+                        <i className="fas fa-users text-gray-400 text-4xl mb-4"></i>
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          No results found
+                          No members found
                         </h3>
                         <p className="text-gray-500 dark:text-gray-400">
-                          No members match your search criteria. Try adjusting
-                          your search terms or filters.
+                          No congregation members found. Try adjusting your
+                          search terms or filters.
                         </p>
                       </div>
                     </td>
@@ -1217,7 +1405,7 @@ export default function LocalMembersPage() {
                                 Date of Birth:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.dateOfBirth}
+                                {selectedMember.date_of_birth || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1259,7 +1447,9 @@ export default function LocalMembersPage() {
                                 Phone Number:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.phoneNumber}
+                                {selectedMember.phone ||
+                                  selectedMember.phone_number ||
+                                  "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1270,7 +1460,7 @@ export default function LocalMembersPage() {
                                 Email Address:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.emailAddress}
+                                {selectedMember.email || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1281,7 +1471,7 @@ export default function LocalMembersPage() {
                                 Relative Contact:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.emergencyContact}
+                                {selectedMember.relative_contact || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1292,7 +1482,7 @@ export default function LocalMembersPage() {
                                 Relative Phone:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.emergencyPhone}
+                                {selectedMember.relative_contact || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1322,7 +1512,7 @@ export default function LocalMembersPage() {
                                 Hometown:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.hometown}
+                                {selectedMember.hometown || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1333,7 +1523,7 @@ export default function LocalMembersPage() {
                                 Place of Residence:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.residence}
+                                {selectedMember.place_of_residence || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1344,7 +1534,7 @@ export default function LocalMembersPage() {
                                 Residential Address:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.residentialAddress}
+                                {selectedMember.residential_address || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1369,18 +1559,7 @@ export default function LocalMembersPage() {
                                 Profession:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.occupation}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 sm:p-4 shadow-sm">
-                            <div className="flex justify-between items-center">
-                              <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">
-                                Education:
-                              </label>
-                              <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.education}
+                                {selectedMember.profession || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1421,7 +1600,7 @@ export default function LocalMembersPage() {
                                 Position:
                               </label>
                               <p className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white">
-                                {selectedMember.position}
+                                {selectedMember.position || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -1438,7 +1617,9 @@ export default function LocalMembersPage() {
                                     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                 }`}
                               >
-                                {selectedMember.status}
+                                {selectedMember.status ||
+                                  selectedMember.membership_status ||
+                                  "N/A"}
                               </span>
                             </div>
                           </div>
@@ -1469,7 +1650,9 @@ export default function LocalMembersPage() {
                                     : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                                 }`}
                               >
-                                {selectedMember.confirmant}
+                                {selectedMember.confirmant ||
+                                  selectedMember.confirmation ||
+                                  "N/A"}
                               </span>
                             </div>
                           </div>
@@ -2082,38 +2265,6 @@ export default function LocalMembersPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Executive Position
-                              </label>
-                              <select
-                                value={editForm.executive_position}
-                                onChange={(e) =>
-                                  setEditForm({
-                                    ...editForm,
-                                    executive_position: e.target.value,
-                                  })
-                                }
-                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              >
-                                <option value="">Select Position</option>
-                                <option value="president">President</option>
-                                <option value="vice_president">
-                                  Vice President
-                                </option>
-                                <option value="secretary">Secretary</option>
-                                <option value="assistant_secretary">
-                                  Assistant Secretary
-                                </option>
-                                <option value="financial_secretary">
-                                  Financial Secretary
-                                </option>
-                                <option value="treasurer">Treasurer</option>
-                                <option value="organizer">Organizer</option>
-                                <option value="evangelism">Evangelism</option>
-                              </select>
-                            </div>
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Executive Level
                               </label>
                               <select
@@ -2128,7 +2279,6 @@ export default function LocalMembersPage() {
                               >
                                 <option value="">Select Level</option>
                                 <option value="Local">Local</option>
-                                <option value="District">District</option>
                               </select>
                             </div>
                           </div>

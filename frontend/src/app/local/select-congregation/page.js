@@ -12,18 +12,30 @@ export default function SelectCongregationPage() {
     type: "success",
   });
 
-  // Congregation list
+  // Congregation list (updated to match actual database IDs)
   const congregations = [
-    { id: "1", name: "Emmanuel Congregation Ahinsan", color: "bg-blue-500" },
-    { id: "2", name: "Peniel Congregation Esreso No1", color: "bg-green-500" },
-    { id: "3", name: "Mizpah Congregation Odagya No1", color: "bg-purple-500" },
-    { id: "4", name: "Christ Congregation Ahinsan Estate", color: "bg-red-500" },
-    { id: "5", name: "Ebenezer Congregation Dompoase Aprabo", color: "bg-yellow-500" },
-    { id: "6", name: "Favour Congregation Esreso No2", color: "bg-indigo-500" },
-    { id: "7", name: "Liberty Congregation Esreso High Tension", color: "bg-pink-500" },
-    { id: "8", name: "Odagya No2", color: "bg-teal-500" },
-    { id: "9", name: "NOM", color: "bg-orange-500" },
-    { id: "10", name: "Kokobriko", color: "bg-cyan-500" }
+    { id: "2", name: "Emmanuel Congregation Ahinsan", color: "bg-blue-500" },
+    { id: "3", name: "Peniel Congregation Esreso No1", color: "bg-green-500" },
+    { id: "4", name: "Mizpah Congregation Odagya No1", color: "bg-purple-500" },
+    {
+      id: "5",
+      name: "Christ Congregation Ahinsan Estate",
+      color: "bg-red-500",
+    },
+    {
+      id: "6",
+      name: "Ebenezer Congregation Dompoase Aprabo",
+      color: "bg-yellow-500",
+    },
+    { id: "7", name: "Favour Congregation Esreso No2", color: "bg-indigo-500" },
+    {
+      id: "8",
+      name: "Liberty Congregation Esreso High Tension",
+      color: "bg-pink-500",
+    },
+    { id: "9", name: "Odagya No2", color: "bg-teal-500" },
+    { id: "10", name: "NOM", color: "bg-orange-500" },
+    { id: "11", name: "Kokobriko", color: "bg-cyan-500" },
   ];
 
   const showToast = (message, type = "success") => {
@@ -33,14 +45,12 @@ export default function SelectCongregationPage() {
 
   const handleCongregationSelect = (congregation) => {
     setSelectedCongregation(congregation);
-    
 
     localStorage.setItem("congregationId", congregation.id);
     localStorage.setItem("congregationName", congregation.name);
-    
+
     showToast(`${congregation.name} selected successfully!`, "success");
-    
-    
+
     setTimeout(() => {
       router.push(`/local/congregation/${congregation.id}`);
     }, 1000);
@@ -71,7 +81,9 @@ export default function SelectCongregationPage() {
               }`}
               onClick={() => handleCongregationSelect(congregation)}
             >
-              <div className={`${congregation.color} rounded-t-lg p-6 text-white`}>
+              <div
+                className={`${congregation.color} rounded-t-lg p-6 text-white`}
+              >
                 <div className="text-center">
                   <i className="fas fa-church text-3xl mb-2"></i>
                   <h3 className="text-lg font-semibold">{congregation.name}</h3>
@@ -86,7 +98,9 @@ export default function SelectCongregationPage() {
                     className={`w-full py-2 px-4 rounded-lg text-white font-medium transition-colors ${
                       selectedCongregation?.id === congregation.id
                         ? "bg-blue-600"
-                        : congregation.color.replace("bg-", "bg-").replace("-500", "-600")
+                        : congregation.color
+                            .replace("bg-", "bg-")
+                            .replace("-500", "-600")
                     }`}
                   >
                     <i className="fas fa-arrow-right mr-2"></i>
@@ -111,15 +125,21 @@ export default function SelectCongregationPage() {
 
         {/* Toast Notification */}
         {toast.show && (
-          <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-            toast.type === "success" 
-              ? "bg-green-500 text-white" 
-              : "bg-red-500 text-white"
-          }`}>
+          <div
+            className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+              toast.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
             <div className="flex items-center">
-              <i className={`fas ${
-                toast.type === "success" ? "fa-check-circle" : "fa-exclamation-circle"
-              } mr-2`}></i>
+              <i
+                className={`fas ${
+                  toast.type === "success"
+                    ? "fa-check-circle"
+                    : "fa-exclamation-circle"
+                } mr-2`}
+              ></i>
               {toast.message}
             </div>
           </div>
@@ -127,4 +147,4 @@ export default function SelectCongregationPage() {
       </div>
     </div>
   );
-} 
+}

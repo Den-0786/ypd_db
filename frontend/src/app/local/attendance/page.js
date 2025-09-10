@@ -62,8 +62,12 @@ export default function LocalAttendancePage() {
   // Helper function to get week number from date
   const getWeekNumber = (date) => {
     const d = new Date(date);
-    const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
-    return Math.ceil((d.getDate() + firstDay.getDay()) / 7);
+    const dayOfMonth = d.getDate();
+
+    // Simple calculation: Week 1 = Days 1-7, Week 2 = Days 8-14, Week 3 = Days 15-21, etc.
+    const weekNumber = Math.ceil(dayOfMonth / 7);
+
+    return weekNumber;
   };
 
   // Helper function to get month name
@@ -111,6 +115,7 @@ export default function LocalAttendancePage() {
     const weeksMap = new Map();
     monthRecords.forEach((record) => {
       const weekNumber = getWeekNumber(record.date);
+      console.log(`Date: ${record.date}, Calculated Week: ${weekNumber}`);
       if (!weeksMap.has(weekNumber)) {
         weeksMap.set(weekNumber, {
           week: `Week ${weekNumber}`,
@@ -254,6 +259,13 @@ export default function LocalAttendancePage() {
       });
 
       setAttendanceRecords(records);
+      console.log("Loaded attendance records:", records);
+      if (records.length > 0) {
+        console.log("First record details:", records[0]);
+        console.log("First record date:", records[0].date);
+        console.log("Looking for date:", selectedDate);
+        console.log("Date match:", records[0].date === selectedDate);
+      }
 
       // Update stats for congregation only
       const totalMale = records.reduce((sum, r) => sum + (r.male || 0), 0);
@@ -291,7 +303,19 @@ export default function LocalAttendancePage() {
 
   // Get attendance data for the selected date
   const getAttendanceForDate = (date) => {
-    const record = attendanceRecords.find((r) => r.date === date);
+    console.log("Looking for attendance for date:", date);
+    console.log("Available attendance records:", attendanceRecords);
+
+    // First try to find exact date match
+    let record = attendanceRecords.find((r) => r.date === date);
+
+    // If no exact match, get the most recent record
+    if (!record && attendanceRecords.length > 0) {
+      record = attendanceRecords[0]; // Records are already sorted by date desc
+      console.log("No exact date match, using most recent record:", record);
+    }
+
+    console.log("Found record for date:", record);
     if (record) {
       return {
         male: record.male || 0,

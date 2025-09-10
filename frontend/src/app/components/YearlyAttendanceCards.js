@@ -1,7 +1,11 @@
 "use client";
 import { useState } from "react";
 
-export default function YearlyAttendanceCards({ currentYearData, onEditMonth, onDeleteMonth }) {
+export default function YearlyAttendanceCards({
+  currentYearData,
+  onEditMonth,
+  onDeleteMonth,
+}) {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -41,8 +45,18 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
   };
 
   const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ];
 
   const getMonthColorClasses = (index) => {
@@ -58,7 +72,7 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
       "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800",
       "bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800",
       "bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800",
-      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800"
+      "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800",
     ];
     return colorClasses[index % colorClasses.length];
   };
@@ -76,7 +90,7 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
       "text-yellow-600 dark:text-yellow-400",
       "text-gray-600 dark:text-gray-400",
       "text-cyan-600 dark:text-cyan-400",
-      "text-emerald-600 dark:text-emerald-400"
+      "text-emerald-600 dark:text-emerald-400",
     ];
     return textColors[index % textColors.length];
   };
@@ -105,11 +119,14 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
               </div>
             </div>
             <div className="text-right">
-              <div className="text-gray-900 dark:text-white font-bold text-lg">
-                {currentYearData.totalMale + currentYearData.totalFemale}
-              </div>
-              <div className="text-gray-600 dark:text-gray-400 text-sm">
-                {currentYearData.totalMale}M / {currentYearData.totalFemale}F
+              <div className="flex items-center justify-end space-x-1 text-sm">
+                <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                  {currentYearData.totalMale}M
+                </span>
+                <span className="text-gray-400 dark:text-gray-500">/</span>
+                <span className="text-pink-600 dark:text-pink-400 font-semibold">
+                  {currentYearData.totalFemale}F
+                </span>
               </div>
             </div>
           </div>
@@ -118,64 +135,86 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
         {/* Monthly Cards - Single row horizontal scroll */}
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
           <div className="flex gap-2 min-w-[2200px]">
-          {currentYearData.months.map((monthData, index) => {
-            const colorClasses = getMonthColorClasses(index);
-            const textColor = getMonthTextColor(index);
-            const monthName = monthNames[index];
-            
-                         return (
-                               <div
+            {currentYearData.months.map((monthData, index) => {
+              const colorClasses = getMonthColorClasses(index);
+              const textColor = getMonthTextColor(index);
+              // Use the actual month name from the data, or fallback to array index
+              let monthName =
+                monthData.monthName || monthData.month || monthNames[index];
+
+              // Convert full month names to short names if needed
+              if (monthName && monthName.length > 3) {
+                const fullMonthNames = [
+                  "January",
+                  "February",
+                  "March",
+                  "April",
+                  "May",
+                  "June",
+                  "July",
+                  "August",
+                  "September",
+                  "October",
+                  "November",
+                  "December",
+                ];
+                const monthIndex = fullMonthNames.indexOf(monthName);
+                if (monthIndex !== -1) {
+                  monthName = monthNames[monthIndex];
+                }
+              }
+
+              return (
+                <div
                   key={index}
                   className={`rounded-lg p-4 border relative group ${colorClasses} w-64 flex-shrink-0`}
                 >
-                <div className="flex items-center justify-between">
-                  {/* Month Label - Left */}
-                  <div className="flex items-center">
-                    <div
-                      className={`text-sm font-medium ${textColor}`}
-                    >
-                      {monthName}
+                  <div className="flex items-center justify-between">
+                    {/* Month Label - Left */}
+                    <div className="flex items-center">
+                      <div className={`text-sm font-medium ${textColor}`}>
+                        {monthName}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Attendance Counts - Center */}
-                  <div className="text-center">
-                    <div className="text-gray-900 dark:text-white text-lg font-bold">
-                      {monthData.total || 0}
+                    {/* Attendance Counts - Center */}
+                    <div className="text-center">
+                      <div className="text-gray-900 dark:text-white text-lg font-bold">
+                        {monthData.total || 0}
+                      </div>
+                      <div className="text-gray-600 dark:text-gray-400 text-xs">
+                        {monthData.male || 0}M / {monthData.female || 0}F
+                      </div>
                     </div>
-                    <div className="text-gray-600 dark:text-gray-400 text-xs">
-                      {monthData.male || 0}M / {monthData.female || 0}F
-                    </div>
-                  </div>
 
-                  {/* Action Buttons - Right */}
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => handleViewMonth(monthData, index)}
-                      className="p-1 bg-blue-500 hover:bg-blue-600 text-white rounded-full text-xs transition-colors"
-                      title="View Details"
-                    >
-                      <i className="fas fa-eye text-xs"></i>
-                    </button>
-                    <button
-                      onClick={() => handleEditMonth(monthData, index)}
-                      className="p-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-xs transition-colors"
-                      title="Edit"
-                    >
-                      <i className="fas fa-edit text-xs"></i>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMonth(monthData, index)}
-                      className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs transition-colors"
-                      title="Delete"
-                    >
-                      <i className="fas fa-trash text-xs"></i>
-                    </button>
+                    {/* Action Buttons - Right */}
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleViewMonth(monthData, index)}
+                        className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                        title="View Details"
+                      >
+                        <i className="fas fa-eye text-sm"></i>
+                      </button>
+                      <button
+                        onClick={() => handleEditMonth(monthData, index)}
+                        className="p-2 text-gray-500 hover:text-yellow-600 dark:text-gray-400 dark:hover:text-yellow-400 transition-colors"
+                        title="Edit"
+                      >
+                        <i className="fas fa-edit text-sm"></i>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMonth(monthData, index)}
+                        className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                        title="Delete"
+                      >
+                        <i className="fas fa-trash text-sm"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -274,12 +313,13 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
                     <i className="fas fa-exclamation-triangle text-red-500 mt-0.5 mr-2"></i>
                     <div>
                       <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-2">
-                        Are you sure you want to delete this month&apos;s attendance record?
+                        Are you sure you want to delete this month&apos;s
+                        attendance record?
                       </p>
                       <p className="text-sm text-red-600 dark:text-red-400">
                         This action cannot be undone. The attendance data for
-                        {monthNames[selectedMonth.monthNumber - 1]} will be permanently
-                        removed.
+                        {monthNames[selectedMonth.monthNumber - 1]} will be
+                        permanently removed.
                       </p>
                     </div>
                   </div>
@@ -338,4 +378,4 @@ export default function YearlyAttendanceCards({ currentYearData, onEditMonth, on
       )}
     </div>
   );
-} 
+}

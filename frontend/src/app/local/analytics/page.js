@@ -15,16 +15,54 @@ export default function LocalAnalyticsPage() {
   const [selectedCongregation, setSelectedCongregation] = useState("All");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [filtered, setFiltered] = useState(null);
+  const [currentCongregationName, setCurrentCongregationName] = useState(null);
 
   useEffect(() => {
+    // Get current congregation from localStorage
+    const congregationName = localStorage.getItem("congregationName");
+    console.log("Local Analytics - Current congregation:", congregationName);
+    setCurrentCongregationName(congregationName);
+
+    // Set the congregation filter to current congregation
+    if (congregationName) {
+      setSelectedCongregation(congregationName);
+      console.log(
+        "Local Analytics - Set selected congregation to:",
+        congregationName
+      );
+    } else {
+      console.log(
+        "Local Analytics - No congregation found in localStorage, redirecting to selection"
+      );
+      window.location.href = "/local/select-congregation";
+      return;
+    }
+
     fetchAnalyticsData();
   }, []);
 
   useEffect(() => {
-    if (!chartData.sundayAttendance) return;
+    if (!(filtered?.sundayAttendance || chartData.sundayAttendance)) return;
     let filteredData = { ...chartData };
+
+    console.log(
+      "Local Analytics - Filtering data for congregation:",
+      selectedCongregation
+    );
+    console.log(
+      "Local Analytics - Available congregations:",
+      (
+        filtered?.membersDatabase || chartData.membersDatabase
+      )?.congregations?.map((c) => c.name)
+    );
+
     // Filter by congregation
     if (selectedCongregation !== "All") {
+      console.log(
+        "Local Analytics - Filtering by congregation:",
+        selectedCongregation
+      );
+
       filteredData = {
         ...filteredData,
         sundayAttendance: {
@@ -46,6 +84,15 @@ export default function LocalAnalyticsPage() {
             ),
         },
       };
+
+      console.log(
+        "Local Analytics - Filtered congregations:",
+        filteredData.membersDatabase.congregations
+      );
+      console.log(
+        "Local Analytics - Filtered weekly trend:",
+        filteredData.sundayAttendance.weeklyTrend
+      );
     }
     // Filter by date range (for weeklyTrend only)
     if (dateRange.start && dateRange.end) {
@@ -65,10 +112,22 @@ export default function LocalAnalyticsPage() {
   const fetchAnalyticsData = async () => {
     try {
       // Try to fetch real data from API first
-      const response = await fetch("/api/analytics/detailed/");
+      const response = await fetch(
+        "http://localhost:8001/api/analytics/detailed/"
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
+          console.log("Local Analytics - API Response:", data.data);
+          console.log(
+            "Local Analytics - Congregations from API:",
+            data.data.congregations
+          );
+          console.log(
+            "Local Analytics - Weekly trend from API:",
+            data.data.weeklyTrend
+          );
+
           // Use real data from API
           const realData = {
             sundayAttendance: {
@@ -99,6 +158,17 @@ export default function LocalAnalyticsPage() {
             },
           };
           setChartData(realData);
+
+          // Ensure congregation filter is set after data loads
+          const congregationName = localStorage.getItem("congregationName");
+          if (congregationName && selectedCongregation === "All") {
+            console.log(
+              "Local Analytics - Setting congregation filter after data load:",
+              congregationName
+            );
+            setSelectedCongregation(congregationName);
+          }
+
           setLoading(false);
           return;
         }
@@ -146,45 +216,44 @@ export default function LocalAnalyticsPage() {
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
             <i className="fas fa-chart-bar text-blue-600 mr-3"></i>
-            Local Analytics Dashboard
+            {currentCongregationName
+              ? `${currentCongregationName} Analytics`
+              : "Local Analytics Dashboard"}
           </h1>
           <p className="text-gray-600 dark:text-gray-300 mt-2">
-            Comprehensive insights into local YPG attendance and membership data
+            Comprehensive insights into{" "}
+            {currentCongregationName ? `${currentCongregationName}'s` : "local"}{" "}
+            YPG attendance and membership data
           </p>
         </div>
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          {/* Large screens - All filters on single row */}
-          <div className="hidden lg:grid grid-cols-3 gap-3">
-            <div>
-              <label
-                htmlFor="local-analytics-cong-filter-lg"
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Congregation
-              </label>
-              <select
-                id="local-analytics-cong-filter-lg"
-                value={selectedCongregation}
-                onChange={(e) => setSelectedCongregation(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
-                aria-label="Filter by congregation"
-              >
-                <option value="All" className="text-gray-800 dark:text-white">
-                  All Congregations
-                </option>
-                {chartData.membersDatabase?.congregations?.map((c) => (
-                  <option
-                    key={c.name}
-                    value={c.name}
-                    className="text-gray-800 dark:text-white"
-                  >
-                    {c.name}
-                  </option>
-                )) || []}
-              </select>
+          {/* Show current congregation info instead of filter */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  <i className="fas fa-church text-blue-600 mr-2"></i>
+                  {currentCongregationName || "Local Congregation"}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Analytics data for this congregation
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Filtered Data
+                </div>
+                <div className="text-xs text-blue-600 dark:text-blue-400">
+                  {selectedCongregation}
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Large screens - Date filters only */}
+          <div className="hidden lg:grid grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="local-analytics-date-start-lg"
@@ -223,36 +292,8 @@ export default function LocalAnalyticsPage() {
             </div>
           </div>
 
-          {/* Small screens - Stacked filters */}
+          {/* Small screens - Date filters only */}
           <div className="lg:hidden space-y-3">
-            <div>
-              <label
-                htmlFor="local-analytics-cong-filter-sm"
-                className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Congregation
-              </label>
-              <select
-                id="local-analytics-cong-filter-sm"
-                value={selectedCongregation}
-                onChange={(e) => setSelectedCongregation(e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white text-xs bg-white dark:bg-gray-700"
-                aria-label="Filter by congregation"
-              >
-                <option value="All" className="text-gray-800 dark:text-white">
-                  All Congregations
-                </option>
-                {chartData.membersDatabase?.congregations?.map((c) => (
-                  <option
-                    key={c.name}
-                    value={c.name}
-                    className="text-gray-800 dark:text-white"
-                  >
-                    {c.name}
-                  </option>
-                )) || []}
-              </select>
-            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label
@@ -308,7 +349,10 @@ export default function LocalAnalyticsPage() {
                 <div>
                   <p className="text-xs opacity-90">Total Attendance</p>
                   <p className="text-lg font-bold">
-                    {chartData.sundayAttendance.totalAttendance}
+                    {
+                      (filtered?.sundayAttendance || chartData.sundayAttendance)
+                        .totalAttendance
+                    }
                   </p>
                 </div>
                 <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -321,7 +365,9 @@ export default function LocalAnalyticsPage() {
                 <div>
                   <p className="text-xs opacity-90">Male Attendance</p>
                   <p className="text-lg font-bold">
-                    {chartData.sundayAttendance.weeklyTrend
+                    {(
+                      filtered?.sundayAttendance || chartData.sundayAttendance
+                    ).weeklyTrend
                       .slice(0, 4)
                       .reduce((sum, week) => sum + week.male, 0)}
                   </p>
@@ -336,7 +382,9 @@ export default function LocalAnalyticsPage() {
                 <div>
                   <p className="text-xs opacity-90">Female Attendance</p>
                   <p className="text-lg font-bold">
-                    {chartData.sundayAttendance.weeklyTrend
+                    {(
+                      filtered?.sundayAttendance || chartData.sundayAttendance
+                    ).weeklyTrend
                       .slice(0, 4)
                       .reduce((sum, week) => sum + week.female, 0)}
                   </p>
@@ -351,7 +399,10 @@ export default function LocalAnalyticsPage() {
                 <div>
                   <p className="text-xs opacity-90">Average Attendance</p>
                   <p className="text-lg font-bold">
-                    {chartData.sundayAttendance.averageAttendance}
+                    {
+                      (filtered?.sundayAttendance || chartData.sundayAttendance)
+                        .averageAttendance
+                    }
                   </p>
                 </div>
                 <i className="fas fa-chart-bar text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -364,7 +415,11 @@ export default function LocalAnalyticsPage() {
                 <div>
                   <p className="text-xs opacity-90">Growth</p>
                   <p className="text-lg font-bold">
-                    {chartData.sundayAttendance.growth}%
+                    {
+                      (filtered?.sundayAttendance || chartData.sundayAttendance)
+                        .growth
+                    }
+                    %
                   </p>
                 </div>
                 <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -572,10 +627,11 @@ export default function LocalAnalyticsPage() {
                   <div>
                     <p className="text-xs opacity-90">Total Members</p>
                     <p className="text-lg font-bold">
-                      {chartData.membersDatabase?.congregations?.reduce(
-                        (sum, c) => sum + c.count,
-                        0
-                      ) || 0}
+                      {(
+                        filtered?.membersDatabase?.congregations ||
+                        (filtered?.membersDatabase || chartData.membersDatabase)
+                          ?.congregations
+                      )?.reduce((sum, c) => sum + c.members, 0) || 0}
                     </p>
                   </div>
                   <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -587,7 +643,9 @@ export default function LocalAnalyticsPage() {
                   <div>
                     <p className="text-xs opacity-90">Male Members</p>
                     <p className="text-lg font-bold">
-                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.genderDistribution?.reduce(
                         (sum, item) => sum + item.male,
                         0
                       ) || 0}
@@ -602,7 +660,9 @@ export default function LocalAnalyticsPage() {
                   <div>
                     <p className="text-xs opacity-90">Female Members</p>
                     <p className="text-lg font-bold">
-                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.genderDistribution?.reduce(
                         (sum, item) => sum + item.female,
                         0
                       ) || 0}
@@ -617,12 +677,12 @@ export default function LocalAnalyticsPage() {
                   <div>
                     <p className="text-xs opacity-90">Active Guilders</p>
                     <p className="text-lg font-bold">
-                      {Math.floor(
-                        (chartData.membersDatabase?.congregations?.reduce(
-                          (sum, c) => sum + c.count,
-                          0
-                        ) || 0) * 0.85
-                      )}
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.congregations?.reduce(
+                        (sum, c) => sum + (c.active_members || 0),
+                        0
+                      ) || 0}
                     </p>
                   </div>
                   <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -634,12 +694,12 @@ export default function LocalAnalyticsPage() {
                   <div>
                     <p className="text-xs opacity-90">Inactive Guilders</p>
                     <p className="text-lg font-bold">
-                      {Math.floor(
-                        (chartData.membersDatabase?.congregations?.reduce(
-                          (sum, c) => sum + c.count,
-                          0
-                        ) || 0) * 0.15
-                      )}
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.congregations?.reduce(
+                        (sum, c) => sum + (c.inactive_members || 0),
+                        0
+                      ) || 0}
                     </p>
                   </div>
                   <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -650,7 +710,12 @@ export default function LocalAnalyticsPage() {
                 <div className="relative z-10 flex items-center justify-between">
                   <div>
                     <p className="text-xs opacity-90">Growth</p>
-                    <p className="text-lg font-bold">+12.5%</p>
+                    <p className="text-lg font-bold">
+                      {(
+                        filtered?.sundayAttendance || chartData.sundayAttendance
+                      )?.growth || 0}
+                      %
+                    </p>
                   </div>
                   <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                 </div>
@@ -666,8 +731,11 @@ export default function LocalAnalyticsPage() {
                       <div>
                         <p className="text-xs opacity-90">Total Members</p>
                         <p className="text-lg font-bold">
-                          {chartData.membersDatabase?.congregations?.reduce(
-                            (sum, c) => sum + c.count,
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.congregations?.reduce(
+                            (sum, c) => sum + c.members,
                             0
                           ) || 0}
                         </p>
@@ -681,7 +749,10 @@ export default function LocalAnalyticsPage() {
                       <div>
                         <p className="text-xs opacity-90">Male Members</p>
                         <p className="text-lg font-bold">
-                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.genderDistribution?.reduce(
                             (sum, item) => sum + item.male,
                             0
                           ) || 0}
@@ -696,7 +767,10 @@ export default function LocalAnalyticsPage() {
                       <div>
                         <p className="text-xs opacity-90">Female Members</p>
                         <p className="text-lg font-bold">
-                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.genderDistribution?.reduce(
                             (sum, item) => sum + item.female,
                             0
                           ) || 0}
@@ -711,12 +785,13 @@ export default function LocalAnalyticsPage() {
                       <div>
                         <p className="text-xs opacity-90">Active Guilders</p>
                         <p className="text-lg font-bold">
-                          {Math.floor(
-                            (chartData.membersDatabase?.congregations?.reduce(
-                              (sum, c) => sum + c.count,
-                              0
-                            ) || 0) * 0.85
-                          )}
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.congregations?.reduce(
+                            (sum, c) => sum + (c.active_members || 0),
+                            0
+                          ) || 0}
                         </p>
                       </div>
                       <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -728,12 +803,13 @@ export default function LocalAnalyticsPage() {
                       <div>
                         <p className="text-xs opacity-90">Inactive Guilders</p>
                         <p className="text-lg font-bold">
-                          {Math.floor(
-                            (chartData.membersDatabase?.congregations?.reduce(
-                              (sum, c) => sum + c.count,
-                              0
-                            ) || 0) * 0.15
-                          )}
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.congregations?.reduce(
+                            (sum, c) => sum + (c.inactive_members || 0),
+                            0
+                          ) || 0}
                         </p>
                       </div>
                       <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
@@ -744,7 +820,13 @@ export default function LocalAnalyticsPage() {
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
                         <p className="text-xs opacity-90">Growth</p>
-                        <p className="text-lg font-bold">+12.5%</p>
+                        <p className="text-lg font-bold">
+                          {(
+                            filtered?.sundayAttendance ||
+                            chartData.sundayAttendance
+                          )?.growth || 0}
+                          %
+                        </p>
                       </div>
                       <i className="fas fa-arrow-up text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
@@ -766,7 +848,9 @@ export default function LocalAnalyticsPage() {
                       Male Members
                     </span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white">
-                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.genderDistribution?.reduce(
                         (sum, item) => sum + item.male,
                         0
                       ) || 0}
@@ -776,7 +860,7 @@ export default function LocalAnalyticsPage() {
                     <div
                       className="h-2 rounded-full bg-blue-500"
                       style={{
-                        width: `${((chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.male, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1)) * 100}%`,
+                        width: `${Math.min((((filtered?.membersDatabase || chartData.membersDatabase)?.genderDistribution?.reduce((sum, item) => sum + item.male, 0) || 0) / ((filtered?.membersDatabase || chartData.membersDatabase)?.congregations?.reduce((sum, c) => sum + c.members, 0) || 1)) * 100, 100)}%`,
                       }}
                     ></div>
                   </div>
@@ -787,7 +871,9 @@ export default function LocalAnalyticsPage() {
                       Female Members
                     </span>
                     <span className="text-sm font-bold text-gray-900 dark:text-white">
-                      {chartData.membersDatabase?.genderDistribution?.reduce(
+                      {(
+                        filtered?.membersDatabase || chartData.membersDatabase
+                      )?.genderDistribution?.reduce(
                         (sum, item) => sum + item.female,
                         0
                       ) || 0}
@@ -797,7 +883,7 @@ export default function LocalAnalyticsPage() {
                     <div
                       className="h-2 rounded-full bg-pink-500"
                       style={{
-                        width: `${((chartData.membersDatabase?.genderDistribution?.reduce((sum, item) => sum + item.female, 0) || 0) / (chartData.membersDatabase?.congregations?.reduce((sum, c) => sum + c.count, 0) || 1)) * 100}%`,
+                        width: `${Math.min((((filtered?.membersDatabase || chartData.membersDatabase)?.genderDistribution?.reduce((sum, item) => sum + item.female, 0) || 0) / ((filtered?.membersDatabase || chartData.membersDatabase)?.congregations?.reduce((sum, c) => sum + c.members, 0) || 1)) * 100, 100)}%`,
                       }}
                     ></div>
                   </div>
@@ -824,7 +910,10 @@ export default function LocalAnalyticsPage() {
                           <i className="fas fa-mars text-white text-sm"></i>
                         </div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.genderDistribution?.reduce(
                             (sum, item) => sum + item.male,
                             0
                           ) || 0}
@@ -838,7 +927,10 @@ export default function LocalAnalyticsPage() {
                           <i className="fas fa-venus text-white text-sm"></i>
                         </div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {chartData.membersDatabase?.genderDistribution?.reduce(
+                          {(
+                            filtered?.membersDatabase ||
+                            chartData.membersDatabase
+                          )?.genderDistribution?.reduce(
                             (sum, item) => sum + item.female,
                             0
                           ) || 0}
@@ -866,7 +958,10 @@ export default function LocalAnalyticsPage() {
                             <i className="fas fa-mars text-white text-sm"></i>
                           </div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {chartData.membersDatabase?.genderDistribution?.reduce(
+                            {(
+                              filtered?.membersDatabase ||
+                              chartData.membersDatabase
+                            )?.genderDistribution?.reduce(
                               (sum, item) => sum + item.male,
                               0
                             ) || 0}
@@ -880,7 +975,10 @@ export default function LocalAnalyticsPage() {
                             <i className="fas fa-venus text-white text-sm"></i>
                           </div>
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {chartData.membersDatabase?.genderDistribution?.reduce(
+                            {(
+                              filtered?.membersDatabase ||
+                              chartData.membersDatabase
+                            )?.genderDistribution?.reduce(
                               (sum, item) => sum + item.female,
                               0
                             ) || 0}
