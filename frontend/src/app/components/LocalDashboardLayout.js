@@ -388,6 +388,7 @@ export default function LocalDashboardLayout({
 
   // Data Management
   const [dataManagementLoading, setDataManagementLoading] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   // Reminder Settings
   const [reminderSettings, setReminderSettings] = useState({
@@ -877,11 +878,10 @@ export default function LocalDashboardLayout({
   };
 
   const handleClearData = async () => {
-    const confirmation = prompt(
-      "Type 'DELETE_ALL_DATA' to confirm you want to clear all data:"
-    );
-    if (confirmation !== "DELETE_ALL_DATA") {
-      showError("Operation cancelled. Confirmation required.");
+    if (!confirmClear) {
+      showError("Click again to confirm clearing all data.");
+      setConfirmClear(true);
+      setTimeout(() => setConfirmClear(false), 5000);
       return;
     }
 
@@ -913,6 +913,7 @@ export default function LocalDashboardLayout({
       showError("Failed to clear data");
     } finally {
       setDataManagementLoading(false);
+      setConfirmClear(false);
     }
   };
 
@@ -1867,6 +1868,8 @@ export default function LocalDashboardLayout({
                             <i className="fas fa-trash mr-2"></i>
                             {dataManagementLoading
                               ? "Clearing..."
+                              : confirmClear
+                              ? "Click again to confirm"
                               : "Clear All Data"}
                           </button>
                         </div>

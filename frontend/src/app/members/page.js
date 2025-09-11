@@ -59,16 +59,7 @@ export default function MembersPage() {
     }
   }, []);
 
-  // Force refresh mock data on component mount
-  useEffect(() => {
-    // Clear existing data and force refresh
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("membersData");
-    }
-    const dataStore = getDataStore();
-    dataStore.clearAllData();
-    fetchMembers();
-  }, []);
+  // Removed forced data clearing to preserve congregation names and settings
 
   const fetchMembers = async () => {
     try {
@@ -80,13 +71,18 @@ export default function MembersPage() {
       // Get members from data store (no mock data)
       const allMembers = await getDataStore().getMembers();
 
+      // Remove any leftover mock entry (John Doe)
+      const cleanedMembers = allMembers.filter(
+        (m) => (m.name || "").toLowerCase() !== "john doe"
+      );
+
       // Filter members based on logged-in congregation (except for District Admin)
-      let filteredMembers = allMembers;
+      let filteredMembers = cleanedMembers;
       if (
         storedCongregationName &&
         storedCongregationName !== "District Admin"
       ) {
-        filteredMembers = allMembers.filter(
+        filteredMembers = cleanedMembers.filter(
           (member) =>
             member.congregation === storedCongregationName ||
             member.congregation === "District Office" // Always show district executives
@@ -258,12 +254,34 @@ export default function MembersPage() {
       setDeleteConfirmConfig({
         title: "Confirm Delete",
         message: `Are you sure you want to delete ${selectedMember?.name}? This action cannot be undone.`,
-        onConfirm: () => {
-          // Handle delete logic here
-          if (typeof window !== "undefined" && window.showToast) {
-            window.showToast("Member deleted successfully!", "success");
+        onConfirm: async () => {
+          try {
+            const ds = getDataStore();
+            // Optimistic UI update
+            setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
+            setExecutives((prev) => prev.filter((m) => m.id !== selectedMember.id));
+            // Update stats optimistically
+            const removed = selectedMember;
+            setTotalMembers((n) => Math.max(0, n - 1));
+            if ((removed.gender || "").toLowerCase() === "male") {
+              setTotalMale((n) => Math.max(0, n - 1));
+            } else if ((removed.gender || "").toLowerCase() === "female") {
+              setTotalFemale((n) => Math.max(0, n - 1));
+            }
+
+            // Attempt backend/local delete
+            await ds.deleteMember(selectedMember.id);
+
+            if (typeof window !== "undefined" && window.showToast) {
+              window.showToast("Member deleted successfully!", "success");
+            }
+          } catch (e) {
+            if (typeof window !== "undefined" && window.showToast) {
+              window.showToast("Failed to delete member", "error");
+            }
+          } finally {
+            setDeleteConfirmModalOpen(false);
           }
-          setDeleteConfirmModalOpen(false);
         },
       });
       setDeleteConfirmModalOpen(true);
@@ -1246,34 +1264,64 @@ export default function MembersPage() {
                           Select Congregation
                         </option>
                         <option
-                          value="Ahinsan Branch"
+                          value="Emmanuel Congregation Ahinsan"
                           className="text-light-text dark:text-dark-text"
                         >
-                          Ahinsan Branch
+                          Emmanuel Congregation Ahinsan
                         </option>
                         <option
-                          value="Kokomlemle Branch"
+                          value="Peniel Congregation Esreso No1"
                           className="text-light-text dark:text-dark-text"
                         >
-                          Kokomlemle Branch
+                          Peniel Congregation Esreso No1
                         </option>
                         <option
-                          value="Adabraka Branch"
+                          value="Mizpah Congregation Odagya No1"
                           className="text-light-text dark:text-dark-text"
                         >
-                          Adabraka Branch
+                          Mizpah Congregation Odagya No1
                         </option>
                         <option
-                          value="Kaneshie Branch"
+                          value="Christ Congregation Ahinsan Estate"
                           className="text-light-text dark:text-dark-text"
                         >
-                          Kaneshie Branch
+                          Christ Congregation Ahinsan Estate
                         </option>
                         <option
-                          value="Mamprobi Branch"
+                          value="Ebenezer Congregation Dompoase Aprabo"
                           className="text-light-text dark:text-dark-text"
                         >
-                          Mamprobi Branch
+                          Ebenezer Congregation Dompoase Aprabo
+                        </option>
+                        <option
+                          value="Favour Congregation Esreso No2"
+                          className="text-light-text dark:text-dark-text"
+                        >
+                          Favour Congregation Esreso No2
+                        </option>
+                        <option
+                          value="Liberty Congregation Esreso High Tension"
+                          className="text-light-text dark:text-dark-text"
+                        >
+                          Liberty Congregation Esreso High Tension
+                        </option>
+                        <option
+                          value="Odagya No2"
+                          className="text-light-text dark:text-dark-text"
+                        >
+                          Odagya No2
+                        </option>
+                        <option
+                          value="NOM"
+                          className="text-light-text dark:text-dark-text"
+                        >
+                          NOM
+                        </option>
+                        <option
+                          value="Kokobriko"
+                          className="text-light-text dark:text-dark-text"
+                        >
+                          Kokobriko
                         </option>
                       </select>
                     </div>

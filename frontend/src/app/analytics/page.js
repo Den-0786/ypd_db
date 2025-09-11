@@ -231,6 +231,12 @@ export default function AnalyticsPage() {
         cong.members += 1;
         if (isMale) cong.male += 1;
         if (isFemale) cong.female += 1;
+        const status = (member.membership_status || member.status || "").toString().toLowerCase();
+        if (status === "active") {
+          cong.active_members += 1;
+        } else {
+          cong.inactive_members += 1;
+        }
       });
 
       // Ensure all congregations seen in attendance also appear, even if they have 0 members

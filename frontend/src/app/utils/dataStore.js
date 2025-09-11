@@ -17,69 +17,8 @@ class DataStore {
 
   // Initialize with mock data for demonstration
   initializeMockData() {
-    this.membersData = [
-      {
-        id: 1,
-        name: "John Doe",
-        phone: "+233123456789",
-        email: "john@example.com",
-        gender: "Male",
-        congregation: "Ahinsan Central",
-        status: "Active",
-        is_executive: true,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        name: "Jane Smith",
-        phone: "+233987654321",
-        email: "jane@example.com",
-        gender: "Female",
-        congregation: "Ahinsan Central",
-        status: "Active",
-        is_executive: false,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        name: "Michael Johnson",
-        phone: "+233555666777",
-        email: "michael@example.com",
-        gender: "Male",
-        congregation: "Ahinsan North",
-        status: "Active",
-        is_executive: true,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 4,
-        name: "Sarah Wilson",
-        phone: "+233444555666",
-        email: "sarah@example.com",
-        gender: "Female",
-        congregation: "Ahinsan South",
-        status: "Active",
-        is_executive: false,
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 5,
-        name: "David Brown",
-        phone: "+233777888999",
-        email: "david@example.com",
-        gender: "Male",
-        congregation: "Ahinsan East",
-        status: "Active",
-        is_executive: true,
-        timestamp: new Date().toISOString(),
-      },
-    ];
-
-    // No mock attendance data - use real data from API/localStorage
-    this.attendanceRecords = [];
-
+    this.membersData = [];
     this.saveToStorage("membersData", this.membersData);
-    this.saveToStorage("attendanceRecords", this.attendanceRecords);
   }
 
   // Storage utilities
@@ -278,6 +217,46 @@ class DataStore {
           member.is_communicant !== undefined ? member.is_communicant : true,
       };
 
+      // Enforce unique positions before API call
+      const existingMembers = await this.getMembers();
+      const isLocalPositionTaken = !!existingMembers.find(
+        (m) =>
+          (m.congregation === member.congregation ||
+            m.congregation?.name === member.congregation) &&
+          (m.executive_position || m.local_executive_position || "")
+            .toString()
+            .trim()
+            .toLowerCase() === (member.executive_position || "")
+            .toString()
+            .trim()
+            .toLowerCase()
+      );
+      if (member.is_executive && member.executive_position && isLocalPositionTaken) {
+        throw new Error(
+          `Position already assigned in ${member.congregation}. Choose another.`
+        );
+      }
+
+      const isDistrictPositionTaken = !!existingMembers.find(
+        (m) =>
+          (m.district_executive_position || "")
+            .toString()
+            .trim()
+            .toLowerCase() === (member.district_executive_position || "")
+            .toString()
+            .trim()
+            .toLowerCase()
+      );
+      if (
+        member.is_executive &&
+        member.district_executive_position &&
+        isDistrictPositionTaken
+      ) {
+        throw new Error(
+          `District position already assigned. Choose another.`
+        );
+      }
+
       const response = await fetch("http://localhost:8001/api/members/add/", {
         method: "POST",
         headers: {
@@ -308,6 +287,15 @@ class DataStore {
         "Error adding member via API, falling back to local storage:",
         error
       );
+
+      // If the error is due to duplicate position, rethrow so UI can notify
+      if (
+        typeof error?.message === "string" &&
+        (error.message.includes("Position already assigned") ||
+          error.message.includes("District position already assigned"))
+      ) {
+        throw error;
+      }
 
       // Fallback to local storage if API fails
       const newMember = {
@@ -565,6 +553,26 @@ class DataStore {
         return this.membersData[memberIndex];
       }
       throw error;
+    }
+  }
+
+  async deleteMember(memberId) {
+    try {
+      const response = await fetch(
+        `http://localhost:8001/api/members/${memberId}/delete/`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) throw new Error("Failed to delete member");
+      this.membersData = this.membersData.filter((m) => m.id !== memberId);
+      this.saveToStorage("membersData", this.membersData);
+      this.updateAnalytics();
+      return true;
+    } catch (e) {
+      // Local fallback
+      this.membersData = this.membersData.filter((m) => m.id !== memberId);
+      this.saveToStorage("membersData", this.membersData);
+      this.updateAnalytics();
+      return true;
     }
   }
 
