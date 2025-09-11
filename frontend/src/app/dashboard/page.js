@@ -9,12 +9,16 @@ import autoLogout from "../utils/autoLogout";
 export default function DashboardPage() {
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizPassword, setQuizPassword] = useState("");
+  const [showQuizPassword, setShowQuizPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
   const [showQuizModal, setShowQuizModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showResultsModal, setShowResultsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingQuiz, setEditingQuiz] = useState(false);
   const [newQuestion, setNewQuestion] = useState({
     title: "",
-    description: "",
     question: "",
     optionA: "",
     optionB: "",
@@ -138,6 +142,12 @@ export default function DashboardPage() {
   };
 
   const handleCreateQuiz = async () => {
+    // Check if there's already an active quiz
+    if (activeQuiz) {
+      showToast("There is already an active quiz. Please delete the existing quiz before creating a new one.", "error");
+      return;
+    }
+
     if (
       !newQuestion.title ||
       !newQuestion.question ||
@@ -166,7 +176,6 @@ export default function DashboardPage() {
           },
           body: JSON.stringify({
             title: newQuestion.title,
-            description: newQuestion.description,
             question: newQuestion.question,
             option_a: newQuestion.optionA,
             option_b: newQuestion.optionB,
@@ -202,7 +211,6 @@ export default function DashboardPage() {
 
         setNewQuestion({
           title: "",
-          description: "",
           question: "",
           optionA: "",
           optionB: "",
@@ -240,6 +248,8 @@ export default function DashboardPage() {
 
       if (data.success) {
         setActiveQuiz({ ...activeQuiz, is_active: false });
+        // Clear password when quiz is ended
+        setQuizPassword("");
         showToast("Quiz ended successfully!", "success");
       } else {
         showToast(data.error || "Failed to end quiz", "error");
@@ -268,6 +278,19 @@ export default function DashboardPage() {
       if (data.success) {
         setActiveQuiz(null);
         setQuizSubmissions([]);
+        // Clear form when quiz is deleted
+        setNewQuestion({
+          title: "",
+          question: "",
+          optionA: "",
+          optionB: "",
+          optionC: "",
+          optionD: "",
+          correctAnswer: "",
+          startTime: "",
+          endTime: "",
+        });
+        setQuizPassword("");
         showToast("Quiz deleted successfully!", "success");
       } else {
         showToast(data.error || "Failed to delete quiz", "error");
@@ -277,14 +300,116 @@ export default function DashboardPage() {
     }
   };
 
-  const handlePasswordSubmit = (password) => {
-    const correctPassword = activeQuiz ? activeQuiz.password : quizPassword;
+  const handleEditQuiz = () => {
+    if (!activeQuiz) return;
+    
+    // Populate the form with existing quiz data
+    setNewQuestion({
+      title: activeQuiz.title || "",
+      question: activeQuiz.question || "",
+      optionA: activeQuiz.option_a || "",
+      optionB: activeQuiz.option_b || "",
+      optionC: activeQuiz.option_c || "",
+      optionD: activeQuiz.option_d || "",
+      correctAnswer: activeQuiz.correct_answer || "",
+      startTime: activeQuiz.start_time || "",
+      endTime: activeQuiz.end_time || "",
+    });
+    setQuizPassword(activeQuiz.password || "");
+    setEditingQuiz(true);
+    setShowEditModal(true);
+  };
 
-    if (password === correctPassword) {
+  const handleUpdateQuiz = async () => {
+    if (!activeQuiz) return;
+
+    if (
+      !newQuestion.title ||
+      !newQuestion.question ||
+      !newQuestion.optionA ||
+      !newQuestion.optionB ||
+      !newQuestion.optionC ||
+      !newQuestion.optionD ||
+      !newQuestion.correctAnswer ||
+      !newQuestion.startTime ||
+      !newQuestion.endTime
+    ) {
+      showToast("Please fill in all fields", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8001/api/quizzes/${activeQuiz.id}/update/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            title: newQuestion.title,
+            question: newQuestion.question,
+            option_a: newQuestion.optionA,
+            option_b: newQuestion.optionB,
+            option_c: newQuestion.optionC,
+            option_d: newQuestion.optionD,
+            correct_answer: newQuestion.correctAnswer,
+            start_time: newQuestion.startTime,
+            end_time: newQuestion.endTime,
+            password: quizPassword,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setActiveQuiz({
+          ...activeQuiz,
+          title: newQuestion.title,
+          question: newQuestion.question,
+          option_a: newQuestion.optionA,
+          option_b: newQuestion.optionB,
+          option_c: newQuestion.optionC,
+          option_d: newQuestion.optionD,
+          correct_answer: newQuestion.correctAnswer,
+          start_time: newQuestion.startTime,
+          end_time: newQuestion.endTime,
+          password: quizPassword,
+        });
+        // Clear form after successful update
+        setNewQuestion({
+          title: "",
+          question: "",
+          optionA: "",
+          optionB: "",
+          optionC: "",
+          optionD: "",
+          correctAnswer: "",
+          startTime: "",
+          endTime: "",
+        });
+        setQuizPassword("");
+        setShowEditModal(false);
+        setEditingQuiz(false);
+        showToast("Quiz updated successfully!", "success");
+      } else {
+        showToast(data.error || "Failed to update quiz", "error");
+      }
+    } catch (error) {
+      showToast("Failed to update quiz", "error");
+    }
+  };
+
+  const handlePasswordSubmit = (password) => {
+    const adminPassword = "district2024";
+
+    if (password === adminPassword) {
       setShowPasswordModal(false);
       setShowQuizModal(true);
+      setAdminPasswordInput("");
     } else {
-      showToast("Incorrect password!", "error");
+      showToast("Incorrect admin password!", "error");
     }
   };
 
@@ -467,13 +592,40 @@ export default function DashboardPage() {
             </h2>
             <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:space-x-3">
               <button
-                onClick={() => setShowPasswordModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base"
+                onClick={() => {
+                  if (activeQuiz) {
+                    showToast("There is already an active quiz. Please delete the existing quiz before creating a new one.", "error");
+                  } else {
+                    // Clear password when starting to create a new quiz
+                    setQuizPassword("");
+                    setShowPasswordModal(true);
+                  }
+                }}
+                className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base ${
+                  activeQuiz 
+                    ? "bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed" 
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
+                disabled={activeQuiz}
               >
                 <i className="fas fa-plus mr-1 sm:mr-2"></i>
-                <span className="hidden xs:inline">Create Quiz</span>
-                <span className="xs:hidden">Create</span>
+                <span className="hidden xs:inline">
+                  {activeQuiz ? "Quiz Exists" : "Create Quiz"}
+                </span>
+                <span className="xs:hidden">
+                  {activeQuiz ? "Exists" : "Create"}
+                </span>
               </button>
+              {activeQuiz && (
+                <button
+                  onClick={handleEditQuiz}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base"
+                >
+                  <i className="fas fa-edit mr-1 sm:mr-2"></i>
+                  <span className="hidden xs:inline">Edit Quiz</span>
+                  <span className="xs:hidden">Edit</span>
+                </button>
+              )}
               {activeQuiz && activeQuiz.is_active && (
                 <button
                   onClick={handleEndQuiz}
@@ -623,12 +775,19 @@ export default function DashboardPage() {
               </label>
               <div className="flex items-center space-x-2">
                 <input
-                  type="text"
+                  type={showQuizPassword ? "text" : "password"}
                   value={quizPassword}
                   onChange={(e) => setQuizPassword(e.target.value)}
                   className="flex-1 px-2 w-[2rem] py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   placeholder="Enter quiz password"
                 />
+                <button
+                  onClick={() => setShowQuizPassword((v) => !v)}
+                  className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md transition-colors duration-200"
+                  title={showQuizPassword ? "Hide password" : "Show password"}
+                >
+                  <i className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                </button>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(quizPassword);
@@ -738,29 +897,40 @@ export default function DashboardPage() {
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Enter Admin Password
             </h3>
-            <input
-              type="password"
-              placeholder="Enter password"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 mb-4"
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handlePasswordSubmit(e.target.value);
-                }
-              }}
-            />
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type={showAdminPassword ? "text" : "password"}
+                value={adminPasswordInput}
+                onChange={(e) => setAdminPasswordInput(e.target.value)}
+                placeholder="Enter admin password"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handlePasswordSubmit(adminPasswordInput);
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPassword(!showAdminPassword)}
+                className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md transition-colors duration-200"
+                title={showAdminPassword ? "Hide password" : "Show password"}
+              >
+                <i className={`fas ${showAdminPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+              </button>
+            </div>
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowPasswordModal(false)}
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setAdminPasswordInput("");
+                }}
                 className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={() =>
-                  handlePasswordSubmit(
-                    document.querySelector('input[type="password"]').value
-                  )
-                }
+                onClick={() => handlePasswordSubmit(adminPasswordInput)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Submit
@@ -789,25 +959,7 @@ export default function DashboardPage() {
                     setNewQuestion({ ...newQuestion, title: e.target.value })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
-                  placeholder="Enter quiz title..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={newQuestion.description}
-                  onChange={(e) =>
-                    setNewQuestion({
-                      ...newQuestion,
-                      description: e.target.value,
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
-                  rows="2"
-                  placeholder="Enter quiz description..."
+                  placeholder="e.g., Bible Quiz, Hymnal Quiz, General Knowledge"
                 />
               </div>
 
@@ -956,7 +1108,22 @@ export default function DashboardPage() {
 
             <div className="flex justify-end space-x-3 mt-6">
               <button
-                onClick={() => setShowQuizModal(false)}
+                onClick={() => {
+                  setShowQuizModal(false);
+                  // Clear form when canceling
+                  setNewQuestion({
+                    title: "",
+                    question: "",
+                    optionA: "",
+                    optionB: "",
+                    optionC: "",
+                    optionD: "",
+                    correctAnswer: "",
+                    startTime: "",
+                    endTime: "",
+                  });
+                  setQuizPassword("");
+                }}
                 className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
               >
                 Cancel
@@ -966,6 +1133,219 @@ export default function DashboardPage() {
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Create Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Quiz Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Edit Quiz
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Quiz Title
+                </label>
+                <input
+                  type="text"
+                  value={newQuestion.title}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  placeholder="e.g., Bible Quiz, Hymna Quiz, General Knowledge"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Question
+                </label>
+                <textarea
+                  value={newQuestion.question}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, question: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  placeholder="Enter your question here..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Option A
+                  </label>
+                  <input
+                    type="text"
+                    value={newQuestion.optionA}
+                    onChange={(e) =>
+                      setNewQuestion({ ...newQuestion, optionA: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Option B
+                  </label>
+                  <input
+                    type="text"
+                    value={newQuestion.optionB}
+                    onChange={(e) =>
+                      setNewQuestion({ ...newQuestion, optionB: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Option C
+                  </label>
+                  <input
+                    type="text"
+                    value={newQuestion.optionC}
+                    onChange={(e) =>
+                      setNewQuestion({ ...newQuestion, optionC: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Option D
+                  </label>
+                  <input
+                    type="text"
+                    value={newQuestion.optionD}
+                    onChange={(e) =>
+                      setNewQuestion({ ...newQuestion, optionD: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Correct Answer
+                </label>
+                <select
+                  value={newQuestion.correctAnswer}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, correctAnswer: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                >
+                  <option value="">Select correct answer</option>
+                  <option value="A">Option A</option>
+                  <option value="B">Option B</option>
+                  <option value="C">Option C</option>
+                  <option value="D">Option D</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Quiz Password
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type={showQuizPassword ? "text" : "password"}
+                    value={quizPassword}
+                    onChange={(e) => setQuizPassword(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                    placeholder="Enter quiz password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowQuizPassword(!showQuizPassword)}
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md transition-colors duration-200"
+                    title={showQuizPassword ? "Hide password" : "Show password"}
+                  >
+                    <i className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleGeneratePassword}
+                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors duration-200"
+                    title="Generate random password"
+                  >
+                    <i className="fas fa-sync-alt"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Start Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newQuestion.startTime}
+                    onChange={(e) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        startTime: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    End Time
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newQuestion.endTime}
+                    onChange={(e) =>
+                      setNewQuestion({
+                        ...newQuestion,
+                        endTime: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingQuiz(false);
+                  // Clear form when canceling edit
+                  setNewQuestion({
+                    title: "",
+                    question: "",
+                    optionA: "",
+                    optionB: "",
+                    optionC: "",
+                    optionD: "",
+                    correctAnswer: "",
+                    startTime: "",
+                    endTime: "",
+                  });
+                  setQuizPassword("");
+                }}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateQuiz}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition-colors"
+              >
+                Update Quiz
               </button>
             </div>
           </div>

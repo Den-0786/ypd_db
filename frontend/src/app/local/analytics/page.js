@@ -131,10 +131,10 @@ export default function LocalAnalyticsPage() {
       const totalFemale = attendanceRecords.reduce((sum, r) => sum + (r.female || 0), 0);
       const averageAttendance = attendanceRecords.length > 0 ? totalAttendance / attendanceRecords.length : 0;
 
-      // Convert attendance records to weekly trend format
+                // Convert attendance records to weekly trend format
       const weeklyTrend = attendanceRecords.map((record) => ({
-        date: record.date,
-        congregation: congregationName,
+                  date: record.date,
+                  congregation: congregationName,
         total: record.total || 0,
         male: record.male || 0,
         female: record.female || 0,
@@ -146,7 +146,7 @@ export default function LocalAnalyticsPage() {
       const totalMembers = members.length;
 
       const analyticsData = {
-        sundayAttendance: {
+            sundayAttendance: {
           totalAttendance,
           averageAttendance: Math.round(averageAttendance),
           congregationsCount: 1,
@@ -154,8 +154,8 @@ export default function LocalAnalyticsPage() {
           weeklyTrend,
           monthlyTrend: [],
           yearlyTrend: [],
-        },
-        membersDatabase: {
+            },
+            membersDatabase: {
           totalMembers,
           congregations: [{
             name: congregationName,
@@ -173,10 +173,10 @@ export default function LocalAnalyticsPage() {
 
       console.log("Analytics - Final data:", analyticsData);
       setChartData(analyticsData);
-      setLoading(false);
+          setLoading(false);
     } catch (error) {
       console.error("Error fetching analytics data:", error);
-      setLoading(false);
+    setLoading(false);
     }
   };
 

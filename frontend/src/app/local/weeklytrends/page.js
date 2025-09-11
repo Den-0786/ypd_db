@@ -49,15 +49,15 @@ export default function WeeklyTrendsPage() {
         female: record.female || 0,
       }));
 
-      const realData = {
-        sundayAttendance: {
+          const realData = {
+            sundayAttendance: {
           weeklyTrend: weeklyTrend,
-        },
-      };
+            },
+          };
 
       console.log("Weekly Trends - Final data:", realData);
-      setChartData(realData);
-      setLoading(false);
+          setChartData(realData);
+          setLoading(false);
     } catch (error) {
       console.error("Error fetching weekly trends data:", error);
       setLoading(false);
@@ -371,7 +371,7 @@ export default function WeeklyTrendsPage() {
                       const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
                       const step = Math.ceil(maxValue / 5);
                       return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
-                        <span key={num}>{num}</span>
+                      <span key={num}>{num}</span>
                       ));
                     })()}
                   </div>
@@ -541,13 +541,13 @@ export default function WeeklyTrendsPage() {
                       const scale = maxValue > 0 ? 80 / maxValue : 0;
                       
                       return weeklyData.map((week, index) => {
-                        if (!week) return null;
+                      if (!week) return null;
                         const x = weeklyData.length === 1 ? 50 : 10 + index * (80 / Math.max(weeklyData.length - 1, 1));
                         const y = 90 - (week?.total || 0) * scale;
                         const prevWeek = index > 0 ? weeklyData[index - 1] : null;
                         const difference = prevWeek ? (week.total || 0) - (prevWeek.total || 0) : 0;
 
-                        return (
+                      return (
                           <g key={index}>
                             {/* Outer glow for better visibility */}
                             <circle
@@ -558,12 +558,12 @@ export default function WeeklyTrendsPage() {
                               className="cursor-pointer"
                             />
                             {/* Main data point */}
-                            <circle
-                              cx={x}
-                              cy={y}
+                        <circle
+                          cx={x}
+                          cy={y}
                               r="2"
-                              fill="#f97316"
-                              stroke="#ffffff"
+                          fill="#f97316"
+                          stroke="#ffffff"
                               strokeWidth="0.5"
                               className="cursor-pointer hover:r-3 transition-all duration-200"
                           onMouseEnter={(e) => {
@@ -594,10 +594,10 @@ export default function WeeklyTrendsPage() {
                               x: 0,
                               y: 0,
                             });
-                            }}
-                          />
+                          }}
+                        />
                           </g>
-                        );
+                      );
                       });
                     })()}
                   </svg>

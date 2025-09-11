@@ -66,51 +66,71 @@ export default function LocalDashboardPage() {
       setLoading(true);
       const dataStore = getDataStore();
 
-      const response = await fetch("http://localhost:8001/api/home-stats/");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          // Get members to calculate executives locally
-          const members = await dataStore.getMembers({
-            congregation: congregationName,
-          });
+      // Get members for this congregation
+      const members = await dataStore.getMembers({
+        congregation: congregationName,
+      });
 
-          // Calculate executives locally for this congregation
-          const localExecutives = members.filter((m) => m.is_executive).length;
+      // Get attendance records for this congregation
+      const attendanceRecords = await dataStore.getAttendanceRecords();
+      const congregationAttendance = attendanceRecords.filter(
+        (record) => record.congregation === congregationName
+      );
 
-          console.log("Dashboard - Local executives count:", localExecutives);
-          console.log(
-            "Dashboard - API executives count:",
-            data.data.numberOfExecutives
-          );
+      // Calculate stats locally for this congregation
+      const totalMembers = members.length;
+      const localExecutives = members.filter((m) => m.is_executive).length;
 
-          // Use API data but calculate executives locally
-          setStats({
-            totalMembers: data.data.totalMembers || 0,
-            thisWeeksAttendance: data.data.thisWeekAttendance || 0,
-            newMembersThisMonth: data.data.newMembersThisMonth || 0,
-            numberOfExecutives: localExecutives, // Use local calculation
-          });
-
-          console.log("Dashboard - API data:", data.data);
-          console.log(
-            "Dashboard - This week's attendance from API:",
-            data.data.thisWeekAttendance
-          );
-          console.log(
-            "Dashboard - Number of executives from API:",
-            data.data.numberOfExecutives
-          );
-        }
-      } else {
-        // Use fallback data
-        setStats({
-          totalMembers: 0,
-          thisWeeksAttendance: 0,
-          newMembersThisMonth: 0,
-          numberOfExecutives: 0,
+      // Calculate this week's attendance - use the most recent attendance record's week (Sunday to Saturday)
+      const now = new Date();
+      let thisWeeksAttendance = 0;
+      
+      if (congregationAttendance.length > 0) {
+        // Find the most recent attendance record
+        const mostRecentRecord = congregationAttendance.reduce((latest, record) => {
+          const recordDate = new Date(record.date);
+          const latestDate = new Date(latest.date);
+          return recordDate > latestDate ? record : latest;
         });
+        
+        // Calculate the week range for the most recent record (Sunday to Saturday)
+        const recordDate = new Date(mostRecentRecord.date);
+        const startOfWeek = new Date(recordDate);
+        startOfWeek.setDate(recordDate.getDate() - recordDate.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        thisWeeksAttendance = congregationAttendance
+          .filter((record) => {
+            const recordDate = new Date(record.date);
+            return recordDate >= startOfWeek && recordDate <= endOfWeek;
+          })
+          .reduce((total, record) => total + (record.total || 0), 0);
       }
+
+      // Calculate new members this month
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const newMembersThisMonth = members.filter((member) => {
+        const memberDate = new Date(member.created_at || member.date_joined || member.joined_date);
+        return memberDate >= startOfMonth;
+      }).length;
+
+      setStats({
+        totalMembers,
+        thisWeeksAttendance,
+        newMembersThisMonth,
+        numberOfExecutives: localExecutives,
+      });
+
+      console.log("Dashboard - Local stats for", congregationName, ":", {
+        totalMembers,
+        thisWeeksAttendance,
+        newMembersThisMonth,
+        numberOfExecutives: localExecutives,
+      });
     } catch (error) {
       console.error("Error fetching congregation data:", error);
       // Use fallback data

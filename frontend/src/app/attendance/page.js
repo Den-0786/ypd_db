@@ -14,9 +14,18 @@ const getWeekOfMonth = (date) => {
   const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const dayOfMonth = d.getDate();
   
-  // Calculate which week of the month this day falls into
-  // Week 1: days 1-7, Week 2: days 8-14, Week 3: days 15-21, etc.
-  return Math.ceil(dayOfMonth / 7);
+  // Calculate which week of the month this day falls into using Sunday-to-Saturday weeks
+  // Find the start of the week containing this date
+  const startOfWeek = new Date(d);
+  startOfWeek.setDate(d.getDate() - d.getDay());
+  
+  // Find the start of the first week of the month
+  const firstWeekStart = new Date(firstDay);
+  firstWeekStart.setDate(firstDay.getDate() - firstDayOfWeek);
+  
+  // Calculate the difference in days and convert to weeks
+  const daysDiff = Math.floor((startOfWeek - firstWeekStart) / (1000 * 60 * 60 * 24));
+  return Math.floor(daysDiff / 7) + 1;
 };
 function getMonthName(date) {
   return new Date(date).toLocaleString("default", { month: "short" });

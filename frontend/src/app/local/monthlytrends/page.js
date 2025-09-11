@@ -73,15 +73,15 @@ export default function MonthlyTrendsPage() {
         return monthOrder.indexOf(a?.month || "") - monthOrder.indexOf(b?.month || "");
       });
 
-      const realData = {
-        sundayAttendance: {
+          const realData = {
+            sundayAttendance: {
           monthlyTrend: monthlyTrend,
-        },
-      };
+            },
+          };
 
       console.log("Monthly Trends - Final data:", realData);
-      setChartData(realData);
-      setLoading(false);
+          setChartData(realData);
+          setLoading(false);
     } catch (error) {
       console.error("Error fetching monthly trends data:", error);
       setLoading(false);
@@ -426,7 +426,7 @@ export default function MonthlyTrendsPage() {
                       const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
                       const step = Math.ceil(maxValue / 5);
                       return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
-                        <span key={num}>{num}</span>
+                      <span key={num}>{num}</span>
                       ));
                     })()}
                   </div>
@@ -594,12 +594,12 @@ export default function MonthlyTrendsPage() {
                               className="cursor-pointer"
                             />
                             {/* Main data point */}
-                            <circle
-                              cx={x}
-                              cy={y}
+                          <circle
+                            cx={x}
+                            cy={y}
                               r="2"
-                              fill="#3b82f6"
-                              stroke="#ffffff"
+                            fill="#3b82f6"
+                            stroke="#ffffff"
                               strokeWidth="0.5"
                               className="cursor-pointer hover:r-3 transition-all duration-200"
                             onMouseEnter={(e) => {

@@ -527,25 +527,15 @@ export default function LocalSidebar({
                     )}
                   </div>
                   <div className="p-2 border-t border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-center">
                       <button
                         onClick={fetchNotifications}
                         className="text-xs text-blue-600 dark:text-blue-400 hover:underline truncate"
                       >
                         {notificationsLoading
                           ? "Refreshing..."
-                          : "Refresh notifications"}
+                          : "See all notifications"}
                       </button>
-                      {/* Test button for development */}
-                      {process.env.NODE_ENV === "development" && (
-                        <button
-                          onClick={createTestNotifications}
-                          className="text-xs text-green-600 dark:text-green-400 hover:underline truncate ml-2"
-                          title="Create test notifications"
-                        >
-                          Test
-                        </button>
-                      )}
                     </div>
                   </div>
                 </div>

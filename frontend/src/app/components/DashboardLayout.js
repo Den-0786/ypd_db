@@ -845,6 +845,67 @@ export default function DashboardLayout({
     return () => clearInterval(interval);
   }, []);
 
+  // Website content state management
+  const [websiteData, setWebsiteData] = useState({
+    about: "",
+    mission: "",
+    vision: "",
+    contact_email: "",
+    contact_phone: "",
+  });
+  const [websiteLoading, setWebsiteLoading] = useState(false);
+
+  const fetchWebsiteData = async () => {
+    try {
+      setWebsiteLoading(true);
+      const response = await fetch("http://localhost:8001/api/settings/website/");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.website) {
+          setWebsiteData({
+            about: data.website.about || "",
+            mission: data.website.mission || "",
+            vision: data.website.vision || "",
+            contact_email: data.website.contact_email || "",
+            contact_phone: data.website.contact_phone || "",
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching website settings:", e);
+    } finally {
+      setWebsiteLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (settingsOpen && activeSettingsTab === "website") {
+      fetchWebsiteData();
+    }
+  }, [settingsOpen, activeSettingsTab]);
+
+  const handleWebsiteUpdate = async () => {
+    try {
+      setWebsiteLoading(true);
+      const response = await fetch("http://localhost:8001/api/settings/website/", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(websiteData),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.success) {
+        showSuccess("Website content updated successfully!");
+      } else {
+        showError(data.error || "Failed to update website content");
+      }
+    } catch (e) {
+      console.error("Error updating website settings:", e);
+      showError("Failed to update website content");
+    } finally {
+      setWebsiteLoading(false);
+    }
+  };
+
   return (
     <div
       className={`min-h-screen ${mounted ? (theme === "dark" ? "dark bg-gray-900" : "bg-gray-50") : "bg-gray-50"}`}
@@ -950,7 +1011,7 @@ export default function DashboardLayout({
                   <i className="fas fa-times text-lg"></i>
                 </button>
               </div>
-              <div className="flex h-96">
+              <div className="flex max-h-[70vh] sm:max-h-[80vh]">
                 {/* Settings Sidebar */}
                 <div className="w-48 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                   <nav className="p-4 space-y-2">
@@ -2382,6 +2443,81 @@ export default function DashboardLayout({
                             >
                               <i className="fas fa-play mr-1"></i>Test Message
                             </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {activeSettingsTab === "website" && (
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                          Website Content
+                        </h3>
+                        <button
+                          onClick={handleWebsiteUpdate}
+                          disabled={websiteLoading}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {websiteLoading ? (
+                            <>
+                              <i className="fas fa-spinner fa-spin mr-2"></i>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-save mr-2"></i>Save
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="space-y-3 sm:space-y-4">
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">About</label>
+                          <textarea
+                            rows={3}
+                            value={websiteData.about}
+                            onChange={(e) => setWebsiteData((p) => ({ ...p, about: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Mission</label>
+                          <textarea
+                            rows={2}
+                            value={websiteData.mission}
+                            onChange={(e) => setWebsiteData((p) => ({ ...p, mission: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Vision</label>
+                          <textarea
+                            rows={2}
+                            value={websiteData.vision}
+                            onChange={(e) => setWebsiteData((p) => ({ ...p, vision: e.target.value }))}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Contact Email</label>
+                            <input
+                              type="email"
+                              value={websiteData.contact_email}
+                              onChange={(e) => setWebsiteData((p) => ({ ...p, contact_email: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Contact Phone</label>
+                            <input
+                              type="tel"
+                              value={websiteData.contact_phone}
+                              onChange={(e) => setWebsiteData((p) => ({ ...p, contact_phone: e.target.value }))}
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                            />
                           </div>
                         </div>
                       </div>

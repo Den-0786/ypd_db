@@ -62,15 +62,15 @@ export default function YearlyTrendsPage() {
       // Convert to array and sort by year
       const yearlyTrend = Object.values(yearlyData).sort((a, b) => a.year - b.year);
 
-      const realData = {
-        sundayAttendance: {
+          const realData = {
+            sundayAttendance: {
           yearlyTrend: yearlyTrend,
-        },
-      };
+            },
+          };
 
       console.log("Yearly Trends - Final data:", realData);
-      setChartData(realData);
-      setLoading(false);
+          setChartData(realData);
+          setLoading(false);
     } catch (error) {
       console.error("Error fetching yearly trends data:", error);
       setLoading(false);
@@ -303,7 +303,7 @@ export default function YearlyTrendsPage() {
                       const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
                       const step = Math.ceil(maxValue / 5);
                       return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
-                        <span key={num}>{num}</span>
+                      <span key={num}>{num}</span>
                       ));
                     })()}
                   </div>
@@ -475,12 +475,12 @@ export default function YearlyTrendsPage() {
                               className="cursor-pointer"
                             />
                             {/* Main data point */}
-                            <circle
-                              cx={x}
-                              cy={y}
+                          <circle
+                            cx={x}
+                            cy={y}
                               r="2"
-                              fill="#10b981"
-                              stroke="#ffffff"
+                            fill="#10b981"
+                            stroke="#ffffff"
                               strokeWidth="0.5"
                               className="cursor-pointer hover:r-3 transition-all duration-200"
                             onMouseEnter={(e) => {

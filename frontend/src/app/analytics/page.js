@@ -82,53 +82,239 @@ export default function AnalyticsPage() {
     try {
       setLoading(true);
 
-      // Fetch detailed analytics data from new API endpoint
-      const analyticsResponse = await fetch(
-        "http://localhost:8001/api/analytics/detailed/"
-      );
-      const homeStatsResponse = await fetch(
-        "http://localhost:8001/api/home-stats/"
-      );
+      const dataStore = getDataStore();
 
-      let analyticsData = null;
-      let homeStatsData = null;
+      // Known congregations baseline to always display
+      const baselineCongregations = [
+        "Emmanuel Congregation Ahinsan",
+        "Peniel Congregation Esreso No1",
+        "Mizpah Congregation Odagya No1",
+        "Christ Congregation Ahinsan Estate",
+        "Ebenezer Congregation Dompoase Aprabo",
+        "Favour Congregation Esreso No2",
+        "Liberty Congregation Esreso High Tension",
+        "Odagya No2",
+        "NOM",
+        "Kokobriko",
+      ];
 
-      if (analyticsResponse.ok) {
-        const analyticsResult = await analyticsResponse.json();
-        if (analyticsResult.success) {
-          analyticsData = analyticsResult.data;
+      // Get real data from dataStore
+      const attendanceRecords = await dataStore.getAttendanceRecords();
+      const members = await dataStore.getMembers();
+
+      // Calculate real analytics from attendance records
+      const totalAttendance = attendanceRecords.reduce((sum, record) => sum + (record.total || 0), 0);
+      const averageAttendance = attendanceRecords.length > 0 ? Math.round(totalAttendance / attendanceRecords.length) : 0;
+      
+      // Get unique congregations
+      const congregations = [...new Set(attendanceRecords.map(record => record.congregation))];
+      const congregationsCount = congregations.length;
+
+      // Calculate growth (compare last month vs previous month)
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      
+      const lastMonthRecords = attendanceRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getMonth() === lastMonth.getMonth() && 
+               recordDate.getFullYear() === lastMonth.getFullYear();
+      });
+      
+      const previousMonthRecords = attendanceRecords.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate.getMonth() === previousMonth.getMonth() && 
+               recordDate.getFullYear() === previousMonth.getFullYear();
+      });
+
+      const lastMonthTotal = lastMonthRecords.reduce((sum, record) => sum + (record.total || 0), 0);
+      const previousMonthTotal = previousMonthRecords.reduce((sum, record) => sum + (record.total || 0), 0);
+      const growth = previousMonthTotal > 0 ? Math.round(((lastMonthTotal - previousMonthTotal) / previousMonthTotal) * 100) : 0;
+
+      // Group attendance by week for weekly trend
+      const weeklyTrend = [];
+      const weeklyMap = new Map();
+      attendanceRecords.forEach(record => {
+        const date = new Date(record.date);
+        const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
+        if (!weeklyMap.has(weekKey)) {
+          weeklyMap.set(weekKey, {
+            date: record.date,
+            male: 0,
+            female: 0,
+            total: 0,
+            congregation: record.congregation
+          });
         }
-      }
+        const week = weeklyMap.get(weekKey);
+        week.male += record.male || 0;
+        week.female += record.female || 0;
+        week.total += record.total || 0;
+      });
+      weeklyTrend.push(...Array.from(weeklyMap.values()));
 
-      if (homeStatsResponse.ok) {
-        const homeStatsResult = await homeStatsResponse.json();
-        if (homeStatsResult.success) {
-          homeStatsData = homeStatsResult.data;
+      // Group attendance by month for monthly trend
+      const monthlyTrend = [];
+      const monthlyMap = new Map();
+      attendanceRecords.forEach(record => {
+        const date = new Date(record.date);
+        const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        if (!monthlyMap.has(monthKey)) {
+          monthlyMap.set(monthKey, {
+            month: date.toLocaleString('default', { month: 'short' }),
+            year: date.getFullYear(),
+            male: 0,
+            female: 0,
+            total: 0
+          });
         }
-      }
+        const month = monthlyMap.get(monthKey);
+        month.male += record.male || 0;
+        month.female += record.female || 0;
+        month.total += record.total || 0;
+      });
+      monthlyTrend.push(...Array.from(monthlyMap.values()));
 
-      if (analyticsData && homeStatsData) {
-        // Use real data from API
-        const realData = {
-          sundayAttendance: {
-            totalAttendance: homeStatsData.sundayAttendance || 0,
-            averageAttendance: homeStatsData.sundayAttendance || 0,
-            congregationsCount: homeStatsData.totalCongregations || 0,
-            growth: homeStatsData.growthRate || 0,
-            weeklyTrend: analyticsData.weeklyTrend || [],
-            monthlyTrend: analyticsData.monthlyTrend || [],
-            yearlyTrend: analyticsData.yearlyTrend || [],
-          },
-          membersDatabase: {
-            totalMembers: homeStatsData.totalMembers || 0,
-            congregations: analyticsData.congregations || [],
-            genderDistribution: analyticsData.genderDistribution || [],
-          },
-        };
-        setChartData(realData);
-        setLoading(false);
-        return;
-      }
+      // Group attendance by year for yearly trend
+      const yearlyTrend = [];
+      const yearlyMap = new Map();
+      attendanceRecords.forEach(record => {
+        const date = new Date(record.date);
+        const year = date.getFullYear();
+        if (!yearlyMap.has(year)) {
+          yearlyMap.set(year, {
+            year: year,
+            male: 0,
+            female: 0,
+            total: 0
+          });
+        }
+        const yearData = yearlyMap.get(year);
+        yearData.male += record.male || 0;
+        yearData.female += record.female || 0;
+        yearData.total += record.total || 0;
+      });
+      yearlyTrend.push(...Array.from(yearlyMap.values()));
+
+      // Calculate members data
+      const totalMembers = members.length;
+
+      // Helper: normalize congregation name to string
+      const getCongregationName = (value) => {
+        if (typeof value === "string") return value;
+        if (!value) return "Unknown";
+        if (typeof value === "object") {
+          return value.name || value.title || String(value.id || "Unknown");
+        }
+        return String(value);
+      };
+
+      // Group members by congregation with male/female counts and total members field expected by UI
+      const membersByCongregation = [];
+      const congregationMap = new Map();
+      members.forEach((member) => {
+        const congregation = getCongregationName(member.congregation);
+        const isMale = member.gender === "Male" || member.gender === "male";
+        const isFemale = member.gender === "Female" || member.gender === "female";
+        if (!congregationMap.has(congregation)) {
+          congregationMap.set(congregation, {
+            name: congregation,
+            members: 0,
+            male: 0,
+            female: 0,
+            color: undefined,
+            active_members: 0,
+            inactive_members: 0,
+          });
+        }
+        const cong = congregationMap.get(congregation);
+        cong.members += 1;
+        if (isMale) cong.male += 1;
+        if (isFemale) cong.female += 1;
+      });
+
+      // Ensure all congregations seen in attendance also appear, even if they have 0 members
+      const attendanceCongregations = new Set(
+        attendanceRecords.map((r) => getCongregationName(r.congregation))
+      );
+      attendanceCongregations.forEach((congName) => {
+        if (!congregationMap.has(congName)) {
+          congregationMap.set(congName, {
+            name: congName,
+            members: 0,
+            male: 0,
+            female: 0,
+            color: undefined,
+            active_members: 0,
+            inactive_members: 0,
+          });
+        }
+      });
+
+      // Ensure baseline congregations also appear
+      baselineCongregations.forEach((congName) => {
+        const name = getCongregationName(congName);
+        if (!congregationMap.has(name)) {
+          congregationMap.set(name, {
+            name,
+            members: 0,
+            male: 0,
+            female: 0,
+            color: undefined,
+            active_members: 0,
+            inactive_members: 0,
+          });
+        }
+      });
+
+      membersByCongregation.push(...Array.from(congregationMap.values()));
+
+      // Assign colors deterministically so bars are visible
+      const colorPalette = [
+        "#4CAF50",
+        "#2196F3",
+        "#FF9800",
+        "#9C27B0",
+        "#F44336",
+        "#00BCD4",
+        "#8BC34A",
+        "#FFC107",
+        "#795548",
+        "#607D8B",
+      ];
+      membersByCongregation
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+        .forEach((c, idx) => {
+          if (!c.color) c.color = colorPalette[idx % colorPalette.length];
+        });
+
+      // Gender distribution by congregation for UI cards (include all congregations)
+      const genderDistribution = membersByCongregation.map((c) => ({
+        congregation: c.name,
+        male: c.male,
+        female: c.female,
+      }));
+
+      const realData = {
+        sundayAttendance: {
+          totalAttendance,
+          averageAttendance,
+          congregationsCount,
+          growth,
+          weeklyTrend,
+          monthlyTrend,
+          yearlyTrend,
+        },
+        membersDatabase: {
+          totalMembers,
+          congregations: membersByCongregation,
+          genderDistribution,
+        },
+      };
+      
+      setChartData(realData);
+      setLoading(false);
+      return;
     } catch (error) {
       console.error("Error fetching analytics data:", error);
     }
@@ -982,8 +1168,8 @@ export default function AnalyticsPage() {
                         <div
                           className="h-2 rounded-full"
                           style={{
-                            width: `${congregation.members > 0 ? Math.max((congregation.members / Math.max(...(chartData.membersDatabase?.congregations?.map((c) => c.members) || [0]))) * 100, 2) : 0}%`,
-                            backgroundColor: congregation.color,
+                            width: `${congregation.members > 0 ? Math.max((congregation.members / Math.max(1, ...((chartData.membersDatabase?.congregations || []).map((c) => (c.members || 0))))) * 100, 2) : 0}%`,
+                            backgroundColor: congregation.color || "#3B82F6",
                           }}
                         ></div>
                       </div>

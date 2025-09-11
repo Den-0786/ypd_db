@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
 import AttendanceSummaryCards from "../../components/AttendanceSummaryCards";
 import AttendanceForDayCard from "../../components/AttendanceForDayCard";
@@ -26,6 +26,8 @@ export default function LocalAttendancePage() {
   const [pendingAction, setPendingAction] = useState(null); 
   const [pendingDeleteAction, setPendingDeleteAction] = useState(null); 
   const [pendingEditAction, setPendingEditAction] = useState(null);
+  const [editData, setEditData] = useState(null);
+  const [prefillForm, setPrefillForm] = useState(null);
   const [logForm, setLogForm] = useState({
     week: "",
     month: "",
@@ -82,15 +84,24 @@ export default function LocalAttendancePage() {
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
+    // Deduplicate records by date+congregation (keep latest)
+    const dedupMap = new Map();
+    attendanceRecords.forEach((r) => {
+      const key = `${r.date}__${r.congregation || ""}`;
+      const existing = dedupMap.get(key);
+      if (!existing || new Date(r.timestamp || r.date) > new Date(existing.timestamp || existing.date)) {
+        dedupMap.set(key, r);
+      }
+    });
+    const allRecords = Array.from(dedupMap.values());
 
-    const allRecords = attendanceRecords;
     let targetMonth = currentMonth;
     let targetYear = currentYear;
 
     if (allRecords.length > 0) {
-      const latestRecord = allRecords.sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      )[0];
+      const latestRecord = allRecords
+        .slice()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       const latestDate = new Date(latestRecord.date);
       targetMonth = latestDate.getMonth();
       targetYear = latestDate.getFullYear();
@@ -109,7 +120,6 @@ export default function LocalAttendancePage() {
     const weeksMap = new Map();
     monthRecords.forEach((record) => {
       const weekNumber = getWeekNumber(record.date);
-      console.log(`Date: ${record.date}, Calculated Week: ${weekNumber}`);
       if (!weeksMap.has(weekNumber)) {
         weeksMap.set(weekNumber, {
           week: `Week ${weekNumber}`,
@@ -122,9 +132,9 @@ export default function LocalAttendancePage() {
         });
       }
       const week = weeksMap.get(weekNumber);
-      week.male += record.male;
-      week.female += record.female;
-      week.total += record.total;
+      week.male += record.male || 0;
+      week.female += record.female || 0;
+      week.total += record.total || 0;
     });
 
     // Convert weeksMap to array and sort by week number
@@ -154,14 +164,23 @@ export default function LocalAttendancePage() {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
 
-    // Get all records and find the most recent year with data
-    const allRecords = attendanceRecords;
+    // Deduplicate records by date+congregation (keep latest)
+    const dedupMap = new Map();
+    attendanceRecords.forEach((r) => {
+      const key = `${r.date}__${r.congregation || ""}`;
+      const existing = dedupMap.get(key);
+      if (!existing || new Date(r.timestamp || r.date) > new Date(existing.timestamp || existing.date)) {
+        dedupMap.set(key, r);
+      }
+    });
+    const allRecords = Array.from(dedupMap.values());
+
     let targetYear = currentYear;
 
     if (allRecords.length > 0) {
-      const latestRecord = allRecords.sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      )[0];
+      const latestRecord = allRecords
+        .slice()
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
       const latestDate = new Date(latestRecord.date);
       targetYear = latestDate.getFullYear();
     }
@@ -175,7 +194,6 @@ export default function LocalAttendancePage() {
     // Group by month
     const monthsMap = new Map();
     yearRecords.forEach((record) => {
-      const recordDate = new Date(record.date);
       const monthName = getMonthName(record.date);
       if (!monthsMap.has(monthName)) {
         monthsMap.set(monthName, {
@@ -186,9 +204,9 @@ export default function LocalAttendancePage() {
         });
       }
       const month = monthsMap.get(monthName);
-      month.male += record.male;
-      month.female += record.female;
-      month.total += record.total;
+      month.male += record.male || 0;
+      month.female += record.female || 0;
+      month.total += record.total || 0;
     });
 
     // Convert monthsMap to array and sort by month order
@@ -253,13 +271,6 @@ export default function LocalAttendancePage() {
       });
 
       setAttendanceRecords(records);
-      console.log("Loaded attendance records:", records);
-      if (records.length > 0) {
-        console.log("First record details:", records[0]);
-        console.log("First record date:", records[0].date);
-        console.log("Looking for date:", selectedDate);
-        console.log("Date match:", records[0].date === selectedDate);
-      }
 
       // Update stats for congregation only
       const totalMale = records.reduce((sum, r) => sum + (r.male || 0), 0);
@@ -291,33 +302,52 @@ export default function LocalAttendancePage() {
     }
   };
 
-  // Generate current month and year data
-  const currentMonthData = generateCurrentMonthData();
-  const currentYearData = generateCurrentYearData();
+  // Generate current month and year data with memoization
+  const currentMonthData = useMemo(() => generateCurrentMonthData(), [attendanceRecords]);
+  const currentYearData = useMemo(() => generateCurrentYearData(), [attendanceRecords]);
 
   // Get attendance data for the selected date
   const getAttendanceForDate = (date) => {
-    console.log("Looking for attendance for date:", date);
-    console.log("Available attendance records:", attendanceRecords);
-
     // First try to find exact date match
     let record = attendanceRecords.find((r) => r.date === date);
 
     // If no exact match, get the most recent record
     if (!record && attendanceRecords.length > 0) {
       record = attendanceRecords[0]; // Records are already sorted by date desc
-      console.log("No exact date match, using most recent record:", record);
     }
-
-    console.log("Found record for date:", record);
     if (record) {
+      // Ensure derived fields
+      const d = new Date(record.date);
+      const weekNum = getWeekNumber(record.date);
+      const monthVal = (d.getMonth() + 1).toString().padStart(2, "0");
       return {
+        id: record.id,
+        date: record.date,
         male: record.male || 0,
         female: record.female || 0,
         total: record.total || 0,
+        week: `week-${weekNum}`,
+        month: monthVal,
+        year: d.getFullYear().toString(),
+        loggedBy: record.loggedBy || "",
+        position: record.position || "",
+        congregation: record.congregation,
       };
     }
-    return { male: 0, female: 0, total: 0 };
+    const now = new Date();
+    return {
+      id: undefined,
+      date: now.toISOString().split("T")[0],
+      male: 0,
+      female: 0,
+      total: 0,
+      week: `week-${getWeekNumber(now)}`,
+      month: (now.getMonth() + 1).toString().padStart(2, "0"),
+      year: now.getFullYear().toString(),
+      loggedBy: "",
+      position: "",
+      congregation: congregationName,
+    };
   };
 
   const selectedDateAttendance = getAttendanceForDate(selectedDate);
@@ -372,12 +402,26 @@ export default function LocalAttendancePage() {
       switch (pendingEditAction) {
         case "week":
           window.showToast("PIN verified for week edit operation", "success");
+          // Apply prepared prefill so all fields show
+          if (prefillForm) {
+            setLogForm((prev) => ({ ...prev, ...prefillForm }));
+          }
+          setShowLogModal(true);
           break;
         case "month":
           window.showToast("PIN verified for month edit operation", "success");
+          // Use same modal for simplicity
+          if (prefillForm) {
+            setLogForm((prev) => ({ ...prev, ...prefillForm }));
+          }
+          setShowLogModal(true);
           break;
         case "day":
           window.showToast("PIN verified for day edit operation", "success");
+          if (prefillForm) {
+            setLogForm((prev) => ({ ...prev, ...prefillForm }));
+          }
+          setShowLogModal(true);
           break;
         default:
           break;
@@ -598,6 +642,19 @@ export default function LocalAttendancePage() {
           selectedDate={selectedDate}
           attendanceData={selectedDateAttendance}
           onEdit={() => {
+            // Prepare prefill from the exact date record
+            const rec = getAttendanceForDate(selectedDate);
+            setPrefillForm({
+              male: rec.male,
+              female: rec.female,
+              total: rec.total,
+              date: rec.date,
+              week: rec.week,
+              month: rec.month,
+              year: rec.year,
+              loggedBy: rec.loggedBy,
+              position: rec.position,
+            });
             setPendingEditAction("day");
             setShowPinModal(true);
           }}
@@ -613,6 +670,55 @@ export default function LocalAttendancePage() {
             setShowPinModal(true);
           }}
           onEditWeek={(week) => {
+            setEditData(week);
+            // Prefill from underlying records for this week
+            const weekNumber = parseInt((week.week || week.weekNumber || "").toString().replace("Week ", "")) || week.weekNumber || 0;
+            // Determine target month/year from latest record or currentMonthData
+            let targetMonthIndex = new Date().getMonth();
+            let targetYear = new Date().getFullYear();
+            if (attendanceRecords.length > 0) {
+              const latest = attendanceRecords
+                .slice()
+                .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+              const ld = new Date(latest.date);
+              targetMonthIndex = ld.getMonth();
+              targetYear = ld.getFullYear();
+            }
+            // Filter records for that week within target month/year
+            const weekRecords = attendanceRecords.filter((r) => {
+              const d = new Date(r.date);
+              return (
+                d.getFullYear() === targetYear &&
+                d.getMonth() === targetMonthIndex &&
+                getWeekNumber(r.date) === weekNumber
+              );
+            });
+            // Pick the most recent record for date/metadata prefill
+            const latestWeekRecord = weekRecords
+              .slice()
+              .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+            const maleVal = week.male || latestWeekRecord?.male || 0;
+            const femaleVal = week.female || latestWeekRecord?.female || 0;
+            const dateVal = latestWeekRecord?.date || new Date().toISOString().split("T")[0];
+            const monthVal = (targetMonthIndex + 1).toString().padStart(2, "0");
+            const yearVal = targetYear.toString();
+            const weekVal = weekNumber ? `week-${weekNumber}` : "";
+            const loggedByVal = latestWeekRecord?.loggedBy || "";
+            const positionVal = latestWeekRecord?.position || "";
+
+            setPrefillForm({
+              male: maleVal,
+              female: femaleVal,
+              total: maleVal + femaleVal,
+              date: dateVal,
+              week: weekVal,
+              month: monthVal,
+              year: yearVal,
+              loggedBy: loggedByVal,
+              position: positionVal,
+            });
+
             setPendingEditAction("week");
             setShowPinModal(true);
           }}
@@ -636,6 +742,7 @@ export default function LocalAttendancePage() {
         handleInputChange={handleInputChange}
         handleCloseLogModal={handleCloseLogModal}
         handleSubmitLog={handleSubmitLog}
+        editMode={Boolean(prefillForm)}
       />
 
       <JointProgramModal

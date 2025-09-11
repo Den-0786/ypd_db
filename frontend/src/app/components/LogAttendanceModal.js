@@ -7,6 +7,7 @@ export default function LogAttendanceModal({
   handleInputChange,
   handleCloseLogModal,
   handleSubmitLog,
+  editMode = false,
 }) {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -20,7 +21,7 @@ export default function LogAttendanceModal({
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 <i className="fas fa-calendar-plus text-green-500 mr-2"></i>
-                Log Attendance
+                {editMode ? "Edit Attendance" : "Log Attendance"}
               </h3>
               <button
                 onClick={handleCloseLogModal}
