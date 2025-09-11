@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -22,9 +23,9 @@ export default function LocalAttendancePage() {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); // 'log' or 'joint'
-  const [pendingDeleteAction, setPendingDeleteAction] = useState(null); // 'week', 'month', 'day'
-  const [pendingEditAction, setPendingEditAction] = useState(null); // 'week', 'month', 'day'
+  const [pendingAction, setPendingAction] = useState(null); 
+  const [pendingDeleteAction, setPendingDeleteAction] = useState(null); 
+  const [pendingEditAction, setPendingEditAction] = useState(null);
   const [logForm, setLogForm] = useState({
     week: "",
     month: "",
@@ -35,7 +36,7 @@ export default function LocalAttendancePage() {
     total: 0,
     loggedBy: "",
     position: "",
-    congregation: congregationName || "Local Congregation", // Dynamic congregation
+    congregation: congregationName || "Local Congregation", 
   });
   const [jointProgramForm, setJointProgramForm] = useState({
     week: "",
@@ -59,37 +60,30 @@ export default function LocalAttendancePage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Helper function to get week number from date
+  
   const getWeekNumber = (date) => {
     const d = new Date(date);
     const dayOfMonth = d.getDate();
-
-    // Simple calculation: Week 1 = Days 1-7, Week 2 = Days 8-14, Week 3 = Days 15-21, etc.
     const weekNumber = Math.ceil(dayOfMonth / 7);
 
     return weekNumber;
   };
 
-  // Helper function to get month name
   const getMonthName = (date) => {
     return new Date(date).toLocaleString("default", { month: "long" });
   };
 
-  // Helper function to get year
   const getYear = (date) => {
     return new Date(date).getFullYear();
   };
 
-  // Generate current month data dynamically from records
   const generateCurrentMonthData = () => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
-    // Get all records and group by month/year to show all available data
-    const allRecords = attendanceRecords;
 
-    // Find the most recent month with data, or use current month
+    const allRecords = attendanceRecords;
     let targetMonth = currentMonth;
     let targetYear = currentYear;
 

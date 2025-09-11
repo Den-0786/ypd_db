@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import getDataStore from "../../utils/dataStore";
 
 export default function MonthlyTrendsPage() {
   const [loading, setLoading] = useState(true);
@@ -30,47 +31,61 @@ export default function MonthlyTrendsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Try to fetch real data from API first
-      const response = await fetch(
-        "http://localhost:8001/api/analytics/detailed/"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          // Filter data by congregation if we're in local dashboard
-          let filteredMonthlyTrend = data.data.monthlyTrend || [];
-          if (congregationName && congregationName !== "District Admin") {
-            filteredMonthlyTrend = filteredMonthlyTrend.filter(
-              (month) => month.congregation === congregationName
-            );
+      setLoading(true);
+      
+      // Get data from data store
+      const dataStore = getDataStore();
+      const attendanceRecords = await dataStore.getAttendanceRecords({ congregation: congregationName });
+
+      console.log("Monthly Trends - Attendance data:", attendanceRecords);
+
+      // Group attendance records by month
+      const monthlyData = {};
+      if (attendanceRecords && Array.isArray(attendanceRecords)) {
+        attendanceRecords.forEach((record) => {
+          if (record && record.date) {
+            const date = new Date(record.date);
+            const monthKey = date.toLocaleDateString("default", { month: "long" });
+            
+            if (!monthlyData[monthKey]) {
+              monthlyData[monthKey] = {
+                month: monthKey,
+                male: 0,
+                female: 0,
+                total: 0,
+              };
+            }
+            
+            monthlyData[monthKey].male += record?.male || 0;
+            monthlyData[monthKey].female += record?.female || 0;
+            monthlyData[monthKey].total += record?.total || 0;
           }
-
-          // Use real data from API
-          const realData = {
-            sundayAttendance: {
-              monthlyTrend: filteredMonthlyTrend,
-            },
-          };
-          setChartData(realData);
-          setLoading(false);
-          return;
-        }
+        });
       }
+
+      // Convert to array and sort by month order
+      const monthOrder = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      
+      const monthlyTrend = Object.values(monthlyData).sort((a, b) => {
+        return monthOrder.indexOf(a?.month || "") - monthOrder.indexOf(b?.month || "");
+      });
+
+      const realData = {
+        sundayAttendance: {
+          monthlyTrend: monthlyTrend,
+        },
+      };
+
+      console.log("Monthly Trends - Final data:", realData);
+      setChartData(realData);
+      setLoading(false);
     } catch (error) {
-      // Show toast message instead of console.log
-      if (typeof window !== "undefined" && window.showToast) {
-        window.showToast("Failed to fetch analytics data", "error");
-      }
+      console.error("Error fetching monthly trends data:", error);
+      setLoading(false);
     }
-
-    // Fallback to empty data if API fails
-    const emptyData = {
-      sundayAttendance: {
-        monthlyTrend: [],
-      },
-    };
-    setChartData(emptyData);
-    setLoading(false);
   };
 
   if (loading) {
@@ -130,13 +145,19 @@ export default function MonthlyTrendsPage() {
                       Monthly Attendance Overview
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      2024 - 12 Month Analysis
+                      {(() => {
+                        const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                        if (monthlyData.length === 0) return "No data available";
+                        const firstRecord = monthlyData[0] || {};
+                        const year = new Date().getFullYear(); // Use current year as fallback
+                        return `${year} - ${monthlyData.length} Month Analysis`;
+                      })()}
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-600">
-                        {chartData.sundayAttendance.monthlyTrend.length}
+                        {chartData.sundayAttendance?.monthlyTrend?.length || 0}
                       </div>
                       <div className="text-xs text-gray-500">Months</div>
                     </div>
@@ -159,9 +180,10 @@ export default function MonthlyTrendsPage() {
                       <div className="text-2xl font-bold text-purple-600">
                         {(() => {
                           const monthlyData =
-                            chartData.sundayAttendance.monthlyTrend;
-                          const firstMonth = monthlyData[0];
-                          const lastMonth = monthlyData[monthlyData.length - 1];
+                            chartData.sundayAttendance?.monthlyTrend || [];
+                          if (monthlyData.length === 0) return 0;
+                          const firstMonth = monthlyData[0] || {};
+                          const lastMonth = monthlyData[monthlyData.length - 1] || {};
                           const difference =
                             (lastMonth?.total || 0) - (firstMonth?.total || 0);
                           return difference > 0 ? "+" + difference : difference;
@@ -177,9 +199,10 @@ export default function MonthlyTrendsPage() {
                     12 months. The data reveals{" "}
                     {(() => {
                       const monthlyData =
-                        chartData.sundayAttendance.monthlyTrend;
-                      const firstMonth = monthlyData[0];
-                      const lastMonth = monthlyData[monthlyData.length - 1];
+                        chartData.sundayAttendance?.monthlyTrend || [];
+                      if (monthlyData.length === 0) return "no data available for analysis.";
+                      const firstMonth = monthlyData[0] || {};
+                      const lastMonth = monthlyData[monthlyData.length - 1] || {};
                       const difference =
                         (lastMonth?.total || 0) - (firstMonth?.total || 0);
                       return difference > 0
@@ -241,7 +264,7 @@ export default function MonthlyTrendsPage() {
                               </div>
                             </div>
                             <div className="text-[10px] text-gray-600 dark:text-gray-300 text-center">
-                              {month.month}
+                              {month?.month || "N/A"}
                             </div>
                           </div>
                         )
@@ -297,7 +320,7 @@ export default function MonthlyTrendsPage() {
                               </div>
                             </div>
                             <div className="text-[10px] md:text-xs text-gray-600 dark:text-gray-300 text-center">
-                              {month.month}
+                              {month?.month || "N/A"}
                             </div>
                           </div>
                         ))}
@@ -309,7 +332,7 @@ export default function MonthlyTrendsPage() {
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-lg w-full">
                   <div className="overflow-x-auto">
                     <div className="flex items-end justify-between space-x-2 min-w-max">
-                      {chartData.sundayAttendance.monthlyTrend
+                      {(chartData.sundayAttendance?.monthlyTrend || [])
                         .slice(6, 12)
                         .map((month, index) => (
                           <div
@@ -320,36 +343,36 @@ export default function MonthlyTrendsPage() {
                               <div
                                 className="w-3 md:w-4 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium"
                                 style={{
-                                  height: `${(month.male / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
+                                  height: `${((month?.male || 0) / Math.max(...(chartData.sundayAttendance?.monthlyTrend || []).map((m) => Math.max(m?.male || 0, m?.female || 0, m?.total || 0)))) * 100}%`,
                                 }}
                               >
                                 <span className="transform -rotate-90 whitespace-nowrap text-[10px] md:text-xs">
-                                  M: {month.male}
+                                  M: {month?.male || 0}
                                 </span>
                               </div>
                               <div
                                 className="w-3 md:w-4 bg-pink-500 rounded flex items-center justify-center text-white text-xs font-medium"
                                 style={{
-                                  height: `${(month.female / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
+                                  height: `${((month?.female || 0) / Math.max(...(chartData.sundayAttendance?.monthlyTrend || []).map((m) => Math.max(m?.male || 0, m?.female || 0, m?.total || 0)))) * 100}%`,
                                 }}
                               >
                                 <span className="transform -rotate-90 whitespace-nowrap text-[10px] md:text-xs">
-                                  F: {month.female}
+                                  F: {month?.female || 0}
                                 </span>
                               </div>
                               <div
                                 className="w-3 md:w-4 bg-green-500 rounded flex items-center justify-center text-white text-xs font-medium"
                                 style={{
-                                  height: `${(month.total / Math.max(...chartData.sundayAttendance.monthlyTrend.map((m) => Math.max(m.male, m.female, m.total)))) * 100}%`,
+                                  height: `${((month?.total || 0) / Math.max(...(chartData.sundayAttendance?.monthlyTrend || []).map((m) => Math.max(m?.male || 0, m?.female || 0, m?.total || 0)))) * 100}%`,
                                 }}
                               >
                                 <span className="transform -rotate-90 whitespace-nowrap text-[10px] md:text-xs">
-                                  Total: {month.total}
+                                  Total: {month?.total || 0}
                                 </span>
                               </div>
                             </div>
                             <div className="text-[10px] md:text-xs text-gray-600 dark:text-gray-300 text-center">
-                              {month.month}
+                              {month?.month || "N/A"}
                             </div>
                           </div>
                         ))}
@@ -397,9 +420,15 @@ export default function MonthlyTrendsPage() {
 
                   {/* Y-axis labels */}
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
-                    {[10, 8, 6, 4, 2, 0].map((num) => (
-                      <span key={num}>{num}</span>
-                    ))}
+                    {(() => {
+                      const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                      if (monthlyData.length === 0) return [0, 0, 0, 0, 0, 0];
+                      const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
+                      const step = Math.ceil(maxValue / 5);
+                      return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
+                        <span key={num}>{num}</span>
+                      ));
+                    })()}
                   </div>
 
                   {/* Line Graph */}
@@ -435,13 +464,17 @@ export default function MonthlyTrendsPage() {
                       stroke="rgba(156, 163, 175, 0.3)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(chartData.sundayAttendance?.monthlyTrend || [])
-                        .map((month, index) => {
-                          const x = 5 + index * 8;
-                          const y = 90 - ((month?.total || 0) / 400) * 65;
+                      points={(() => {
+                        const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                        if (monthlyData.length === 0) return "";
+                        const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return monthlyData.map((month, index) => {
+                          const x = monthlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(monthlyData.length - 1, 1));
+                          const y = 90 - (month?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                     />
 
                     {/* Main Blue Line */}
@@ -450,25 +483,33 @@ export default function MonthlyTrendsPage() {
                       stroke="url(#lineGradient)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(chartData.sundayAttendance?.monthlyTrend || [])
-                        .map((month, index) => {
-                          const x = 5 + index * 8;
-                          const y = 90 - ((month?.total || 0) / 400) * 60;
+                      points={(() => {
+                        const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                        if (monthlyData.length === 0) return "";
+                        const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return monthlyData.map((month, index) => {
+                          const x = monthlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(monthlyData.length - 1, 1));
+                          const y = 90 - (month?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       filter="url(#glow)"
                     />
 
                     {/* Invisible Interactive Path for Tooltip */}
                     <path
-                      d={(chartData.sundayAttendance?.monthlyTrend || [])
-                        .map((month, index) => {
-                          const x = 5 + index * 8;
-                          const y = 90 - ((month?.total || 0) / 400) * 60;
+                      d={(() => {
+                        const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                        if (monthlyData.length === 0) return "";
+                        const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return monthlyData.map((month, index) => {
+                          const x = monthlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(monthlyData.length - 1, 1));
+                          const y = 90 - (month?.total || 0) * scale;
                           return index === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       fill="none"
                       stroke="transparent"
                       strokeWidth="8"
@@ -481,7 +522,7 @@ export default function MonthlyTrendsPage() {
                           ((e.clientX - rect.left) / rect.width) * 100;
 
                         // Find the nearest point based on mouse position
-                        const points = chartData.sundayAttendance.monthlyTrend;
+                        const points = chartData.sundayAttendance?.monthlyTrend || [];
                         let nearestIndex = 0;
                         let minDistance = Infinity;
 
@@ -530,30 +571,37 @@ export default function MonthlyTrendsPage() {
                     />
 
                     {/* Data Points */}
-                    {(chartData.sundayAttendance?.monthlyTrend || []).map(
-                      (month, index) => {
-                        const x = 5 + index * 8;
-                        const y = 90 - ((month?.total || 0) / 400) * 60;
-                        const prevMonth =
-                          index > 0
-                            ? (chartData.sundayAttendance?.monthlyTrend || [])[
-                                index - 1
-                              ]
-                            : null;
-                        const difference = prevMonth
-                          ? (month?.total || 0) - (prevMonth?.total || 0)
-                          : 0;
+                    {(() => {
+                      const monthlyData = chartData.sundayAttendance?.monthlyTrend || [];
+                      if (monthlyData.length === 0) return [];
+                      const maxValue = Math.max(...monthlyData.map(m => m?.total || 0));
+                      const scale = maxValue > 0 ? 80 / maxValue : 0;
+                      
+                      return monthlyData.map((month, index) => {
+                        const x = monthlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(monthlyData.length - 1, 1));
+                        const y = 90 - (month?.total || 0) * scale;
+                        const prevMonth = index > 0 ? monthlyData[index - 1] : null;
+                        const difference = prevMonth ? (month?.total || 0) - (prevMonth?.total || 0) : 0;
 
                         return (
-                          <circle
-                            key={index}
-                            cx={x}
-                            cy={y}
-                            r="1.2"
-                            fill="#3b82f6"
-                            stroke="#ffffff"
-                            strokeWidth="0.3"
-                            className="cursor-pointer hover:r-2.5 transition-all duration-200"
+                          <g key={index}>
+                            {/* Outer glow for better visibility */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="3"
+                              fill="rgba(59, 130, 246, 0.3)"
+                              className="cursor-pointer"
+                            />
+                            {/* Main data point */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="2"
+                              fill="#3b82f6"
+                              stroke="#ffffff"
+                              strokeWidth="0.5"
+                              className="cursor-pointer hover:r-3 transition-all duration-200"
                             onMouseEnter={(e) => {
                               const rect = e.target
                                 .closest("svg")
@@ -584,9 +632,10 @@ export default function MonthlyTrendsPage() {
                               });
                             }}
                           />
+                          </g>
                         );
-                      }
-                    )}
+                      });
+                    })()}
                   </svg>
 
                   {/* Tooltip */}
@@ -640,14 +689,11 @@ export default function MonthlyTrendsPage() {
                     {(() => {
                       const monthlyData =
                         chartData.sundayAttendance?.monthlyTrend || [];
-                      const firstMonth = monthlyData[0];
-                      const lastMonth = monthlyData[monthlyData.length - 1];
+                      if (monthlyData.length === 0) return "No data available for analysis.";
+                      const firstMonth = monthlyData[0] || {};
+                      const lastMonth = monthlyData[monthlyData.length - 1] || {};
                       const difference =
                         (lastMonth?.total || 0) - (firstMonth?.total || 0);
-                      const percentage = (
-                        (difference / (firstMonth?.total || 1)) *
-                        100
-                      ).toFixed(1);
 
                       return difference > 0
                         ? `Monthly attendance has increased by ${Math.abs(difference)} people over the year. Strong growth!`

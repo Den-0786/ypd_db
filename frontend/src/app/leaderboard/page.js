@@ -1,12 +1,18 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import AttendanceLeaderboard from "../components/AttendanceLeaderboard";
 import AnnualWinners from "../components/AnnualWinners";
 
 export default function LeaderboardPage() {
   const [activeTab, setActiveTab] = useState("weekly");
+  const [lastUpdated, setLastUpdated] = useState("");
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    // Set the timestamp on the client side to avoid hydration mismatch
+    setLastUpdated(new Date().toLocaleString());
+  }, []);
 
   const tabs = [
     { id: "weekly", name: "Weekly Winners", icon: "fas fa-calendar-week" },
@@ -32,7 +38,7 @@ export default function LeaderboardPage() {
             <div className="text-left sm:text-right">
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 <i className="fas fa-clock mr-1"></i>
-                Last updated: {new Date().toLocaleString()}
+                Last updated: {lastUpdated || "Loading..."}
               </div>
             </div>
           </div>

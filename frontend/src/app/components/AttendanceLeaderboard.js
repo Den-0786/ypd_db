@@ -12,29 +12,97 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
       setLoading(true);
 
       try {
-        // Get leaderboard data from data store
         const dataStore = getDataStore();
-        const data = dataStore.getLeaderboardData(type);
+        const attendanceRecords = await dataStore.getAttendanceRecords();
+        
+        console.log("DEBUG: Raw attendance records for leaderboard:", attendanceRecords);
+        console.log("DEBUG: Number of records:", attendanceRecords?.length || 0);
 
-        // Transform data to match expected format (even if empty)
+        if (!attendanceRecords || !Array.isArray(attendanceRecords)) {
+          console.log("DEBUG: No valid attendance records found for leaderboard");
+          const emptyData = {
+            currentWinners: [],
+            previousWinner: null,
+            showComparison: false,
+            period: type === "weekly" ? "This Week" : "This Month",
+            date:
+              type === "weekly"
+                ? `Week ${Math.ceil(new Date().getDate() / 7)}, ${new Date().getFullYear()}`
+                : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
+          };
+          setLeaderboardData(emptyData);
+          setLoading(false);
+          return;
+        }
+
+        // Filter records based on type (weekly or monthly)
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth();
+        const currentWeek = Math.ceil(currentDate.getDate() / 7);
+
+        let filteredRecords = [];
+        
+        if (type === "weekly") {
+          filteredRecords = attendanceRecords.filter(record => {
+            if (!record || !record.date) return false;
+            const recordDate = new Date(record.date);
+            const recordWeek = Math.ceil(recordDate.getDate() / 7);
+            return recordDate.getFullYear() === currentYear && 
+                   recordDate.getMonth() === currentMonth && 
+                   recordWeek === currentWeek;
+          });
+        } else if (type === "monthly") {
+          filteredRecords = attendanceRecords.filter(record => {
+            if (!record || !record.date) return false;
+            const recordDate = new Date(record.date);
+            return recordDate.getFullYear() === currentYear && 
+                   recordDate.getMonth() === currentMonth;
+          });
+        }
+
+        console.log("DEBUG: Filtered records for", type, ":", filteredRecords);
+
+        // Group by congregation and calculate totals
+        const congregationTotals = {};
+        
+        filteredRecords.forEach(record => {
+          if (record && record.congregation) {
+            if (!congregationTotals[record.congregation]) {
+              congregationTotals[record.congregation] = {
+                congregation: record.congregation,
+                male_count: 0,
+                female_count: 0,
+                total_count: 0
+              };
+            }
+            
+            congregationTotals[record.congregation].male_count += record.male || 0;
+            congregationTotals[record.congregation].female_count += record.female || 0;
+            congregationTotals[record.congregation].total_count += record.total || 0;
+          }
+        });
+
+        // Sort by total_count and take top 3
+        const currentWinners = Object.values(congregationTotals)
+          .sort((a, b) => b.total_count - a.total_count)
+          .slice(0, 3)
+          .map((item, index) => ({
+            ...item,
+            rank: index + 1,
+          }));
+
+        console.log("DEBUG: Calculated leaderboard:", currentWinners);
+
         const transformedData = {
-          currentWinners:
-            data && data.length > 0
-              ? data.map((item, index) => ({
-                  congregation: item.congregation,
-                  male_count: item.male_count,
-                  female_count: item.female_count,
-                  total_count: item.total_count,
-                  rank: index + 1,
-                }))
-              : [],
+          currentWinners,
           previousWinner: null, // Will be implemented when we have historical data
           showComparison: false,
           period: type === "weekly" ? "This Week" : "This Month",
           date:
             type === "weekly"
-              ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
-              : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
+              ? `Week ${currentWeek}, ${currentYear}`
+              : `${new Date().toLocaleString("default", { month: "long" })} ${currentYear}`,
         };
 
         setLeaderboardData(transformedData);
@@ -49,7 +117,7 @@ export default function AttendanceLeaderboard({ type = "weekly" }) {
           period: type === "weekly" ? "This Week" : "This Month",
           date:
             type === "weekly"
-              ? `Week ${new Date().getDate()}, ${new Date().getFullYear()}`
+              ? `Week ${Math.ceil(new Date().getDate() / 7)}, ${new Date().getFullYear()}`
               : `${new Date().toLocaleString("default", { month: "long" })} ${new Date().getFullYear()}`,
         };
 

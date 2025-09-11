@@ -1,49 +1,140 @@
 "use client";
 import { useState, useEffect } from "react";
+import getDataStore from "../utils/dataStore";
 
 export default function AnnualWinners({ year = 2024 }) {
   const [annualData, setAnnualData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching annual winners data
+    // Fetch annual winners data from data store
     const fetchAnnualData = async () => {
       setLoading(true);
 
       try {
-        // Fetch real data from API
-        const response = await fetch("http://localhost:8001/api/home-stats/");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data) {
-            // Use real data from API
-            const realData = {
-              year: year,
-              congregations: data.data.leaderboardTop || [],
-              totalCongregations: data.data.totalCongregations || 0,
-              totalMonths: 12,
-            };
-            setAnnualData(realData);
-            setLoading(false);
-            return;
+        const dataStore = getDataStore();
+        const attendanceRecords = await dataStore.getAttendanceRecords();
+        
+        console.log("DEBUG: Raw attendance records for annual winners:", attendanceRecords);
+        console.log("DEBUG: Number of records:", attendanceRecords?.length || 0);
+
+        if (!attendanceRecords || !Array.isArray(attendanceRecords)) {
+          console.log("DEBUG: No valid attendance records found for annual winners");
+          const emptyData = {
+            year: year,
+            congregations: [],
+            totalCongregations: 0,
+            totalMonths: 12,
+          };
+          setAnnualData(emptyData);
+          setLoading(false);
+          return;
+        }
+
+        // Filter records for the specified year
+        const yearRecords = attendanceRecords.filter(record => {
+          if (!record || !record.date) return false;
+          const recordDate = new Date(record.date);
+          return recordDate.getFullYear() === year;
+        });
+
+        console.log("DEBUG: Filtered records for year", year, ":", yearRecords);
+
+        // Group by congregation and calculate monthly totals
+        const congregationData = {};
+        
+        yearRecords.forEach(record => {
+          if (record && record.congregation && record.date) {
+            const recordDate = new Date(record.date);
+            const month = recordDate.getMonth();
+            const monthName = recordDate.toLocaleString('default', { month: 'long' });
+            
+            if (!congregationData[record.congregation]) {
+              congregationData[record.congregation] = {
+                congregation: record.congregation,
+                monthlyTotals: {},
+                totalAttendance: 0,
+                wins: 0,
+                months: []
+              };
+            }
+            
+            if (!congregationData[record.congregation].monthlyTotals[month]) {
+              congregationData[record.congregation].monthlyTotals[month] = {
+                month: monthName,
+                total: 0
+              };
+            }
+            
+            congregationData[record.congregation].monthlyTotals[month].total += record.total || 0;
+            congregationData[record.congregation].totalAttendance += record.total || 0;
+          }
+        });
+
+        // Calculate monthly winners and track wins
+        const monthlyWinners = {};
+        for (let month = 0; month < 12; month++) {
+          const monthName = new Date(year, month).toLocaleString('default', { month: 'long' });
+          let maxTotal = 0;
+          let winner = null;
+          
+          Object.keys(congregationData).forEach(congregation => {
+            const monthTotal = congregationData[congregation].monthlyTotals[month]?.total || 0;
+            if (monthTotal > maxTotal) {
+              maxTotal = monthTotal;
+              winner = congregation;
+            }
+          });
+          
+          if (winner) {
+            monthlyWinners[month] = winner;
+            congregationData[winner].wins++;
+            congregationData[winner].months.push(monthName);
           }
         }
+
+        // Convert to array and sort by wins, then by total attendance
+        const congregations = Object.values(congregationData)
+          .filter(cong => cong.wins > 0)
+          .sort((a, b) => {
+            if (b.wins !== a.wins) return b.wins - a.wins;
+            return b.totalAttendance - a.totalAttendance;
+          })
+          .map((cong, index) => ({
+            congregation: cong.congregation,
+            wins: cong.wins,
+            total_attendance: cong.totalAttendance,
+            months: cong.months,
+            rank: index + 1
+          }));
+
+        console.log("DEBUG: Calculated annual winners:", congregations);
+
+        const realData = {
+          year: year,
+          congregations: congregations,
+          totalCongregations: Object.keys(congregationData).length,
+          totalMonths: 12,
+        };
+
+        setAnnualData(realData);
       } catch (error) {
         console.error("Error fetching annual data:", error);
+
+        // Fallback to empty data if error occurs
+        const emptyData = {
+          year: year,
+          congregations: [],
+          totalCongregations: 0,
+          totalMonths: 12,
+        };
+
+        setAnnualData(emptyData);
       }
 
-      // Fallback to empty data if API fails
-      const emptyData = {
-        year: year,
-        congregations: [],
-        totalCongregations: 0,
-        totalMonths: 12,
-      };
-
       setTimeout(() => {
-        setAnnualData(emptyData);
         setLoading(false);
-      }, 1000);
+      }, 500);
     };
 
     fetchAnnualData();

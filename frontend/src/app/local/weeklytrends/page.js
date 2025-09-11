@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import getDataStore from "../../utils/dataStore";
 
 export default function WeeklyTrendsPage() {
   const [loading, setLoading] = useState(true);
@@ -31,47 +32,36 @@ export default function WeeklyTrendsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Try to fetch real data from API first
-      const response = await fetch(
-        "http://localhost:8001/api/analytics/detailed/"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          // Filter data by congregation if we're in local dashboard
-          let filteredWeeklyTrend = data.data.weeklyTrend || [];
-          if (congregationName && congregationName !== "District Admin") {
-            filteredWeeklyTrend = filteredWeeklyTrend.filter(
-              (week) => week.congregation === congregationName
-            );
-          }
+      setLoading(true);
+      
+      // Get data from data store
+      const dataStore = getDataStore();
+      const attendanceRecords = await dataStore.getAttendanceRecords({ congregation: congregationName });
 
-          // Use real data from API
-          const realData = {
-            sundayAttendance: {
-              weeklyTrend: filteredWeeklyTrend,
-            },
-          };
-          setChartData(realData);
-          setLoading(false);
-          return;
-        }
-      }
+      console.log("Weekly Trends - Attendance data:", attendanceRecords);
+
+      // Convert attendance records to weekly trend format
+      const weeklyTrend = attendanceRecords.map((record) => ({
+        date: record.date,
+        congregation: congregationName,
+        total: record.total || 0,
+        male: record.male || 0,
+        female: record.female || 0,
+      }));
+
+      const realData = {
+        sundayAttendance: {
+          weeklyTrend: weeklyTrend,
+        },
+      };
+
+      console.log("Weekly Trends - Final data:", realData);
+      setChartData(realData);
+      setLoading(false);
     } catch (error) {
-      // Show toast message instead of console.log
-      if (typeof window !== "undefined" && window.showToast) {
-        window.showToast("Failed to fetch analytics data", "error");
-      }
+      console.error("Error fetching weekly trends data:", error);
+      setLoading(false);
     }
-
-    // Fallback to empty data if API fails
-    const emptyData = {
-      sundayAttendance: {
-        weeklyTrend: [],
-      },
-    };
-    setChartData(emptyData);
-    setLoading(false);
   };
 
   if (loading) {
@@ -131,7 +121,13 @@ export default function WeeklyTrendsPage() {
                       Weekly Attendance Overview
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      January 2025 - 4 Week Analysis
+                      {(() => {
+                        const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                        if (weeklyData.length === 0) return "No data available";
+                        const firstDate = new Date(weeklyData[0]?.date);
+                        const monthYear = firstDate.toLocaleDateString("default", { month: "long", year: "numeric" });
+                        return `${monthYear} - ${weeklyData.length} Week Analysis`;
+                      })()}
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -216,7 +212,12 @@ export default function WeeklyTrendsPage() {
               <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-lg border border-gray-100 dark:border-gray-600 w-full">
                 <div className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
                   <i className="fas fa-calendar-week text-blue-500 mr-2"></i>
-                  January 2025
+                  {(() => {
+                    const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                    if (weeklyData.length === 0) return "No Data";
+                    const firstDate = new Date(weeklyData[0]?.date);
+                    return firstDate.toLocaleDateString("default", { month: "long", year: "numeric" });
+                  })()}
                 </div>
                 <div className="overflow-x-auto">
                   <div className="flex items-end justify-between space-x-2 md:space-x-4 min-w-max">
@@ -364,9 +365,15 @@ export default function WeeklyTrendsPage() {
 
                   {/* Y-axis labels */}
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
-                    {[10, 8, 6, 4, 2, 0].map((num) => (
-                      <span key={num}>{num}</span>
-                    ))}
+                    {(() => {
+                      const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                      if (weeklyData.length === 0) return [0, 0, 0, 0, 0, 0];
+                      const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
+                      const step = Math.ceil(maxValue / 5);
+                      return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
+                        <span key={num}>{num}</span>
+                      ));
+                    })()}
                   </div>
 
                   {/* Line Graph */}
@@ -376,6 +383,19 @@ export default function WeeklyTrendsPage() {
                     preserveAspectRatio="xMidYMid slice"
                     style={{ padding: "0.2rem" }}
                   >
+                    {/* Show message if no data */}
+                    {chartData.sundayAttendance?.weeklyTrend?.length === 0 && (
+                      <text
+                        x="50"
+                        y="50"
+                        textAnchor="middle"
+                        className="text-gray-500 dark:text-gray-400"
+                        fontSize="4"
+                        fill="currentColor"
+                      >
+                        No attendance data available
+                      </text>
+                    )}
                     <defs>
                       <linearGradient
                         id="lineGradient"
@@ -402,16 +422,17 @@ export default function WeeklyTrendsPage() {
                       stroke="rgba(156, 163, 175, 0.3)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(
-                        chartData.sundayAttendance?.weeklyTrend?.slice(0, 4) ||
-                        []
-                      )
-                        .map((week, index) => {
-                          const x = 10 + index * 25;
-                          const y = 88 - ((week?.total || 0) / 10) * 6;
+                      points={(() => {
+                        const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                        if (weeklyData.length === 0) return "";
+                        const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return weeklyData.map((week, index) => {
+                          const x = weeklyData.length === 1 ? 50 : 10 + index * (80 / Math.max(weeklyData.length - 1, 1));
+                          const y = 90 - (week?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                     />
 
                     {/* Main Orange/Red Line */}
@@ -420,29 +441,33 @@ export default function WeeklyTrendsPage() {
                       stroke="url(#lineGradient)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(
-                        chartData.sundayAttendance?.weeklyTrend?.slice(0, 4) ||
-                        []
-                      )
-                        .map((week, index) => {
-                          const x = 10 + index * 25;
-                          const y = 90 - ((week?.total || 0) / 10) * 6;
+                      points={(() => {
+                        const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                        if (weeklyData.length === 0) return "";
+                        const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return weeklyData.map((week, index) => {
+                          const x = weeklyData.length === 1 ? 50 : 10 + index * (80 / Math.max(weeklyData.length - 1, 1));
+                          const y = 90 - (week?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       filter="url(#glow)"
                     />
 
                     {/* Invisible Interactive Path for Tooltip */}
                     <path
-                      d={chartData.sundayAttendance.weeklyTrend
-                        .slice(0, 4)
-                        .map((week, index) => {
-                          const x = 10 + index * 25;
-                          const y = 90 - (week.total / 10) * 6;
+                      d={(() => {
+                        const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                        if (weeklyData.length === 0) return "";
+                        const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return weeklyData.map((week, index) => {
+                          const x = weeklyData.length === 1 ? 50 : 10 + index * (80 / Math.max(weeklyData.length - 1, 1));
+                          const y = 90 - (week?.total || 0) * scale;
                           return index === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       fill="none"
                       stroke="transparent"
                       strokeWidth="12"
@@ -509,30 +534,38 @@ export default function WeeklyTrendsPage() {
                     />
 
                     {/* Data Points */}
-                    {(
-                      chartData.sundayAttendance?.weeklyTrend?.slice(0, 4) || []
-                    ).map((week, index) => {
-                      if (!week) return null;
-                      const x = 10 + index * 25;
-                      const y = 90 - ((week.total || 0) / 10) * 6;
-                      const prevWeek =
-                        index > 0
-                          ? chartData.sundayAttendance?.weeklyTrend?.[index - 1]
-                          : null;
-                      const difference = prevWeek
-                        ? (week.total || 0) - (prevWeek.total || 0)
-                        : 0;
+                    {(() => {
+                      const weeklyData = chartData.sundayAttendance?.weeklyTrend || [];
+                      if (weeklyData.length === 0) return [];
+                      const maxValue = Math.max(...weeklyData.map(w => w?.total || 0));
+                      const scale = maxValue > 0 ? 80 / maxValue : 0;
+                      
+                      return weeklyData.map((week, index) => {
+                        if (!week) return null;
+                        const x = weeklyData.length === 1 ? 50 : 10 + index * (80 / Math.max(weeklyData.length - 1, 1));
+                        const y = 90 - (week?.total || 0) * scale;
+                        const prevWeek = index > 0 ? weeklyData[index - 1] : null;
+                        const difference = prevWeek ? (week.total || 0) - (prevWeek.total || 0) : 0;
 
-                      return (
-                        <circle
-                          key={index}
-                          cx={x}
-                          cy={y}
-                          r="1.2"
-                          fill="#f97316"
-                          stroke="#ffffff"
-                          strokeWidth="0.3"
-                          className="cursor-pointer hover:r-2.5 transition-all duration-200"
+                        return (
+                          <g key={index}>
+                            {/* Outer glow for better visibility */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="3"
+                              fill="rgba(249, 115, 22, 0.3)"
+                              className="cursor-pointer"
+                            />
+                            {/* Main data point */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="2"
+                              fill="#f97316"
+                              stroke="#ffffff"
+                              strokeWidth="0.5"
+                              className="cursor-pointer hover:r-3 transition-all duration-200"
                           onMouseEnter={(e) => {
                             const rect = e.target
                               .closest("svg")
@@ -561,10 +594,12 @@ export default function WeeklyTrendsPage() {
                               x: 0,
                               y: 0,
                             });
-                          }}
-                        />
-                      );
-                    })}
+                            }}
+                          />
+                          </g>
+                        );
+                      });
+                    })()}
                   </svg>
 
                   {/* Tooltip */}

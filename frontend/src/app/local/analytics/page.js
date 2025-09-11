@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import getDataStore from "../../utils/dataStore";
 
 export default function LocalAnalyticsPage() {
   const [loading, setLoading] = useState(true);
@@ -111,92 +112,72 @@ export default function LocalAnalyticsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Try to fetch real data from API first
-      const response = await fetch(
-        "http://localhost:8001/api/analytics/detailed/"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          console.log("Local Analytics - API Response:", data.data);
-          console.log(
-            "Local Analytics - Congregations from API:",
-            data.data.congregations
-          );
-          console.log(
-            "Local Analytics - Weekly trend from API:",
-            data.data.weeklyTrend
-          );
+      setLoading(true);
+      
+      // Get congregation name from localStorage
+      const congregationName = localStorage.getItem("congregationName");
+      
+      // Get data from data store
+      const dataStore = getDataStore();
+      const members = await dataStore.getMembers({ congregation: congregationName });
+      const attendanceRecords = await dataStore.getAttendanceRecords({ congregation: congregationName });
 
-          // Use real data from API
-          const realData = {
-            sundayAttendance: {
-              totalAttendance: data.data.weeklyTrend.reduce(
-                (sum, week) => sum + week.total,
-                0
-              ),
-              averageAttendance:
-                data.data.weeklyTrend.length > 0
-                  ? data.data.weeklyTrend.reduce(
-                      (sum, week) => sum + week.total,
-                      0
-                    ) / data.data.weeklyTrend.length
-                  : 0,
-              congregationsCount: data.data.congregations.length,
-              growth: 0, // Would need to calculate from trend data
-              weeklyTrend: data.data.weeklyTrend || [],
-              monthlyTrend: data.data.monthlyTrend || [],
-              yearlyTrend: data.data.yearlyTrend || [],
-            },
-            membersDatabase: {
-              totalMembers: data.data.congregations.reduce(
-                (sum, cong) => sum + cong.members,
-                0
-              ),
-              congregations: data.data.congregations || [],
-              genderDistribution: data.data.genderDistribution || [],
-            },
-          };
-          setChartData(realData);
+      console.log("Analytics - Members data:", members);
+      console.log("Analytics - Attendance data:", attendanceRecords);
 
-          // Ensure congregation filter is set after data loads
-          const congregationName = localStorage.getItem("congregationName");
-          if (congregationName && selectedCongregation === "All") {
-            console.log(
-              "Local Analytics - Setting congregation filter after data load:",
-              congregationName
-            );
-            setSelectedCongregation(congregationName);
-          }
+      // Calculate attendance analytics
+      const totalAttendance = attendanceRecords.reduce((sum, r) => sum + (r.total || 0), 0);
+      const totalMale = attendanceRecords.reduce((sum, r) => sum + (r.male || 0), 0);
+      const totalFemale = attendanceRecords.reduce((sum, r) => sum + (r.female || 0), 0);
+      const averageAttendance = attendanceRecords.length > 0 ? totalAttendance / attendanceRecords.length : 0;
 
-          setLoading(false);
-          return;
-        }
-      }
+      // Convert attendance records to weekly trend format
+      const weeklyTrend = attendanceRecords.map((record) => ({
+        date: record.date,
+        congregation: congregationName,
+        total: record.total || 0,
+        male: record.male || 0,
+        female: record.female || 0,
+      }));
+
+      // Calculate members analytics
+      const maleMembers = members.filter(m => m.gender === "Male").length;
+      const femaleMembers = members.filter(m => m.gender === "Female").length;
+      const totalMembers = members.length;
+
+      const analyticsData = {
+        sundayAttendance: {
+          totalAttendance,
+          averageAttendance: Math.round(averageAttendance),
+          congregationsCount: 1,
+          growth: 0,
+          weeklyTrend,
+          monthlyTrend: [],
+          yearlyTrend: [],
+        },
+        membersDatabase: {
+          totalMembers,
+          congregations: [{
+            name: congregationName,
+            members: totalMembers,
+            active_members: totalMembers,
+            inactive_members: 0,
+          }],
+          genderDistribution: [{
+            congregation: congregationName,
+            male: maleMembers,
+            female: femaleMembers,
+          }],
+        },
+      };
+
+      console.log("Analytics - Final data:", analyticsData);
+      setChartData(analyticsData);
+      setLoading(false);
     } catch (error) {
-      // Show toast message instead of console.log
-      if (typeof window !== "undefined" && window.showToast) {
-        window.showToast("Failed to fetch analytics data", "error");
-      }
+      console.error("Error fetching analytics data:", error);
+      setLoading(false);
     }
-
-    // Set empty data if API fails
-    setChartData({
-      sundayAttendance: {
-        totalAttendance: 0,
-        averageAttendance: 0,
-        congregationsCount: 0,
-        growth: 0,
-        weeklyTrend: [],
-        monthlyTrend: [],
-        yearlyTrend: [],
-      },
-      membersDatabase: {
-        congregations: [],
-        genderDistribution: [],
-      },
-    });
-    setLoading(false);
   };
 
   if (loading) {
@@ -725,7 +706,7 @@ export default function LocalAnalyticsPage() {
             <div className="lg:hidden">
               <div className="overflow-x-auto">
                 <div className="flex space-x-3 min-w-max pb-2">
-                  <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-green-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-green-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-green-400/20 to-green-600/20 dark:from-green-400/10 dark:to-green-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -743,7 +724,7 @@ export default function LocalAnalyticsPage() {
                       <i className="fas fa-users text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-blue-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -761,7 +742,7 @@ export default function LocalAnalyticsPage() {
                       <i className="fas fa-mars text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-pink-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-pink-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-400/20 to-pink-600/20 dark:from-pink-400/10 dark:to-pink-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -779,7 +760,7 @@ export default function LocalAnalyticsPage() {
                       <i className="fas fa-venus text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-orange-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-orange-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-orange-600/20 dark:from-orange-400/10 dark:to-orange-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -797,7 +778,7 @@ export default function LocalAnalyticsPage() {
                       <i className="fas fa-user-check text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-red-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-red-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-600/20 dark:from-red-400/10 dark:to-red-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -815,7 +796,7 @@ export default function LocalAnalyticsPage() {
                       <i className="fas fa-user-times text-xl opacity-80 group-hover:scale-110 transition-transform duration-200"></i>
                     </div>
                   </div>
-                  <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-40">
+                  <div className="bg-yellow-500 dark:bg-gray-800 text-white rounded-lg p-3 shadow-lg dark:shadow-yellow-500/20 relative overflow-hidden group flex-shrink-0 w-48">
                     <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 dark:from-yellow-400/10 dark:to-yellow-600/10 animate-pulse"></div>
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
@@ -945,8 +926,8 @@ export default function LocalAnalyticsPage() {
               </div>
               {/* Small screens - Grid layout with evenly distributed cards */}
               <div className="lg:hidden">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg dark:shadow-blue-500/20 relative overflow-hidden group">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-blue-600/20 dark:from-blue-400/10 dark:to-blue-600/10 animate-pulse"></div>
                     <div className="relative z-10">
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3 text-center">

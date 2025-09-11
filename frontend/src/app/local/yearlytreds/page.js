@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import LocalDashboardLayout from "../../components/LocalDashboardLayout";
+import getDataStore from "../../utils/dataStore";
 
 export default function YearlyTrendsPage() {
   const [loading, setLoading] = useState(true);
@@ -30,43 +31,50 @@ export default function YearlyTrendsPage() {
 
   const fetchAnalyticsData = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:8001/api/analytics/detailed/"
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          let filteredYearlyTrend = data.data.yearlyTrend || [];
-          if (congregationName && congregationName !== "District Admin") {
-            filteredYearlyTrend = filteredYearlyTrend.filter(
-              (year) => year.congregation === congregationName
-            );
-          }
+      setLoading(true);
+      
+      // Get data from data store
+      const dataStore = getDataStore();
+      const attendanceRecords = await dataStore.getAttendanceRecords({ congregation: congregationName });
 
-          // Use real data from API
-          const realData = {
-            sundayAttendance: {
-              yearlyTrend: filteredYearlyTrend,
-            },
+      console.log("Yearly Trends - Attendance data:", attendanceRecords);
+
+      // Group attendance records by year
+      const yearlyData = {};
+      attendanceRecords.forEach((record) => {
+        const date = new Date(record.date);
+        const year = date.getFullYear();
+        
+        if (!yearlyData[year]) {
+          yearlyData[year] = {
+            year: year,
+            male: 0,
+            female: 0,
+            total: 0,
           };
-          setChartData(realData);
-          setLoading(false);
-          return;
         }
-      }
-    } catch (error) {
-      if (typeof window !== "undefined" && window.showToast) {
-        window.showToast("Failed to fetch analytics data", "error");
-      }
-    }
+        
+        yearlyData[year].male += record.male || 0;
+        yearlyData[year].female += record.female || 0;
+        yearlyData[year].total += record.total || 0;
+      });
 
-    const emptyData = {
-      sundayAttendance: {
-        yearlyTrend: [],
-      },
-    };
-    setChartData(emptyData);
-    setLoading(false);
+      // Convert to array and sort by year
+      const yearlyTrend = Object.values(yearlyData).sort((a, b) => a.year - b.year);
+
+      const realData = {
+        sundayAttendance: {
+          yearlyTrend: yearlyTrend,
+        },
+      };
+
+      console.log("Yearly Trends - Final data:", realData);
+      setChartData(realData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching yearly trends data:", error);
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -126,7 +134,13 @@ export default function YearlyTrendsPage() {
                       Yearly Attendance Overview
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      2025 - 2031 - 6 Year Analysis
+                      {(() => {
+                        const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                        if (yearlyData.length === 0) return "No data available";
+                        const firstYear = yearlyData[0]?.year || new Date().getFullYear();
+                        const lastYear = yearlyData[yearlyData.length - 1]?.year || new Date().getFullYear();
+                        return `${firstYear} - ${lastYear} - ${yearlyData.length} Year Analysis`;
+                      })()}
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -283,9 +297,15 @@ export default function YearlyTrendsPage() {
 
                   {/* Y-axis labels */}
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
-                    {[10, 8, 6, 4, 2, 0].map((num) => (
-                      <span key={num}>{num}</span>
-                    ))}
+                    {(() => {
+                      const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                      if (yearlyData.length === 0) return [0, 0, 0, 0, 0, 0];
+                      const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
+                      const step = Math.ceil(maxValue / 5);
+                      return [step * 5, step * 4, step * 3, step * 2, step, 0].map((num) => (
+                        <span key={num}>{num}</span>
+                      ));
+                    })()}
                   </div>
 
                   {/* Line Graph */}
@@ -321,15 +341,17 @@ export default function YearlyTrendsPage() {
                       stroke="rgba(156, 163, 175, 0.3)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(chartData.sundayAttendance?.yearlyTrend || [])
-                        .map((year, index) => {
-                          const x = 10 + index * 15;
-                          const baseY = 65 - ((year?.total || 0) / 3000) * 15;
-                          const variation = Math.sin(index * 0.8) * 3;
-                          const y = baseY + variation;
+                      points={(() => {
+                        const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                        if (yearlyData.length === 0) return "";
+                        const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return yearlyData.map((year, index) => {
+                          const x = yearlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(yearlyData.length - 1, 1));
+                          const y = 90 - (year?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                     />
 
                     {/* Main Green Line */}
@@ -338,29 +360,33 @@ export default function YearlyTrendsPage() {
                       stroke="url(#lineGradient)"
                       strokeWidth="0.5"
                       strokeLinecap="round"
-                      points={(chartData.sundayAttendance?.yearlyTrend || [])
-                        .map((year, index) => {
-                          const x = 10 + index * 15;
-                          const baseY = 65 - ((year?.total || 0) / 3000) * 15;
-                          const variation = Math.sin(index * 0.8) * 3;
-                          const y = baseY + variation;
+                      points={(() => {
+                        const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                        if (yearlyData.length === 0) return "";
+                        const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return yearlyData.map((year, index) => {
+                          const x = yearlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(yearlyData.length - 1, 1));
+                          const y = 90 - (year?.total || 0) * scale;
                           return `${x},${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       filter="url(#glow)"
                     />
 
                     {/* Invisible Interactive Path for Tooltip */}
                     <path
-                      d={(chartData.sundayAttendance?.yearlyTrend || [])
-                        .map((year, index) => {
-                          const x = 10 + index * 15;
-                          const baseY = 65 - ((year?.total || 0) / 3000) * 15;
-                          const variation = Math.sin(index * 0.8) * 3;
-                          const y = baseY + variation;
+                      d={(() => {
+                        const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                        if (yearlyData.length === 0) return "";
+                        const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
+                        const scale = maxValue > 0 ? 80 / maxValue : 0;
+                        return yearlyData.map((year, index) => {
+                          const x = yearlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(yearlyData.length - 1, 1));
+                          const y = 90 - (year?.total || 0) * scale;
                           return index === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-                        })
-                        .join(" ")}
+                        }).join(" ");
+                      })()}
                       fill="none"
                       stroke="transparent"
                       strokeWidth="12"
@@ -426,32 +452,37 @@ export default function YearlyTrendsPage() {
                     />
 
                     {/* Data Points */}
-                    {(chartData.sundayAttendance?.yearlyTrend || []).map(
-                      (year, index) => {
-                        const x = 10 + index * 15;
-                        const baseY = 65 - ((year?.total || 0) / 3000) * 15;
-                        const variation = Math.sin(index * 0.8) * 3;
-                        const y = baseY + variation;
-                        const prevYear =
-                          index > 0
-                            ? (chartData.sundayAttendance?.yearlyTrend || [])[
-                                index - 1
-                              ]
-                            : null;
-                        const difference = prevYear
-                          ? (year?.total || 0) - (prevYear?.total || 0)
-                          : 0;
+                    {(() => {
+                      const yearlyData = chartData.sundayAttendance?.yearlyTrend || [];
+                      if (yearlyData.length === 0) return [];
+                      const maxValue = Math.max(...yearlyData.map(y => y?.total || 0));
+                      const scale = maxValue > 0 ? 80 / maxValue : 0;
+                      
+                      return yearlyData.map((year, index) => {
+                        const x = yearlyData.length === 1 ? 50 : 10 + index * (80 / Math.max(yearlyData.length - 1, 1));
+                        const y = 90 - (year?.total || 0) * scale;
+                        const prevYear = index > 0 ? yearlyData[index - 1] : null;
+                        const difference = prevYear ? (year?.total || 0) - (prevYear?.total || 0) : 0;
 
                         return (
-                          <circle
-                            key={index}
-                            cx={x}
-                            cy={y}
-                            r="1.2"
-                            fill="#10b981"
-                            stroke="#ffffff"
-                            strokeWidth="0.3"
-                            className="cursor-pointer hover:r-2.5 transition-all duration-200"
+                          <g key={index}>
+                            {/* Outer glow for better visibility */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="3"
+                              fill="rgba(16, 185, 129, 0.3)"
+                              className="cursor-pointer"
+                            />
+                            {/* Main data point */}
+                            <circle
+                              cx={x}
+                              cy={y}
+                              r="2"
+                              fill="#10b981"
+                              stroke="#ffffff"
+                              strokeWidth="0.5"
+                              className="cursor-pointer hover:r-3 transition-all duration-200"
                             onMouseEnter={(e) => {
                               const rect = e.target
                                 .closest("svg")
@@ -486,9 +517,10 @@ export default function YearlyTrendsPage() {
                               });
                             }}
                           />
+                          </g>
                         );
-                      }
-                    )}
+                      });
+                    })()}
                   </svg>
 
                   {/* Tooltip */}

@@ -11,7 +11,12 @@ import getDataStore from "../utils/dataStore";
 const getWeekOfMonth = (date) => {
   const d = new Date(date);
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
-  return Math.ceil((d.getDate() + firstDay.getDay()) / 7);
+  const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const dayOfMonth = d.getDate();
+  
+  // Calculate which week of the month this day falls into
+  // Week 1: days 1-7, Week 2: days 8-14, Week 3: days 15-21, etc.
+  return Math.ceil(dayOfMonth / 7);
 };
 function getMonthName(date) {
   return new Date(date).toLocaleString("default", { month: "short" });
@@ -39,11 +44,9 @@ export default function AttendancePage() {
     position: "",
   });
   const [selectedCongregation, setSelectedCongregation] = useState("");
-  const [selectedWeek, setSelectedWeek] = useState(getWeekOfMonth(new Date()));
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().toLocaleString("default", { month: "short" })
-  );
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedWeek, setSelectedWeek] = useState("All");
+  const [selectedMonth, setSelectedMonth] = useState("All");
+  const [selectedYear, setSelectedYear] = useState("All");
 
   // Monthly and yearly summary table states
   const [selectedMonthlyRecords, setSelectedMonthlyRecords] = useState([]);
@@ -109,7 +112,7 @@ export default function AttendancePage() {
       const dataStore = getDataStore();
       const records = await dataStore.getAttendanceRecords();
 
-      // Transform records to match expected format
+      // Use records directly as they're already in the correct format from dataStore
       const transformedRecords = records.map((record) => ({
         id: record.id,
         congregation: { name: record.congregation },

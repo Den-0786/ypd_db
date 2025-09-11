@@ -75,35 +75,8 @@ class DataStore {
       },
     ];
 
-    this.attendanceRecords = [
-      {
-        id: 1,
-        date: "2024-01-07",
-        male: 25,
-        female: 30,
-        total: 55,
-        congregation: "Ahinsan Central",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 2,
-        date: "2024-01-14",
-        male: 28,
-        female: 32,
-        total: 60,
-        congregation: "Ahinsan Central",
-        timestamp: new Date().toISOString(),
-      },
-      {
-        id: 3,
-        date: "2024-01-21",
-        male: 30,
-        female: 35,
-        total: 65,
-        congregation: "Ahinsan Central",
-        timestamp: new Date().toISOString(),
-      },
-    ];
+    // No mock attendance data - use real data from API/localStorage
+    this.attendanceRecords = [];
 
     this.saveToStorage("membersData", this.membersData);
     this.saveToStorage("attendanceRecords", this.attendanceRecords);

@@ -70,81 +70,36 @@ export default function LocalDashboardPage() {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.data) {
+          // Get members to calculate executives locally
           const members = await dataStore.getMembers({
             congregation: congregationName,
           });
-          const attendance = await dataStore.getAttendanceRecords({
-            congregation: congregationName,
-          });
 
-          console.log("Dashboard - Loaded attendance data:", attendance);
-          console.log("Dashboard - Congregation name:", congregationName);
+          // Calculate executives locally for this congregation
+          const localExecutives = members.filter((m) => m.is_executive).length;
 
-          // Calculate this week's attendance
-          const currentDate = new Date();
-          const currentWeek = Math.ceil(
-            (currentDate.getDate() +
-              new Date(
-                currentDate.getFullYear(),
-                currentDate.getMonth(),
-                1
-              ).getDay()) /
-              7
-          );
-          const thisWeekAttendance = attendance
-            .filter((r) => {
-              const recordDate = new Date(r.date);
-              const recordWeek = Math.ceil(
-                (recordDate.getDate() +
-                  new Date(
-                    recordDate.getFullYear(),
-                    recordDate.getMonth(),
-                    1
-                  ).getDay()) /
-                  7
-              );
-              return (
-                recordDate.getFullYear() === currentDate.getFullYear() &&
-                recordDate.getMonth() === currentDate.getMonth() &&
-                recordWeek === currentWeek
-              );
-            })
-            .reduce((sum, r) => sum + (r.total || 0), 0);
-
+          console.log("Dashboard - Local executives count:", localExecutives);
           console.log(
-            "Dashboard - This week's attendance:",
-            thisWeekAttendance
+            "Dashboard - API executives count:",
+            data.data.numberOfExecutives
           );
-          console.log("Dashboard - Current week:", currentWeek);
 
-          // Calculate new members this month
-          const currentMonth = currentDate.getMonth();
-          const currentYear = currentDate.getFullYear();
-          const newMembersThisMonth = members.filter((m) => {
-            const memberDate = new Date(m.timestamp);
-            return (
-              memberDate.getMonth() === currentMonth &&
-              memberDate.getFullYear() === currentYear
-            );
-          }).length;
-
-          // Count executives
-          const numberOfExecutives = members.filter(
-            (m) => m.is_executive
-          ).length;
-
-          // Use API data directly like district dashboard
+          // Use API data but calculate executives locally
           setStats({
             totalMembers: data.data.totalMembers || 0,
             thisWeeksAttendance: data.data.thisWeekAttendance || 0,
             newMembersThisMonth: data.data.newMembersThisMonth || 0,
-            numberOfExecutives: data.data.numberOfExecutives || 0,
+            numberOfExecutives: localExecutives, // Use local calculation
           });
 
           console.log("Dashboard - API data:", data.data);
           console.log(
             "Dashboard - This week's attendance from API:",
             data.data.thisWeekAttendance
+          );
+          console.log(
+            "Dashboard - Number of executives from API:",
+            data.data.numberOfExecutives
           );
         }
       } else {
