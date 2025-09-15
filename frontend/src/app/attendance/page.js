@@ -13,18 +13,20 @@ const getWeekOfMonth = (date) => {
   const firstDay = new Date(d.getFullYear(), d.getMonth(), 1);
   const firstDayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const dayOfMonth = d.getDate();
-  
+
   // Calculate which week of the month this day falls into using Sunday-to-Saturday weeks
   // Find the start of the week containing this date
   const startOfWeek = new Date(d);
   startOfWeek.setDate(d.getDate() - d.getDay());
-  
+
   // Find the start of the first week of the month
   const firstWeekStart = new Date(firstDay);
   firstWeekStart.setDate(firstDay.getDate() - firstDayOfWeek);
-  
+
   // Calculate the difference in days and convert to weeks
-  const daysDiff = Math.floor((startOfWeek - firstWeekStart) / (1000 * 60 * 60 * 24));
+  const daysDiff = Math.floor(
+    (startOfWeek - firstWeekStart) / (1000 * 60 * 60 * 24)
+  );
   return Math.floor(daysDiff / 7) + 1;
 };
 function getMonthName(date) {
@@ -35,6 +37,18 @@ function getYear(date) {
 }
 
 export default function AttendancePage() {
+  // Redirect local users to local attendance page
+  useEffect(() => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user && user.congregationId && user.congregationId !== "district") {
+          window.location.href = "/local/attendance";
+        }
+      }
+    } catch (e) {}
+  }, []);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);

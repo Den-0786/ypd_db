@@ -3058,34 +3058,50 @@ def api_home_stats(request):
         
         sunday_attendance = int(recent_attendance['avg_total'] or 0)
         
-        # Calculate this week's attendance
-        current_week_start = timezone.now().date() - timedelta(days=timezone.now().date().weekday())
-        this_week_attendance = SundayAttendance.objects.filter(
-            date__gte=current_week_start
-        ).aggregate(
-            total=Sum('total_count')
-        )['total'] or 0
+        # Calculate this week's attendance - use the most recent week with data
+        # Get the most recent attendance record to determine the current week
+        latest_attendance = SundayAttendance.objects.order_by('-date').first()
+        if latest_attendance:
+            # Calculate week start for the most recent attendance date
+            latest_date = latest_attendance.date
+            week_start = latest_date - timedelta(days=latest_date.weekday())
+            this_week_attendance = SundayAttendance.objects.filter(
+                date__gte=week_start
+            ).aggregate(
+                total=Sum('total_count')
+            )['total'] or 0
+        else:
+            this_week_attendance = 0
         
-        # Calculate this month's attendance
-        current_month_start = timezone.now().date().replace(day=1)
-        this_month_attendance = SundayAttendance.objects.filter(
-            date__gte=current_month_start
-        ).aggregate(
-            total=Sum('total_count')
-        )['total'] or 0
+        # Calculate this month's attendance - use the most recent month with data
+        if latest_attendance:
+            # Calculate month start for the most recent attendance date
+            latest_date = latest_attendance.date
+            month_start = latest_date.replace(day=1)
+            this_month_attendance = SundayAttendance.objects.filter(
+                date__gte=month_start
+            ).aggregate(
+                total=Sum('total_count')
+            )['total'] or 0
+        else:
+            this_month_attendance = 0
         
         # Calculate growth rate (comparing last 2 weeks)
-        last_week_start = current_week_start - timedelta(days=7)
-        last_week_attendance = SundayAttendance.objects.filter(
-            date__gte=last_week_start,
-            date__lt=current_week_start
-        ).aggregate(
-            total=Sum('total_count')
-        )['total'] or 0
-        
         growth_rate = 0
-        if last_week_attendance > 0:
-            growth_rate = ((this_week_attendance - last_week_attendance) / last_week_attendance) * 100
+        if latest_attendance:
+            # Get the week before the most recent week
+            latest_date = latest_attendance.date
+            current_week_start = latest_date - timedelta(days=latest_date.weekday())
+            last_week_start = current_week_start - timedelta(days=7)
+            last_week_attendance = SundayAttendance.objects.filter(
+                date__gte=last_week_start,
+                date__lt=current_week_start
+            ).aggregate(
+                total=Sum('total_count')
+            )['total'] or 0
+            
+            if last_week_attendance > 0:
+                growth_rate = ((this_week_attendance - last_week_attendance) / last_week_attendance) * 100
         
         # Get leaderboard data (top 3 congregations by recent attendance)
         leaderboard_data = []

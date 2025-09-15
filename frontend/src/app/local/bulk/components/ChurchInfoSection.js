@@ -122,21 +122,116 @@ export default function ChurchInfoSection({
         </div>
 
         <div className="sm:col-span-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Position
-          </label>
-          <input
-            type="text"
-            value={currentMember.position}
-            onChange={(e) =>
-              setCurrentMember({
-                ...currentMember,
-                position: e.target.value,
-              })
-            }
-            className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
-            placeholder="Member, Elder, etc."
-          />
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Position
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is_executive_inline"
+                checked={currentMember.is_executive}
+                onChange={(e) =>
+                  setCurrentMember({
+                    ...currentMember,
+                    is_executive: e.target.checked,
+                    executive_level: e.target.checked ? "local" : "",
+                    position: e.target.checked ? currentMember.position : "",
+                  })
+                }
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label
+                htmlFor="is_executive_inline"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap"
+              >
+                Executive
+              </label>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {currentMember.is_executive ? (
+              <select
+                value={currentMember.local_executive_position}
+                onChange={(e) => {
+                  const position = e.target.value;
+                  const positionDisplay = getExecutivePositionDisplay(position);
+                  setCurrentMember({
+                    ...currentMember,
+                    local_executive_position: position,
+                    executive_position: position,
+                    position: positionDisplay,
+                  });
+                }}
+                className="flex-1 px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
+              >
+                <option value="" className="text-gray-800 dark:text-white">
+                  Select Position
+                </option>
+                <option
+                  value="president"
+                  className="text-gray-800 dark:text-white"
+                >
+                  President
+                </option>
+                <option
+                  value="vice_president"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Vice President
+                </option>
+                <option
+                  value="secretary"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Secretary
+                </option>
+                <option
+                  value="assistant_secretary"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Assistant Secretary
+                </option>
+                <option
+                  value="financial_secretary"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Financial Secretary
+                </option>
+                <option
+                  value="treasurer"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Treasurer
+                </option>
+                <option
+                  value="organizer"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Organizer
+                </option>
+                <option
+                  value="evangelism_coordinator"
+                  className="text-gray-800 dark:text-white"
+                >
+                  Evangelism Coordinator
+                </option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={currentMember.position}
+                onChange={(e) =>
+                  setCurrentMember({
+                    ...currentMember,
+                    position: e.target.value,
+                  })
+                }
+                className="flex-1 px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
+                placeholder="Member, Elder, etc."
+              />
+            )}
+          </div>
         </div>
 
         <div className="sm:col-span-1">
@@ -241,290 +336,6 @@ export default function ChurchInfoSection({
               No
             </option>
           </select>
-        </div>
-
-        {/* Executive Information */}
-        <div className="sm:col-span-3">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
-            <div className="flex items-center mb-4">
-              <input
-                type="checkbox"
-                id="is_executive"
-                checked={currentMember.is_executive}
-                onChange={(e) =>
-                  setCurrentMember({
-                    ...currentMember,
-                    is_executive: e.target.checked,
-                    // Clear position field when unchecking executive
-                    position: e.target.checked ? currentMember.position : "",
-                  })
-                }
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label
-                htmlFor="is_executive"
-                className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                Is Executive Member
-              </label>
-            </div>
-
-            {currentMember.is_executive && (
-              <div className="space-y-4">
-                {/* Executive Level Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Executive Level{" "}
-                    <span className="text-red-500 font-bold">*</span>
-                  </label>
-                  <select
-                    value={currentMember.executive_level}
-                    onChange={(e) => {
-                      const level = e.target.value;
-                      let newPosition = "";
-
-                      // Set position based on level and existing positions
-                      if (
-                        level === "local" &&
-                        currentMember.local_executive_position
-                      ) {
-                        newPosition = getExecutivePositionDisplay(
-                          currentMember.local_executive_position
-                        );
-                      } else if (
-                        level === "district" &&
-                        currentMember.district_executive_position
-                      ) {
-                        newPosition = getExecutivePositionDisplay(
-                          currentMember.district_executive_position
-                        );
-                      } else if (level === "both") {
-                        // For both, prefer local position if available, otherwise district
-                        if (currentMember.local_executive_position) {
-                          newPosition = getExecutivePositionDisplay(
-                            currentMember.local_executive_position
-                          );
-                        } else if (currentMember.district_executive_position) {
-                          newPosition = getExecutivePositionDisplay(
-                            currentMember.district_executive_position
-                          );
-                        }
-                      }
-
-                      setCurrentMember({
-                        ...currentMember,
-                        executive_level: level,
-                        // Reset positions when level changes
-                        executive_position: "",
-                        local_executive_position: "",
-                        district_executive_position: "",
-                        // Update position field
-                        position: newPosition,
-                      });
-                    }}
-                    className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
-                    required
-                  >
-                    <option value="" className="text-gray-800 dark:text-white">
-                      Select Executive Level
-                    </option>
-                    <option
-                      value="local"
-                      className="text-gray-800 dark:text-white"
-                    >
-                      Local Executive
-                    </option>
-                    <option
-                      value="district"
-                      className="text-gray-800 dark:text-white"
-                    >
-                      District Executive
-                    </option>
-                    <option
-                      value="both"
-                      className="text-gray-800 dark:text-white"
-                    >
-                      Both Local & District Executive
-                    </option>
-                  </select>
-                </div>
-
-                {/* Local Executive Position */}
-                {(currentMember.executive_level === "local" ||
-                  currentMember.executive_level === "both") && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Local Executive Position
-                      {currentMember.executive_level === "local" && (
-                        <span className="text-red-500 font-bold">*</span>
-                      )}
-                    </label>
-                    <select
-                      value={currentMember.local_executive_position}
-                      onChange={(e) => {
-                        const position = e.target.value;
-                        const positionDisplay =
-                          getExecutivePositionDisplay(position);
-                        setCurrentMember({
-                          ...currentMember,
-                          local_executive_position: position,
-                          executive_position:
-                            currentMember.executive_level === "local"
-                              ? position
-                              : currentMember.executive_position,
-                          position: positionDisplay, // Direct update to position field
-                        });
-                      }}
-                      className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
-                      required={currentMember.executive_level === "local"}
-                    >
-                      <option
-                        value=""
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Select Local Position
-                      </option>
-                      <option
-                        value="president"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        President
-                      </option>
-                      <option
-                        value="vice_president"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Vice President
-                      </option>
-                      <option
-                        value="secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Secretary
-                      </option>
-                      <option
-                        value="assistant_secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Assistant Secretary
-                      </option>
-                      <option
-                        value="financial_secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Financial Secretary
-                      </option>
-                      <option
-                        value="treasurer"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Treasurer
-                      </option>
-                      <option
-                        value="organizer"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Organizer
-                      </option>
-                      <option
-                        value="evangelism_coordinator"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Evangelism Coordinator
-                      </option>
-                    </select>
-                  </div>
-                )}
-
-                {/* District Executive Position */}
-                {(currentMember.executive_level === "district" ||
-                  currentMember.executive_level === "both") && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      District Executive Position
-                      {currentMember.executive_level === "district" && (
-                        <span className="text-red-500 font-bold">*</span>
-                      )}
-                    </label>
-                    <select
-                      value={currentMember.district_executive_position}
-                      onChange={(e) => {
-                        const position = e.target.value;
-                        const positionDisplay =
-                          getExecutivePositionDisplay(position);
-                        setCurrentMember({
-                          ...currentMember,
-                          district_executive_position: position,
-                          executive_position:
-                            currentMember.executive_level === "district"
-                              ? position
-                              : currentMember.executive_position,
-                          position: positionDisplay, // Direct update to position field
-                        });
-                      }}
-                      className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700 text-sm lg:text-base"
-                      required={currentMember.executive_level === "district"}
-                    >
-                      <option
-                        value=""
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Select District Position
-                      </option>
-                      <option
-                        value="president"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        President
-                      </option>
-                      <option
-                        value="presidents_rep"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        President's Rep
-                      </option>
-                      <option
-                        value="secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Secretary
-                      </option>
-                      <option
-                        value="assistant_secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Assistant Secretary
-                      </option>
-                      <option
-                        value="financial_secretary"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Financial Secretary
-                      </option>
-                      <option
-                        value="treasurer"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Treasurer
-                      </option>
-                      <option
-                        value="organizer"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Organizer
-                      </option>
-                      <option
-                        value="evangelism_coordinator"
-                        className="text-gray-800 dark:text-white"
-                      >
-                        Evangelism Coordinator
-                      </option>
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

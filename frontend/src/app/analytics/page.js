@@ -5,6 +5,18 @@ import DashboardLayout from "../components/DashboardLayout";
 import getDataStore from "../utils/dataStore";
 
 export default function AnalyticsPage() {
+  // Redirect local users to local analytics page
+  useEffect(() => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user && user.congregationId && user.congregationId !== "district") {
+          window.location.href = "/local/analytics";
+        }
+      }
+    } catch (e) {}
+  }, []);
   const [loading, setLoading] = useState(true);
   const [chartData, setChartData] = useState({
     sundayAttendance: {
@@ -103,38 +115,61 @@ export default function AnalyticsPage() {
       const members = await dataStore.getMembers();
 
       // Calculate real analytics from attendance records
-      const totalAttendance = attendanceRecords.reduce((sum, record) => sum + (record.total || 0), 0);
-      const averageAttendance = attendanceRecords.length > 0 ? Math.round(totalAttendance / attendanceRecords.length) : 0;
-      
+      const totalAttendance = attendanceRecords.reduce(
+        (sum, record) => sum + (record.total || 0),
+        0
+      );
+      const averageAttendance =
+        attendanceRecords.length > 0
+          ? Math.round(totalAttendance / attendanceRecords.length)
+          : 0;
+
       // Get unique congregations
-      const congregations = [...new Set(attendanceRecords.map(record => record.congregation))];
+      const congregations = [
+        ...new Set(attendanceRecords.map((record) => record.congregation)),
+      ];
       const congregationsCount = congregations.length;
 
       // Calculate growth (compare last month vs previous month)
       const now = new Date();
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      
-      const lastMonthRecords = attendanceRecords.filter(record => {
+
+      const lastMonthRecords = attendanceRecords.filter((record) => {
         const recordDate = new Date(record.date);
-        return recordDate.getMonth() === lastMonth.getMonth() && 
-               recordDate.getFullYear() === lastMonth.getFullYear();
-      });
-      
-      const previousMonthRecords = attendanceRecords.filter(record => {
-        const recordDate = new Date(record.date);
-        return recordDate.getMonth() === previousMonth.getMonth() && 
-               recordDate.getFullYear() === previousMonth.getFullYear();
+        return (
+          recordDate.getMonth() === lastMonth.getMonth() &&
+          recordDate.getFullYear() === lastMonth.getFullYear()
+        );
       });
 
-      const lastMonthTotal = lastMonthRecords.reduce((sum, record) => sum + (record.total || 0), 0);
-      const previousMonthTotal = previousMonthRecords.reduce((sum, record) => sum + (record.total || 0), 0);
-      const growth = previousMonthTotal > 0 ? Math.round(((lastMonthTotal - previousMonthTotal) / previousMonthTotal) * 100) : 0;
+      const previousMonthRecords = attendanceRecords.filter((record) => {
+        const recordDate = new Date(record.date);
+        return (
+          recordDate.getMonth() === previousMonth.getMonth() &&
+          recordDate.getFullYear() === previousMonth.getFullYear()
+        );
+      });
+
+      const lastMonthTotal = lastMonthRecords.reduce(
+        (sum, record) => sum + (record.total || 0),
+        0
+      );
+      const previousMonthTotal = previousMonthRecords.reduce(
+        (sum, record) => sum + (record.total || 0),
+        0
+      );
+      const growth =
+        previousMonthTotal > 0
+          ? Math.round(
+              ((lastMonthTotal - previousMonthTotal) / previousMonthTotal) * 100
+            )
+          : 0;
 
       // Group attendance by week for weekly trend
       const weeklyTrend = [];
       const weeklyMap = new Map();
-      attendanceRecords.forEach(record => {
+      attendanceRecords.forEach((record) => {
         const date = new Date(record.date);
         const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
         if (!weeklyMap.has(weekKey)) {
@@ -143,7 +178,7 @@ export default function AnalyticsPage() {
             male: 0,
             female: 0,
             total: 0,
-            congregation: record.congregation
+            congregation: record.congregation,
           });
         }
         const week = weeklyMap.get(weekKey);
@@ -156,16 +191,16 @@ export default function AnalyticsPage() {
       // Group attendance by month for monthly trend
       const monthlyTrend = [];
       const monthlyMap = new Map();
-      attendanceRecords.forEach(record => {
+      attendanceRecords.forEach((record) => {
         const date = new Date(record.date);
         const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
         if (!monthlyMap.has(monthKey)) {
           monthlyMap.set(monthKey, {
-            month: date.toLocaleString('default', { month: 'short' }),
+            month: date.toLocaleString("default", { month: "short" }),
             year: date.getFullYear(),
             male: 0,
             female: 0,
-            total: 0
+            total: 0,
           });
         }
         const month = monthlyMap.get(monthKey);
@@ -178,7 +213,7 @@ export default function AnalyticsPage() {
       // Group attendance by year for yearly trend
       const yearlyTrend = [];
       const yearlyMap = new Map();
-      attendanceRecords.forEach(record => {
+      attendanceRecords.forEach((record) => {
         const date = new Date(record.date);
         const year = date.getFullYear();
         if (!yearlyMap.has(year)) {
@@ -186,7 +221,7 @@ export default function AnalyticsPage() {
             year: year,
             male: 0,
             female: 0,
-            total: 0
+            total: 0,
           });
         }
         const yearData = yearlyMap.get(year);
@@ -215,7 +250,8 @@ export default function AnalyticsPage() {
       members.forEach((member) => {
         const congregation = getCongregationName(member.congregation);
         const isMale = member.gender === "Male" || member.gender === "male";
-        const isFemale = member.gender === "Female" || member.gender === "female";
+        const isFemale =
+          member.gender === "Female" || member.gender === "female";
         if (!congregationMap.has(congregation)) {
           congregationMap.set(congregation, {
             name: congregation,
@@ -231,7 +267,9 @@ export default function AnalyticsPage() {
         cong.members += 1;
         if (isMale) cong.male += 1;
         if (isFemale) cong.female += 1;
-        const status = (member.membership_status || member.status || "").toString().toLowerCase();
+        const status = (member.membership_status || member.status || "")
+          .toString()
+          .toLowerCase();
         if (status === "active") {
           cong.active_members += 1;
         } else {
@@ -317,7 +355,7 @@ export default function AnalyticsPage() {
           genderDistribution,
         },
       };
-      
+
       setChartData(realData);
       setLoading(false);
       return;
@@ -1174,7 +1212,7 @@ export default function AnalyticsPage() {
                         <div
                           className="h-2 rounded-full"
                           style={{
-                            width: `${congregation.members > 0 ? Math.max((congregation.members / Math.max(1, ...((chartData.membersDatabase?.congregations || []).map((c) => (c.members || 0))))) * 100, 2) : 0}%`,
+                            width: `${congregation.members > 0 ? Math.max((congregation.members / Math.max(1, ...(chartData.membersDatabase?.congregations || []).map((c) => c.members || 0))) * 100, 2) : 0}%`,
                             backgroundColor: congregation.color || "#3B82F6",
                           }}
                         ></div>

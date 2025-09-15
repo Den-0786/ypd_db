@@ -10,6 +10,18 @@ import ToastContainer from "../components/ToastContainer";
 import getDataStore from "../utils/dataStore";
 
 export default function MembersPage() {
+  // Redirect local users to local members page
+  useEffect(() => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user && user.congregationId && user.congregationId !== "district") {
+          window.location.href = "/local/members";
+        }
+      }
+    } catch (e) {}
+  }, []);
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState([]);
   const [executives, setExecutives] = useState([]);
@@ -205,7 +217,6 @@ export default function MembersPage() {
       is_executive: member.is_executive || false,
       executive_position: member.executive_position || member.position || "",
       executive_level: member.executive_level || "",
-      local_executive_position: member.local_executive_position || "",
       district_executive_position: member.district_executive_position || "",
       date_of_birth: member.date_of_birth || member.dateOfBirth || "",
       place_of_residence: member.place_of_residence || member.residence || "",
@@ -258,8 +269,12 @@ export default function MembersPage() {
           try {
             const ds = getDataStore();
             // Optimistic UI update
-            setMembers((prev) => prev.filter((m) => m.id !== selectedMember.id));
-            setExecutives((prev) => prev.filter((m) => m.id !== selectedMember.id));
+            setMembers((prev) =>
+              prev.filter((m) => m.id !== selectedMember.id)
+            );
+            setExecutives((prev) =>
+              prev.filter((m) => m.id !== selectedMember.id)
+            );
             // Update stats optimistically
             const removed = selectedMember;
             setTotalMembers((n) => Math.max(0, n - 1));
@@ -338,7 +353,6 @@ export default function MembersPage() {
               is_executive: editForm.is_executive,
               executive_position: editForm.executive_position,
               executive_level: editForm.executive_level,
-              local_executive_position: editForm.local_executive_position,
               district_executive_position: editForm.district_executive_position,
               date_of_birth: editForm.date_of_birth,
               place_of_residence: editForm.place_of_residence,
@@ -1136,46 +1150,6 @@ export default function MembersPage() {
                         defaultValue={selectedMember.date_of_birth || ""}
                         className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
                       />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Marital Status
-                      </label>
-                      <select
-                        defaultValue={selectedMember.marital_status || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                      >
-                        <option
-                          value=""
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Select Marital Status
-                        </option>
-                        <option
-                          value="Single"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Single
-                        </option>
-                        <option
-                          value="Married"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Married
-                        </option>
-                        <option
-                          value="Divorced"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Divorced
-                        </option>
-                        <option
-                          value="Widowed"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Widowed
-                        </option>
-                      </select>
                     </div>
                     <div className="sm:col-span-1">
                       <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">

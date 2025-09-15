@@ -33,7 +33,7 @@ export default function DashboardLayout({
       title: "Attendance Reminder",
       message_template: "Dear {congregation}, please submit your Sunday attendance for {date} ({day}). Thank you!",
       is_active: true,
-      target_congregations: "all", // "all", "specific", "non_submitting"
+      target_congregations: "all", 
       selected_congregations: []
     },
     birthday_message: {
@@ -87,17 +87,15 @@ export default function DashboardLayout({
       }
     };
 
-    // Set initial state - ensure sidebar is closed on mobile by default
+   
     if (window.innerWidth >= 1024) {
       setSidebarOpen(true);
     } else {
       setSidebarOpen(false);
     }
 
-    // Add event listener
     window.addEventListener("resize", handleResize);
 
-    // Cleanup
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
@@ -288,34 +286,6 @@ export default function DashboardLayout({
       handleReminderSettingChange(settingType, 'selected_congregations', []);
     }
   };
-
-  // Sample notifications
-  const notifications = [
-    {
-      id: 1,
-      message: "New member registration pending approval",
-      time: "2 min ago",
-      type: "info",
-    },
-    {
-      id: 2,
-      message: "Weekly attendance report is ready",
-      time: "1 hour ago",
-      type: "success",
-    },
-    {
-      id: 3,
-      message: "System backup completed successfully",
-      time: "3 hours ago",
-      type: "success",
-    },
-    {
-      id: 4,
-      message: "Database maintenance scheduled for tonight",
-      time: "5 hours ago",
-      type: "warning",
-    },
-  ];
 
   return (
     <div

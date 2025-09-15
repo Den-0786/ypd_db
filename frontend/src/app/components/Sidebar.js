@@ -160,7 +160,13 @@ export default function Sidebar({
           {/* Sidebar Navigation */}
           <nav className={`${sidebarOpen ? "p-4" : "p-2"} space-y-2`}>
             <Link
-              href="/dashboard"
+              href={
+                typeof window !== "undefined" &&
+                localStorage.getItem("congregationId") &&
+                localStorage.getItem("congregationId") !== "district"
+                  ? "/local/dashboard"
+                  : "/dashboard"
+              }
               className={`flex items-center ${sidebarOpen ? "space-x-3" : "justify-center"} p-3 rounded-lg transition-all duration-200 min-w-0 ${
                 pathname === "/dashboard"
                   ? mounted && theme === "dark"

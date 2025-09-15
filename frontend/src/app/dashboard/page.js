@@ -7,6 +7,18 @@ import ToastContainer from "../components/ToastContainer";
 import autoLogout from "../utils/autoLogout";
 
 export default function DashboardPage() {
+  // Redirect local users to their local dashboard
+  useEffect(() => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user && user.congregationId && user.congregationId !== "district") {
+          window.location.href = "/local/dashboard";
+        }
+      }
+    } catch (e) {}
+  }, []);
   const [activeQuiz, setActiveQuiz] = useState(null);
   const [quizPassword, setQuizPassword] = useState("");
   const [showQuizPassword, setShowQuizPassword] = useState(false);
@@ -144,7 +156,10 @@ export default function DashboardPage() {
   const handleCreateQuiz = async () => {
     // Check if there's already an active quiz
     if (activeQuiz) {
-      showToast("There is already an active quiz. Please delete the existing quiz before creating a new one.", "error");
+      showToast(
+        "There is already an active quiz. Please delete the existing quiz before creating a new one.",
+        "error"
+      );
       return;
     }
 
@@ -302,7 +317,7 @@ export default function DashboardPage() {
 
   const handleEditQuiz = () => {
     if (!activeQuiz) return;
-    
+
     // Populate the form with existing quiz data
     setNewQuestion({
       title: activeQuiz.title || "",
@@ -594,7 +609,10 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   if (activeQuiz) {
-                    showToast("There is already an active quiz. Please delete the existing quiz before creating a new one.", "error");
+                    showToast(
+                      "There is already an active quiz. Please delete the existing quiz before creating a new one.",
+                      "error"
+                    );
                   } else {
                     // Clear password when starting to create a new quiz
                     setQuizPassword("");
@@ -602,8 +620,8 @@ export default function DashboardPage() {
                   }
                 }}
                 className={`px-3 sm:px-4 py-2 rounded-md font-medium transition-colors duration-200 flex items-center text-sm sm:text-base ${
-                  activeQuiz 
-                    ? "bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed" 
+                  activeQuiz
+                    ? "bg-gray-400 hover:bg-gray-500 text-white cursor-not-allowed"
                     : "bg-blue-600 hover:bg-blue-700 text-white"
                 }`}
                 disabled={activeQuiz}
@@ -786,7 +804,9 @@ export default function DashboardPage() {
                   className="px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-md transition-colors duration-200"
                   title={showQuizPassword ? "Hide password" : "Show password"}
                 >
-                  <i className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                  <i
+                    className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}
+                  ></i>
                 </button>
                 <button
                   onClick={() => {
@@ -916,7 +936,9 @@ export default function DashboardPage() {
                 className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md transition-colors duration-200"
                 title={showAdminPassword ? "Hide password" : "Show password"}
               >
-                <i className={`fas ${showAdminPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                <i
+                  className={`fas ${showAdminPassword ? "fa-eye-slash" : "fa-eye"}`}
+                ></i>
               </button>
             </div>
             <div className="flex justify-end space-x-3">
@@ -1186,7 +1208,10 @@ export default function DashboardPage() {
                     type="text"
                     value={newQuestion.optionA}
                     onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, optionA: e.target.value })
+                      setNewQuestion({
+                        ...newQuestion,
+                        optionA: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   />
@@ -1199,7 +1224,10 @@ export default function DashboardPage() {
                     type="text"
                     value={newQuestion.optionB}
                     onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, optionB: e.target.value })
+                      setNewQuestion({
+                        ...newQuestion,
+                        optionB: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   />
@@ -1212,7 +1240,10 @@ export default function DashboardPage() {
                     type="text"
                     value={newQuestion.optionC}
                     onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, optionC: e.target.value })
+                      setNewQuestion({
+                        ...newQuestion,
+                        optionC: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   />
@@ -1225,7 +1256,10 @@ export default function DashboardPage() {
                     type="text"
                     value={newQuestion.optionD}
                     onChange={(e) =>
-                      setNewQuestion({ ...newQuestion, optionD: e.target.value })
+                      setNewQuestion({
+                        ...newQuestion,
+                        optionD: e.target.value,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                   />
@@ -1239,7 +1273,10 @@ export default function DashboardPage() {
                 <select
                   value={newQuestion.correctAnswer}
                   onChange={(e) =>
-                    setNewQuestion({ ...newQuestion, correctAnswer: e.target.value })
+                    setNewQuestion({
+                      ...newQuestion,
+                      correctAnswer: e.target.value,
+                    })
                   }
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-white bg-white dark:bg-gray-700"
                 >
@@ -1269,7 +1306,9 @@ export default function DashboardPage() {
                     className="px-3 py-2 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-md transition-colors duration-200"
                     title={showQuizPassword ? "Hide password" : "Show password"}
                   >
-                    <i className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}></i>
+                    <i
+                      className={`fas ${showQuizPassword ? "fa-eye-slash" : "fa-eye"}`}
+                    ></i>
                   </button>
                   <button
                     type="button"

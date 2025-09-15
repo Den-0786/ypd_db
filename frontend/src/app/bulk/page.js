@@ -9,6 +9,18 @@ import ModeToggle from "./components/ModeToggle";
 import ToastNotification from "./components/ToastNotification";
 
 export default function BulkRegistrationPage() {
+  // Redirect local users to local add member page
+  useEffect(() => {
+    try {
+      const userRaw = localStorage.getItem("user");
+      if (userRaw) {
+        const user = JSON.parse(userRaw);
+        if (user && user.congregationId && user.congregationId !== "district") {
+          window.location.href = "/local/bulk";
+        }
+      }
+    } catch (e) {}
+  }, []);
   const [selectedCongregation, setSelectedCongregation] = useState("");
   const [members, setMembers] = useState([]);
   const [currentSection, setCurrentSection] = useState("personal");

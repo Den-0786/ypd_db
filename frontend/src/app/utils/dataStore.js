@@ -279,8 +279,16 @@ class DataStore {
         this.updateAnalytics();
         return newMember;
       } else {
-        // API Error occurred
-        throw new Error(data.error || data.errors || "Failed to add member");
+        // API Error occurred - normalize error message
+        const errorMessage =
+          typeof data?.error === "string"
+            ? data.error
+            : typeof data?.errors === "string"
+            ? data.errors
+            : data?.errors
+            ? JSON.stringify(data.errors)
+            : "Failed to add member";
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error(
@@ -447,59 +455,137 @@ class DataStore {
   // Update member data
   async updateMember(memberId, updatedData) {
     try {
+      // Preserve existing values for fields not being edited
+      const existingMember = this.membersData.find((m) => m.id === memberId) || {};
+
+      const isExecutive =
+        updatedData.is_executive !== undefined
+          ? updatedData.is_executive
+          : existingMember.is_executive === true;
+
       // Prepare data for API
       const requestData = {
         first_name:
-          updatedData.first_name || updatedData.name?.split(" ")[0] || "",
-        last_name:
-          updatedData.last_name ||
-          updatedData.name?.split(" ").slice(1).join(" ") ||
+          updatedData.first_name ??
+          existingMember.first_name ??
+          updatedData.name?.split(" ")[0] ??
           "",
-        phone_number: updatedData.phone_number || updatedData.phone || "",
-        email: updatedData.email || "",
-        gender: updatedData.gender || "Male",
-        congregation: updatedData.congregation || "",
+        last_name:
+          updatedData.last_name ??
+          existingMember.last_name ??
+          updatedData.name?.split(" ").slice(1).join(" ") ??
+          "",
+        phone_number:
+          updatedData.phone_number ?? existingMember.phone_number ?? updatedData.phone ?? "",
+        email: updatedData.email ?? existingMember.email ?? "",
+        gender: updatedData.gender ?? existingMember.gender ?? "Male",
+        congregation: updatedData.congregation ?? existingMember.congregation ?? "",
         membership_status:
-          updatedData.membership_status || updatedData.status || "Active",
-        is_executive: updatedData.is_executive || false,
-        executive_position: updatedData.is_executive
-          ? updatedData.executive_position || updatedData.position || ""
+          updatedData.membership_status ?? existingMember.membership_status ?? updatedData.status ?? "Active",
+        is_executive: isExecutive,
+        executive_position: isExecutive
+          ? (updatedData.executive_position ?? updatedData.position ?? existingMember.executive_position ?? "")
           : "",
-        executive_level: updatedData.is_executive
-          ? updatedData.executive_level || "local"
+        executive_level: isExecutive
+          ? (updatedData.executive_level ?? existingMember.executive_level ?? "local")
           : "",
-        local_executive_position: updatedData.is_executive
-          ? updatedData.local_executive_position || ""
+        local_executive_position: isExecutive
+          ? (updatedData.local_executive_position ?? existingMember.local_executive_position ?? "")
           : "",
-        district_executive_position: updatedData.is_executive
-          ? updatedData.district_executive_position || ""
+        district_executive_position: isExecutive
+          ? (updatedData.district_executive_position ?? existingMember.district_executive_position ?? "")
           : "",
         date_of_birth:
-          updatedData.date_of_birth || updatedData.dateOfBirth || "1990-01-01",
+          updatedData.date_of_birth ?? existingMember.date_of_birth ?? updatedData.dateOfBirth ?? "1990-01-01",
         place_of_residence:
-          updatedData.place_of_residence || updatedData.residence || "Accra",
+          updatedData.place_of_residence ?? existingMember.place_of_residence ?? updatedData.residence ?? "Accra",
         residential_address:
-          updatedData.residential_address ||
-          updatedData.residentialAddress ||
+          updatedData.residential_address ??
+          existingMember.residential_address ??
+          updatedData.residentialAddress ??
           "123 Main Street, Accra",
-        hometown: updatedData.hometown || "Accra",
+        hometown: updatedData.hometown ?? existingMember.hometown ?? "Accra",
         relative_contact:
-          updatedData.relative_contact ||
-          updatedData.emergencyPhone ||
+          updatedData.relative_contact ??
+          existingMember.relative_contact ??
+          updatedData.emergencyPhone ??
           "Not provided",
         is_baptized:
           updatedData.is_baptized !== undefined
             ? updatedData.is_baptized
-            : updatedData.baptism === "Yes",
+            : updatedData.baptism !== undefined
+            ? updatedData.baptism === "Yes"
+            : existingMember.is_baptized ?? false,
         is_confirmed:
           updatedData.is_confirmed !== undefined
             ? updatedData.is_confirmed
-            : updatedData.confirmation === "Yes",
+            : updatedData.confirmation !== undefined
+            ? updatedData.confirmation === "Yes"
+            : existingMember.is_confirmed ?? false,
         is_communicant:
           updatedData.is_communicant !== undefined
             ? updatedData.is_communicant
-            : updatedData.communicant === "Yes",
+            : updatedData.communicant !== undefined
+            ? updatedData.communicant === "Yes"
+            : existingMember.is_communicant ?? false,
       };
+
+      // Enforce unique executive positions before API call
+      try {
+        const existingMembers = await this.getMembers();
+
+        // Check local position uniqueness within the same congregation
+        const normalizedRequestedLocalPosition = (requestData.executive_position || requestData.local_executive_position || "")
+          .toString()
+          .trim()
+          .toLowerCase();
+
+        const isLocalPositionTaken =
+          isExecutive &&
+          normalizedRequestedLocalPosition !== "" &&
+          !!existingMembers.find(
+            (m) =>
+              m.id !== memberId &&
+              (
+                (m.congregation === requestData.congregation || m.congregation?.name === requestData.congregation) &&
+                ((m.executive_position || m.local_executive_position || "")
+                  .toString()
+                  .trim()
+                  .toLowerCase() === normalizedRequestedLocalPosition)
+              )
+          );
+
+        if (isLocalPositionTaken) {
+          throw new Error(
+            `Position already assigned in ${requestData.congregation}. Choose another.`
+          );
+        }
+
+        // Check district position uniqueness across district
+        const normalizedRequestedDistrictPosition = (requestData.district_executive_position || "")
+          .toString()
+          .trim()
+          .toLowerCase();
+
+        const isDistrictPositionTaken =
+          isExecutive &&
+          normalizedRequestedDistrictPosition !== "" &&
+          !!existingMembers.find(
+            (m) =>
+              m.id !== memberId &&
+              (m.district_executive_position || "")
+                .toString()
+                .trim()
+                .toLowerCase() === normalizedRequestedDistrictPosition
+          );
+
+        if (isDistrictPositionTaken) {
+          throw new Error(`District position already assigned. Choose another.`);
+        }
+      } catch (precheckError) {
+        // Surface pre-validation errors to UI
+        throw precheckError;
+      }
 
       const response = await fetch(
         `http://localhost:8001/api/members/update/${memberId}/`,
@@ -532,26 +618,19 @@ class DataStore {
         }
         return this.membersData[memberIndex];
       } else {
-        throw new Error(data.error || data.errors || "Failed to update member");
+        const errorMessage =
+          typeof data?.error === "string"
+            ? data.error
+            : typeof data?.errors === "string"
+            ? data.errors
+            : data?.errors
+            ? JSON.stringify(data.errors)
+            : "Failed to update member";
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error(
-        "Error updating member via API, falling back to local storage:",
-        error
-      );
-
-      // Fallback to local storage if API fails
-      const memberIndex = this.membersData.findIndex((m) => m.id === memberId);
-      if (memberIndex !== -1) {
-        this.membersData[memberIndex] = {
-          ...this.membersData[memberIndex],
-          ...updatedData,
-          timestamp: new Date().toISOString(),
-        };
-        this.saveToStorage("membersData", this.membersData);
-        this.updateAnalytics();
-        return this.membersData[memberIndex];
-      }
+      console.error("Error updating member via API:", error);
+      // Do not update local storage on failure; surface the error to the UI
       throw error;
     }
   }
