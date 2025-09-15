@@ -440,10 +440,14 @@ export default function DashboardLayout({
         showError("New PINs do not match");
         return;
       }
-      if (!/^\d{4,6}$/.test(securityData.newPin)) {
-        showError("PIN must be 4-6 digits");
+      if (!/^\d{4}$/.test(securityData.newPin)) {
+        showError("PIN must be exactly 4 digits");
         return;
       }
+
+      // Get congregation info from localStorage
+      const congregationId = localStorage.getItem("congregationId");
+      const congregationName = localStorage.getItem("congregationName");
 
       const response = await fetch(
         "http://localhost:8001/api/settings/security/",
@@ -457,12 +461,15 @@ export default function DashboardLayout({
             newPin: securityData.newPin,
             confirmPin: securityData.confirmPin,
             requirePinForActions: securityData.requirePinForActions,
+            congregation_id: congregationId,
+            congregation_name: congregationName,
           }),
         }
       );
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
         if (data.success) {
           showSuccess("PIN updated successfully!");
           // Clear PIN fields
@@ -481,7 +488,6 @@ export default function DashboardLayout({
         showError("Failed to update PIN");
       }
     } catch (error) {
-      console.error("Error updating PIN:", error);
       showError("Failed to update PIN");
     } finally {
       setSecurityLoading(false);
@@ -799,7 +805,13 @@ export default function DashboardLayout({
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8001/api/notifications/");
+      const response = await fetch("http://localhost:8001/api/notifications/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -837,12 +849,18 @@ export default function DashboardLayout({
 
   // Fetch notifications on mount and set up polling
   useEffect(() => {
-    fetchNotifications();
+    // Add a small delay to ensure backend is ready
+    const timeoutId = setTimeout(() => {
+      fetchNotifications();
+    }, 1000);
 
     // Poll for new notifications every 30 seconds
     const interval = setInterval(fetchNotifications, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(interval);
+    };
   }, []);
 
   // Website content state management
@@ -858,7 +876,9 @@ export default function DashboardLayout({
   const fetchWebsiteData = async () => {
     try {
       setWebsiteLoading(true);
-      const response = await fetch("http://localhost:8001/api/settings/website/");
+      const response = await fetch(
+        "http://localhost:8001/api/settings/website/"
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.website) {
@@ -887,11 +907,14 @@ export default function DashboardLayout({
   const handleWebsiteUpdate = async () => {
     try {
       setWebsiteLoading(true);
-      const response = await fetch("http://localhost:8001/api/settings/website/", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(websiteData),
-      });
+      const response = await fetch(
+        "http://localhost:8001/api/settings/website/",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(websiteData),
+        }
+      );
       const data = await response.json().catch(() => ({}));
       if (response.ok && data.success) {
         showSuccess("Website content updated successfully!");
@@ -1455,234 +1478,242 @@ export default function DashboardLayout({
                             PIN authentication is used for quick actions and
                             sensitive operations.
                           </p>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Current PIN
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showCurrentPin ? "text" : "password"}
-                                maxLength="6"
-                                value={securityData.currentPin}
-                                onChange={(e) =>
-                                  setSecurityData((prev) => ({
-                                    ...prev,
-                                    currentPin: e.target.value,
-                                  }))
-                                }
-                                placeholder="Enter 4-6 digit PIN"
-                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                                disabled={securityLoading}
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setShowCurrentPin(!showCurrentPin)
-                                }
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                disabled={securityLoading}
-                              >
-                                {showCurrentPin ? (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                    />
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              New PIN
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showNewPin ? "text" : "password"}
-                                maxLength="6"
-                                value={securityData.newPin}
-                                onChange={(e) =>
-                                  setSecurityData((prev) => ({
-                                    ...prev,
-                                    newPin: e.target.value,
-                                  }))
-                                }
-                                placeholder="Enter 4-6 digit PIN"
-                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                                disabled={securityLoading}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => setShowNewPin(!showNewPin)}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                disabled={securityLoading}
-                              >
-                                {showNewPin ? (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                    />
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
-                              Confirm New PIN
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showConfirmPin ? "text" : "password"}
-                                maxLength="6"
-                                value={securityData.confirmPin}
-                                onChange={(e) =>
-                                  setSecurityData((prev) => ({
-                                    ...prev,
-                                    confirmPin: e.target.value,
-                                  }))
-                                }
-                                placeholder="Confirm 4-6 digit PIN"
-                                className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
-                                disabled={securityLoading}
-                              />
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setShowConfirmPin(!showConfirmPin)
-                                }
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                disabled={securityLoading}
-                              >
-                                {showConfirmPin ? (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                                    />
-                                  </svg>
-                                ) : (
-                                  <svg
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                    />
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                    />
-                                  </svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="pin-actions"
-                              checked={securityData.requirePinForActions}
-                              onChange={(e) =>
-                                setSecurityData((prev) => ({
-                                  ...prev,
-                                  requirePinForActions: e.target.checked,
-                                }))
-                              }
-                              className="rounded"
-                              disabled={securityLoading}
-                            />
-                            <label
-                              htmlFor="pin-actions"
-                              className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              Require PIN for sensitive actions
-                            </label>
-                          </div>
-                          <button
-                            onClick={handlePinUpdate}
-                            disabled={securityLoading}
-                            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handlePinUpdate();
+                            }}
                           >
-                            {securityLoading ? (
-                              <>
-                                <i className="fas fa-spinner fa-spin mr-2"></i>
-                                Updating...
-                              </>
-                            ) : (
-                              "Update PIN Settings"
-                            )}
-                          </button>
+                            <div>
+                              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                Current PIN
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showCurrentPin ? "text" : "password"}
+                                  maxLength="6"
+                                  value={securityData.currentPin}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      currentPin: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Enter 4-digit PIN"
+                                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  disabled={securityLoading}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowCurrentPin(!showCurrentPin)
+                                  }
+                                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  disabled={securityLoading}
+                                >
+                                  {showCurrentPin ? (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                New PIN
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showNewPin ? "text" : "password"}
+                                  maxLength="6"
+                                  value={securityData.newPin}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      newPin: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Enter 4-digit PIN"
+                                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  disabled={securityLoading}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowNewPin(!showNewPin)}
+                                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  disabled={securityLoading}
+                                >
+                                  {showNewPin ? (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                                Confirm New PIN
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showConfirmPin ? "text" : "password"}
+                                  maxLength="6"
+                                  value={securityData.confirmPin}
+                                  onChange={(e) =>
+                                    setSecurityData((prev) => ({
+                                      ...prev,
+                                      confirmPin: e.target.value,
+                                    }))
+                                  }
+                                  placeholder="Confirm 4-digit PIN"
+                                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
+                                  disabled={securityLoading}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setShowConfirmPin(!showConfirmPin)
+                                  }
+                                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                  disabled={securityLoading}
+                                >
+                                  {showConfirmPin ? (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                                      />
+                                    </svg>
+                                  ) : (
+                                    <svg
+                                      className="h-4 w-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="pin-actions"
+                                checked={securityData.requirePinForActions}
+                                onChange={(e) =>
+                                  setSecurityData((prev) => ({
+                                    ...prev,
+                                    requirePinForActions: e.target.checked,
+                                  }))
+                                }
+                                className="rounded"
+                                disabled={securityLoading}
+                              />
+                              <label
+                                htmlFor="pin-actions"
+                                className="text-xs sm:text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                Require PIN for sensitive actions
+                              </label>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={handlePinUpdate}
+                              disabled={securityLoading}
+                              className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {securityLoading ? (
+                                <>
+                                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                                  Updating...
+                                </>
+                              ) : (
+                                "Update PIN Settings"
+                              )}
+                            </button>
+                          </form>
                         </div>
                       )}
                     </div>
@@ -2474,48 +2505,83 @@ export default function DashboardLayout({
 
                       <div className="space-y-3 sm:space-y-4">
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">About</label>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                            About
+                          </label>
                           <textarea
                             rows={3}
                             value={websiteData.about}
-                            onChange={(e) => setWebsiteData((p) => ({ ...p, about: e.target.value }))}
+                            onChange={(e) =>
+                              setWebsiteData((p) => ({
+                                ...p,
+                                about: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Mission</label>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                            Mission
+                          </label>
                           <textarea
                             rows={2}
                             value={websiteData.mission}
-                            onChange={(e) => setWebsiteData((p) => ({ ...p, mission: e.target.value }))}
+                            onChange={(e) =>
+                              setWebsiteData((p) => ({
+                                ...p,
+                                mission: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Vision</label>
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                            Vision
+                          </label>
                           <textarea
                             rows={2}
                             value={websiteData.vision}
-                            onChange={(e) => setWebsiteData((p) => ({ ...p, vision: e.target.value }))}
+                            onChange={(e) =>
+                              setWebsiteData((p) => ({
+                                ...p,
+                                vision: e.target.value,
+                              }))
+                            }
                             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                           />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                           <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Contact Email</label>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Contact Email
+                            </label>
                             <input
                               type="email"
                               value={websiteData.contact_email}
-                              onChange={(e) => setWebsiteData((p) => ({ ...p, contact_email: e.target.value }))}
+                              onChange={(e) =>
+                                setWebsiteData((p) => ({
+                                  ...p,
+                                  contact_email: e.target.value,
+                                }))
+                              }
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">Contact Phone</label>
+                            <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">
+                              Contact Phone
+                            </label>
                             <input
                               type="tel"
                               value={websiteData.contact_phone}
-                              onChange={(e) => setWebsiteData((p) => ({ ...p, contact_phone: e.target.value }))}
+                              onChange={(e) =>
+                                setWebsiteData((p) => ({
+                                  ...p,
+                                  contact_phone: e.target.value,
+                                }))
+                              }
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                             />
                           </div>

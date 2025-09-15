@@ -1,42 +1,113 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-export default function PinModal({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  onPinSuccess, 
-  title, 
-  message, 
+export default function PinModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  onPinSuccess,
+  title,
+  message,
   description,
-  type = "edit" 
+  type = "edit",
 }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentPin, setCurrentPin] = useState("1234"); // Default fallback
+  const [debugInfo, setDebugInfo] = useState(null);
 
-  // Mock PIN - in a real app, this would be fetched from the server
-  const CORRECT_PIN = "1234";
+  // Fetch current PIN from server
+  useEffect(() => {
+    const fetchCurrentPin = async () => {
+      try {
+        // Get congregation info from localStorage
+        const congregationId = localStorage.getItem("congregationId");
+        const congregationName = localStorage.getItem("congregationName");
+
+        const url = `http://localhost:8001/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setDebugInfo(data);
+            setCurrentPin(data.pin);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching current PIN:", error);
+        // Keep default PIN
+      }
+    };
+
+    if (isOpen) {
+      fetchCurrentPin();
+    }
+  }, [isOpen]);
+
+  const checkCurrentPin = async () => {
+    try {
+      // Get congregation info from localStorage
+      const congregationId = localStorage.getItem("congregationId");
+      const congregationName = localStorage.getItem("congregationName");
+
+      const url = `http://localhost:8001/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setDebugInfo(data);
+      }
+    } catch (error) {
+      console.error("Error checking current PIN:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Get congregation info from localStorage
+      const user = localStorage.getItem("user");
+      const congregationId = localStorage.getItem("congregationId");
+      const congregationName = localStorage.getItem("congregationName");
 
-    if (pin === CORRECT_PIN) {
-      setIsLoading(false);
-      // Support both onConfirm and onPinSuccess for backward compatibility
-      if (onPinSuccess) {
-        onPinSuccess();
-      } else if (onConfirm) {
-        onConfirm();
+      // Validate PIN with server
+      const response = await fetch("http://localhost:8001/api/validate-pin/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pin: pin,
+          congregation_id: congregationId,
+          congregation_name: congregationName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsLoading(false);
+        // Clear PIN after successful validation
+        setPin("");
+        setError("");
+        // Support both onConfirm and onPinSuccess for backward compatibility
+        if (onPinSuccess) {
+          onPinSuccess();
+          // Don't close immediately - let the parent handle closing
+        } else if (onConfirm) {
+          onConfirm();
+          handleClose();
+        }
+      } else {
+        setError(data.error || "Incorrect PIN. Please try again.");
+        setIsLoading(false);
       }
-      handleClose();
-    } else {
-      setError("Incorrect PIN. Please try again.");
+    } catch (error) {
+      console.error("Error validating PIN:", error);
+      setError("Failed to validate PIN. Please try again.");
       setIsLoading(false);
     }
   };
@@ -61,35 +132,37 @@ export default function PinModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-              <i className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-lock"} text-red-500 mr-2`}></i>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+              <i
+                className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-lock"} text-red-500 mr-2 text-sm`}
+              ></i>
               {title}
             </h3>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
-              <i className="fas fa-times text-xl"></i>
+              <i className="fas fa-times text-lg"></i>
             </button>
           </div>
 
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
+          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
             {description || message}
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Enter PIN <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
                 value={pin}
                 onChange={handlePinChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:border-transparent ${
+                className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:border-transparent ${
                   error
                     ? "border-red-500 focus:ring-red-500"
                     : "border-gray-300 dark:border-gray-600 focus:ring-blue-500"
@@ -100,39 +173,35 @@ export default function PinModal({
                 autoFocus
               />
               {error && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
                   {error}
                 </p>
               )}
             </div>
 
-            <div className="flex space-x-3 pt-4">
+            <div className="flex space-x-2 pt-2">
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors ${
-                  type === "edit"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-red-600 hover:bg-red-700"
-                } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`flex-1 px-3 py-2 text-sm text-white rounded-md transition-colors bg-blue-600 hover:bg-blue-700 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isLoading || !pin}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                    <i className="fas fa-spinner fa-spin mr-1 text-xs"></i>
                     Verifying...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <i className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-check"} mr-2`}></i>
-                    {type === "edit" ? "Edit" : type === "delete" ? "Delete" : "Confirm"}
+                    <i className="fas fa-check mr-1 text-xs"></i>
+                    Confirm
                   </span>
                 )}
               </button>

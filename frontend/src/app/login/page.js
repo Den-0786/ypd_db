@@ -71,7 +71,9 @@ export default function LoginPage() {
     try {
       setTimeout(() => {
         setIsLoading(false);
-        alert("Password reset link sent to your email!");
+        setToastMessage("Password reset link sent to your email!");
+        setToastType("success");
+        setShowToast(true);
         setShowForgotPassword(false);
       }, 1500);
     } catch (err) {
@@ -114,7 +116,7 @@ export default function LoginPage() {
 
         // Redirect congregation users to local dashboard, district users to main dashboard
         setTimeout(() => {
-          if (authResult.congregation.id === "district") {
+          if (authResult.congregation.id === "1") {
             window.location.href = "/dashboard";
           } else {
             window.location.href = "/local/dashboard";

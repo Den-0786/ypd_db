@@ -38,7 +38,7 @@ class Congregation(models.Model):
     location = models.CharField(max_length=100, blank=True)
     background_color = models.CharField(max_length=20, default="#f0f0f0")
     pin = models.CharField(
-        max_length=6, default="123456", help_text="6-digit PIN for congregation access"
+        max_length=4, default="1234", help_text="4-digit PIN for congregation access"
     )
     user = models.OneToOneField(
         User,

@@ -12,13 +12,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import sys
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Add backend directory to Python path
+backend_path = BASE_DIR / "backend"
+if str(backend_path) not in sys.path:
+    sys.path.insert(0, str(backend_path))
 
 
 # Quick-start development settings - unsuitable for production
@@ -85,7 +91,7 @@ ROOT_URLCONF = "ypg_db.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": [BASE_DIR / "backend" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -149,9 +155,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = BASE_DIR / "backend" / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / "static",
+    BASE_DIR / "backend" / "static",
 ]
 
 # WhiteNoise static files storage

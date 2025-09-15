@@ -159,31 +159,31 @@ class NewCongregationForm(forms.ModelForm):
 
 class ChangePINForm(forms.Form):
     current_pin = forms.CharField(
-        max_length=6,
+        max_length=4,
         widget=forms.PasswordInput(attrs={"placeholder": "Current PIN"}),
-        help_text="Enter your current 6-digit PIN",
+        help_text="Enter your current 4-digit PIN",
     )
     new_pin = forms.CharField(
-        max_length=6,
+        max_length=4,
         widget=forms.PasswordInput(attrs={"placeholder": "New PIN"}),
-        help_text="Enter your new 6-digit PIN",
+        help_text="Enter your new 4-digit PIN",
     )
     confirm_pin = forms.CharField(
-        max_length=6,
+        max_length=4,
         widget=forms.PasswordInput(attrs={"placeholder": "Confirm new PIN"}),
-        help_text="Confirm your new 6-digit PIN",
+        help_text="Confirm your new 4-digit PIN",
     )
 
     def clean_current_pin(self):
         pin = self.cleaned_data.get("current_pin")
-        if not pin.isdigit() or len(pin) != 6:
-            raise ValidationError("PIN must be a 6-digit number.")
+        if not pin.isdigit() or len(pin) != 4:
+            raise ValidationError("PIN must be a 4-digit number.")
         return pin
 
     def clean_new_pin(self):
         pin = self.cleaned_data.get("new_pin")
-        if not pin.isdigit() or len(pin) != 6:
-            raise ValidationError("PIN must be a 6-digit number.")
+        if not pin.isdigit() or len(pin) != 4:
+            raise ValidationError("PIN must be a 4-digit number.")
         return pin
 
     def clean_confirm_pin(self):
@@ -213,14 +213,14 @@ class BulkGuilderForm(forms.Form):
 
 class PINForm(forms.Form):
     pin = forms.CharField(
-        max_length=6,
-        widget=forms.PasswordInput(attrs={"placeholder": "Enter 6-digit PIN"}),
+        max_length=4,
+        widget=forms.PasswordInput(attrs={"placeholder": "Enter 4-digit PIN"}),
     )
 
     def clean_pin(self):
         pin = self.cleaned_data.get("pin")
-        if not pin.isdigit() or len(pin) != 6:
-            raise ValidationError("PIN must be a 6-digit number.")
+        if not pin.isdigit() or len(pin) != 4:
+            raise ValidationError("PIN must be a 4-digit number.")
         return pin
 
 

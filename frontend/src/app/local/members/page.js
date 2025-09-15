@@ -66,45 +66,19 @@ export default function LocalMembersPage() {
 
   // Fetch data for congregation
   useEffect(() => {
-    console.log("Local members page useEffect triggered");
-    console.log("congregationName:", congregationName);
-    console.log("congregationId:", congregationId);
-
-    // Temporary alert to verify code execution
     if (typeof window !== "undefined") {
-      console.log("Window is available, code is executing");
-      console.log("Console.log test - this should appear in browser console");
-      // Test if console.log is working
-      try {
-        console.log("Console.log is working");
-      } catch (e) {
-        console.error("Console.log error:", e);
-      }
-    }
-
     const fetchMembers = async () => {
-      console.log("fetchMembers function called");
       if (congregationName && congregationId) {
         try {
           setLoading(true);
-          console.log(
-            "Fetching members for congregation:",
-            congregationName,
-            "ID:",
-            congregationId
-          );
           // Get members for this congregation
           const dataStore = getDataStore();
           const allMembers = await dataStore.getMembers({
             congregation: congregationId,
           });
 
-          console.log("Local members page - received allMembers:", allMembers);
-          console.log("Sample member data:", allMembers[0]);
           if (allMembers.length > 0) {
             console.log("Sample member fields:", {
-              id: allMembers[0].id,
-              name: allMembers[0].name,
               phone: allMembers[0].phone,
               phone_number: allMembers[0].phone_number,
               gender: allMembers[0].gender,
@@ -177,17 +151,12 @@ export default function LocalMembersPage() {
           setLoading(false);
         }
       } else {
-        console.log(
-          "Missing congregation data - Name:",
-          congregationName,
-          "ID:",
-          congregationId
-        );
         setLoading(false);
       }
     };
 
     fetchMembers();
+    }
   }, [congregationName, congregationId]);
 
   const [selectedMember, setSelectedMember] = useState(null);
@@ -198,21 +167,14 @@ export default function LocalMembersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const membersPerPage = 15;
 
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+  };
+
   const handleViewDetails = (member) => {
-    console.log("Viewing member data:", member);
-    console.log("Member fields:", {
-      id: member.id,
-      name: member.name,
-      phone: member.phone,
-      phone_number: member.phone_number,
-      email: member.email,
-      date_of_birth: member.date_of_birth,
-      hometown: member.hometown,
-      place_of_residence: member.place_of_residence,
-      residential_address: member.residential_address,
-      profession: member.profession,
-      relative_contact: member.relative_contact,
-    });
     setSelectedMember(member);
     setShowDetailsModal(true);
   };
@@ -465,14 +427,42 @@ export default function LocalMembersPage() {
           itemName:
             pendingAction.member.name ||
             `${pendingAction.member.first_name} ${pendingAction.member.last_name}`,
-          onConfirm: () => {
+          onConfirm: async () => {
+            try {
+              const response = await fetch(
+                `http://localhost:8001/api/members/delete/${pendingAction.member.id}/`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                  },
+                }
+              );
+
+              if (response.ok) {
+                const responseData = await response.json();
             const filteredMembers = members.filter(
               (m) => m.id !== pendingAction.member.id
             );
+                console.log(
+                  "Deleting member with ID:",
+                  pendingAction.member.id
+                );
+                console.log("Members before delete:", members.length);
+                console.log("Members after delete:", filteredMembers.length);
             setMembers(filteredMembers);
             showSuccess(
               `${pendingAction.member.name || `${pendingAction.member.first_name} ${pendingAction.member.last_name}`} deleted successfully!`
             );
+              } else {
+                const errorData = await response.json();
+                showError(errorData.error || "Failed to delete member");
+              }
+            } catch (error) {
+              console.error("Error deleting member:", error);
+              showError("Failed to delete member");
+            }
             setPendingAction(null);
           },
         });
@@ -483,7 +473,22 @@ export default function LocalMembersPage() {
         setDeleteConfirmConfig({
           type: "bulk",
           itemCount: pendingAction.memberIds.length,
-          onConfirm: () => {
+          onConfirm: async () => {
+            try {
+              const deletePromises = pendingAction.memberIds.map((id) =>
+                fetch(`http://localhost:8001/api/members/delete/${id}/`, {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                  },
+                })
+              );
+
+              const responses = await Promise.all(deletePromises);
+              const allSuccessful = responses.every((response) => response.ok);
+
+              if (allSuccessful) {
             const updatedMembers = members.filter(
               (member) => !pendingAction.memberIds.includes(member.id)
             );
@@ -492,6 +497,13 @@ export default function LocalMembersPage() {
             showSuccess(
               `${pendingAction.memberIds.length} member(s) deleted successfully!`
             );
+              } else {
+                showError("Failed to delete some members");
+              }
+            } catch (error) {
+              console.error("Error deleting members:", error);
+              showError("Failed to delete members");
+            }
             setPendingAction(null);
           },
         });

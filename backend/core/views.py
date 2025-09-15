@@ -2150,6 +2150,39 @@ def api_update_member(request, member_id):
         return JsonResponse({"success": False, "error": "Invalid JSON"}, status=400)
 
 
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def api_delete_member(request, member_id):
+    """API endpoint for deleting a member"""
+    try:
+        print(f"api_delete_member called for member_id: {member_id}")
+        
+        # Get the member to delete
+        try:
+            member = Guilder.objects.get(id=member_id)
+        except Guilder.DoesNotExist:
+            return JsonResponse({
+                "success": False, 
+                "error": f"Member with ID {member_id} not found"
+            }, status=404)
+        
+        # Note: No authentication/permission checks for API consistency
+        
+        # Delete the member
+        member.delete()
+        
+        return JsonResponse({
+            "success": True, 
+            "message": "Member deleted successfully!"
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            "success": False, 
+            "error": str(e)
+        }, status=500)
+
+
 # Advanced Analytics API Endpoints
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -2713,6 +2746,194 @@ def api_settings_profile(request):
 
 
 @csrf_exempt
+@require_http_methods(["GET"])
+def api_get_current_pin(request):
+    """API endpoint for getting current PIN (for debugging)"""
+    try:
+        # Get congregation info from query parameters (sent by frontend)
+        congregation_id = request.GET.get('congregation_id')
+        congregation_name = request.GET.get('congregation_name')
+        
+        print(f"Get current PIN request - Congregation ID: {congregation_id}, Congregation Name: {congregation_name}")
+        
+        # Try to get congregation - prioritize frontend-provided info
+        congregation = None
+        
+        # First, try to get congregation using ID from frontend
+        if congregation_id:
+            try:
+                # Handle special case where district ID might be "district" string
+                if congregation_id == "district":
+                    congregation = Congregation.objects.get(name="District Admin")
+                    print(f"Found district congregation by name: {congregation.name}")
+                else:
+                    congregation = Congregation.objects.get(id=congregation_id)
+                    print(f"Found congregation by ID from frontend: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print(f"Congregation with ID {congregation_id} not found")
+        
+        # If not found by ID, try by name from frontend
+        if not congregation and congregation_name:
+            try:
+                congregation = Congregation.objects.get(name=congregation_name)
+                print(f"Found congregation by name from frontend: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print(f"Congregation '{congregation_name}' not found in database")
+        
+        # If still not found, try authenticated user
+        if not congregation and request.user.is_authenticated:
+            try:
+                congregation = Congregation.objects.get(user=request.user)
+                print(f"Found authenticated congregation: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print("No congregation found for authenticated user")
+        
+        # If still not found, try session
+        if not congregation:
+            session_congregation_id = request.session.get('congregation_id')
+            if session_congregation_id:
+                try:
+                    congregation = Congregation.objects.get(id=session_congregation_id)
+                    print(f"Found congregation from session: {congregation.name}")
+                except Congregation.DoesNotExist:
+                    print("Congregation from session not found")
+        
+        # Last resort - use first available congregation
+        if not congregation:
+            try:
+                congregation = Congregation.objects.first()
+                print(f"Using first available congregation: {congregation.name if congregation else 'None'}")
+            except:
+                print("No congregations available")
+        
+        if congregation:
+            return JsonResponse({
+                'success': True,
+                'congregation': congregation.name,
+                'pin': congregation.pin
+            })
+        else:
+            session_pin = request.session.get('new_pin', '1234')
+            return JsonResponse({
+                'success': True,
+                'congregation': 'Session',
+                'pin': session_pin
+            })
+                
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_validate_pin(request):
+    """API endpoint for validating PIN"""
+    try:
+        data = json.loads(request.body)
+        pin = data.get('pin')
+        congregation_id = data.get('congregation_id')
+        congregation_name = data.get('congregation_name')
+        
+        print(f"PIN validation request - PIN: {pin}, Congregation ID: {congregation_id}, Congregation Name: {congregation_name}")
+        
+        if not pin:
+            return JsonResponse({
+                'success': False,
+                'error': 'PIN is required'
+            }, status=400)
+        
+        # Try to get congregation - prioritize frontend-provided info
+        congregation = None
+        
+        # First, try to get congregation using ID from frontend
+        if congregation_id:
+            try:
+                # Handle special case where district ID might be "district" string
+                if congregation_id == "district":
+                    congregation = Congregation.objects.get(name="District Admin")
+                    print(f"Found district congregation by name: {congregation.name}")
+                else:
+                    congregation = Congregation.objects.get(id=congregation_id)
+                    print(f"Found congregation by ID from frontend: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print(f"Congregation with ID {congregation_id} not found")
+        
+        # If not found by ID, try by name from frontend
+        if not congregation and congregation_name:
+            try:
+                congregation = Congregation.objects.get(name=congregation_name)
+                print(f"Found congregation by name from frontend: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print(f"Congregation '{congregation_name}' not found in database")
+        
+        # If still not found, try authenticated user
+        if not congregation and request.user.is_authenticated:
+            try:
+                congregation = Congregation.objects.get(user=request.user)
+                print(f"Found authenticated congregation: {congregation.name}")
+            except Congregation.DoesNotExist:
+                print("No congregation found for authenticated user")
+        
+        # If still not found, try session
+        if not congregation:
+            session_congregation_id = request.session.get('congregation_id')
+            if session_congregation_id:
+                try:
+                    congregation = Congregation.objects.get(id=session_congregation_id)
+                    print(f"Found congregation from session: {congregation.name}")
+                except Congregation.DoesNotExist:
+                    print("Congregation from session not found")
+        
+        # Last resort - use first available congregation
+        if not congregation:
+            try:
+                congregation = Congregation.objects.first()
+                print(f"Using first available congregation: {congregation.name if congregation else 'None'}")
+            except:
+                print("No congregations available")
+        
+        if congregation:
+            print(f"Validating PIN for congregation {congregation.name}: stored PIN = '{congregation.pin}', provided PIN = '{pin}'")
+            if congregation.pin == pin:
+                print("PIN validation successful")
+                return JsonResponse({
+                    'success': True,
+                    'message': 'PIN is valid'
+                })
+            else:
+                print("PIN validation failed - PINs don't match")
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid PIN'
+                }, status=401)
+        else:
+            # Fallback to session PIN or default
+            session_pin = request.session.get('new_pin', '1234')
+            print(f"Using session PIN: '{session_pin}', provided PIN: '{pin}'")
+            if session_pin == pin:
+                print("Session PIN validation successful")
+                return JsonResponse({
+                    'success': True,
+                    'message': 'PIN is valid'
+                })
+            else:
+                print("Session PIN validation failed")
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Invalid PIN'
+                }, status=401)
+                
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@csrf_exempt
 @require_http_methods(["GET", "PUT"])
 def api_settings_security(request):
     """API endpoint for security settings (password/PIN changes)"""
@@ -2815,10 +3036,12 @@ def api_settings_security(request):
             
             # Handle PIN change
             if data.get('newPin'):
-                if not re.match(r'^\d{4,6}$', data['newPin']):
+                print(f"PIN change request - Current PIN: {data.get('currentPin')}, New PIN: {data.get('newPin')}")
+                
+                if not re.match(r'^\d{4}$', data['newPin']):
                     return JsonResponse({
                         'success': False,
-                        'error': 'PIN must be 4-6 digits'
+                        'error': 'PIN must be exactly 4 digits'
                     }, status=400)
                 
                 if data['newPin'] != data.get('confirmPin', ''):
@@ -2834,14 +3057,79 @@ def api_settings_security(request):
                         'error': 'New PIN cannot be the same as current PIN. Please use a different PIN.'
                     }, status=400)
                 
-                # Store new PIN in session (in real implementation, this would update user model)
-                request.session['new_pin'] = data['newPin']
-                request.session['pin_changed_at'] = timezone.now().isoformat()
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'PIN updated successfully'
-                })
+                try:
+                    # Get congregation info from frontend data
+                    congregation_id = data.get('congregation_id')
+                    congregation_name = data.get('congregation_name')
+                    
+                    print(f"PIN change - Congregation ID: {congregation_id}, Congregation Name: {congregation_name}")
+                    
+                    # Try to get congregation - prioritize frontend-provided info
+                    congregation = None
+                    
+                    # First, try to get congregation using ID from frontend
+                    if congregation_id:
+                        try:
+                            # Handle special case where district ID might be "district" string
+                            if congregation_id == "district":
+                                congregation = Congregation.objects.get(name="District Admin")
+                                print(f"Found district congregation by name for PIN change: {congregation.name}")
+                            else:
+                                congregation = Congregation.objects.get(id=congregation_id)
+                                print(f"Found congregation by ID for PIN change: {congregation.name}")
+                        except Congregation.DoesNotExist:
+                            print(f"Congregation with ID {congregation_id} not found for PIN change")
+                    
+                    # If not found by ID, try by name from frontend
+                    if not congregation and congregation_name:
+                        try:
+                            congregation = Congregation.objects.get(name=congregation_name)
+                            print(f"Found congregation by name for PIN change: {congregation.name}")
+                        except Congregation.DoesNotExist:
+                            print(f"Congregation '{congregation_name}' not found for PIN change")
+                    
+                    # If still not found, try authenticated user
+                    if not congregation and request.user.is_authenticated:
+                        try:
+                            congregation = Congregation.objects.get(user=request.user)
+                            print(f"Found authenticated congregation for PIN change: {congregation.name}")
+                        except Congregation.DoesNotExist:
+                            print("No congregation found for authenticated user for PIN change")
+                    
+                    if congregation:
+                        # Verify current PIN before updating
+                        if data.get('currentPin') and congregation.pin != data['currentPin']:
+                            print(f"Current PIN verification failed - stored: '{congregation.pin}', provided: '{data['currentPin']}'")
+                            return JsonResponse({
+                                'success': False,
+                                'error': 'Current PIN is incorrect'
+                            }, status=400)
+                        
+                        # Update PIN in database
+                        print(f"Updating PIN for congregation {congregation.name} from {congregation.pin} to {data['newPin']}")
+                        congregation.pin = data['newPin']
+                        congregation.save()
+                        
+                        # Verify the PIN was saved
+                        congregation.refresh_from_db()
+                        print(f"PIN after save: {congregation.pin}")
+                        
+                        return JsonResponse({
+                            'success': True,
+                            'message': 'PIN updated successfully'
+                        })
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'No congregation found to update PIN'
+                        }, status=404)
+                        
+                except Exception as e:
+                    print(f"Error updating PIN: {str(e)}")
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Failed to update PIN: {str(e)}'
+                    }, status=500)
             
             return JsonResponse({
                 'success': True, 

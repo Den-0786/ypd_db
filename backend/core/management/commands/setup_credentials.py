@@ -32,7 +32,7 @@ class Command(BaseCommand):
 
             # Create district congregation
             district_congregation, created = Congregation.objects.get_or_create(
-                name='District Executive',
+                name='District Admin',
                 defaults={
                     'location': 'District Level',
                     'pin': '1234',
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 }
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"✓ District congregation created: PIN=1234"))
+                self.stdout.write(self.style.SUCCESS(f"✓ District Admin congregation created: PIN=1234"))
             else:
                 self.stdout.write(self.style.WARNING("District congregation already exists"))
 

@@ -226,12 +226,14 @@ class DataStore {
           (m.executive_position || m.local_executive_position || "")
             .toString()
             .trim()
-            .toLowerCase() === (member.executive_position || "")
-            .toString()
-            .trim()
-            .toLowerCase()
+            .toLowerCase() ===
+            (member.executive_position || "").toString().trim().toLowerCase()
       );
-      if (member.is_executive && member.executive_position && isLocalPositionTaken) {
+      if (
+        member.is_executive &&
+        member.executive_position &&
+        isLocalPositionTaken
+      ) {
         throw new Error(
           `Position already assigned in ${member.congregation}. Choose another.`
         );
@@ -242,7 +244,8 @@ class DataStore {
           (m.district_executive_position || "")
             .toString()
             .trim()
-            .toLowerCase() === (member.district_executive_position || "")
+            .toLowerCase() ===
+          (member.district_executive_position || "")
             .toString()
             .trim()
             .toLowerCase()
@@ -252,9 +255,7 @@ class DataStore {
         member.district_executive_position &&
         isDistrictPositionTaken
       ) {
-        throw new Error(
-          `District position already assigned. Choose another.`
-        );
+        throw new Error(`District position already assigned. Choose another.`);
       }
 
       const response = await fetch("http://localhost:8001/api/members/add/", {
@@ -284,10 +285,10 @@ class DataStore {
           typeof data?.error === "string"
             ? data.error
             : typeof data?.errors === "string"
-            ? data.errors
-            : data?.errors
-            ? JSON.stringify(data.errors)
-            : "Failed to add member";
+              ? data.errors
+              : data?.errors
+                ? JSON.stringify(data.errors)
+                : "Failed to add member";
         throw new Error(errorMessage);
       }
     } catch (error) {
@@ -354,10 +355,6 @@ class DataStore {
       }
 
       const data = await response.json();
-      console.log("API response data:", data);
-      if (data.members && data.members.length > 0) {
-        console.log("Sample member from API:", data.members[0]);
-      }
 
       if (data.members && Array.isArray(data.members)) {
         // Update local storage with API data
@@ -408,10 +405,6 @@ class DataStore {
 
         this.membersData = members;
         this.saveToStorage("membersData", this.membersData);
-        console.log("Mapped members data:", members);
-        if (members.length > 0) {
-          console.log("Sample mapped member:", members[0]);
-        }
         return this.membersData;
       } else {
         // Fallback to local storage
@@ -456,7 +449,8 @@ class DataStore {
   async updateMember(memberId, updatedData) {
     try {
       // Preserve existing values for fields not being edited
-      const existingMember = this.membersData.find((m) => m.id === memberId) || {};
+      const existingMember =
+        this.membersData.find((m) => m.id === memberId) || {};
 
       const isExecutive =
         updatedData.is_executive !== undefined
@@ -476,29 +470,51 @@ class DataStore {
           updatedData.name?.split(" ").slice(1).join(" ") ??
           "",
         phone_number:
-          updatedData.phone_number ?? existingMember.phone_number ?? updatedData.phone ?? "",
+          updatedData.phone_number ??
+          existingMember.phone_number ??
+          updatedData.phone ??
+          "",
         email: updatedData.email ?? existingMember.email ?? "",
         gender: updatedData.gender ?? existingMember.gender ?? "Male",
-        congregation: updatedData.congregation ?? existingMember.congregation ?? "",
+        congregation:
+          updatedData.congregation ?? existingMember.congregation ?? "",
         membership_status:
-          updatedData.membership_status ?? existingMember.membership_status ?? updatedData.status ?? "Active",
+          updatedData.membership_status ??
+          existingMember.membership_status ??
+          updatedData.status ??
+          "Active",
         is_executive: isExecutive,
         executive_position: isExecutive
-          ? (updatedData.executive_position ?? updatedData.position ?? existingMember.executive_position ?? "")
+          ? (updatedData.executive_position ??
+            updatedData.position ??
+            existingMember.executive_position ??
+            "")
           : "",
         executive_level: isExecutive
-          ? (updatedData.executive_level ?? existingMember.executive_level ?? "local")
+          ? (updatedData.executive_level ??
+            existingMember.executive_level ??
+            "local")
           : "",
         local_executive_position: isExecutive
-          ? (updatedData.local_executive_position ?? existingMember.local_executive_position ?? "")
+          ? (updatedData.local_executive_position ??
+            existingMember.local_executive_position ??
+            "")
           : "",
         district_executive_position: isExecutive
-          ? (updatedData.district_executive_position ?? existingMember.district_executive_position ?? "")
+          ? (updatedData.district_executive_position ??
+            existingMember.district_executive_position ??
+            "")
           : "",
         date_of_birth:
-          updatedData.date_of_birth ?? existingMember.date_of_birth ?? updatedData.dateOfBirth ?? "1990-01-01",
+          updatedData.date_of_birth ??
+          existingMember.date_of_birth ??
+          updatedData.dateOfBirth ??
+          "1990-01-01",
         place_of_residence:
-          updatedData.place_of_residence ?? existingMember.place_of_residence ?? updatedData.residence ?? "Accra",
+          updatedData.place_of_residence ??
+          existingMember.place_of_residence ??
+          updatedData.residence ??
+          "Accra",
         residential_address:
           updatedData.residential_address ??
           existingMember.residential_address ??
@@ -514,20 +530,20 @@ class DataStore {
           updatedData.is_baptized !== undefined
             ? updatedData.is_baptized
             : updatedData.baptism !== undefined
-            ? updatedData.baptism === "Yes"
-            : existingMember.is_baptized ?? false,
+              ? updatedData.baptism === "Yes"
+              : (existingMember.is_baptized ?? false),
         is_confirmed:
           updatedData.is_confirmed !== undefined
             ? updatedData.is_confirmed
             : updatedData.confirmation !== undefined
-            ? updatedData.confirmation === "Yes"
-            : existingMember.is_confirmed ?? false,
+              ? updatedData.confirmation === "Yes"
+              : (existingMember.is_confirmed ?? false),
         is_communicant:
           updatedData.is_communicant !== undefined
             ? updatedData.is_communicant
             : updatedData.communicant !== undefined
-            ? updatedData.communicant === "Yes"
-            : existingMember.is_communicant ?? false,
+              ? updatedData.communicant === "Yes"
+              : (existingMember.is_communicant ?? false),
       };
 
       // Enforce unique executive positions before API call
@@ -535,7 +551,11 @@ class DataStore {
         const existingMembers = await this.getMembers();
 
         // Check local position uniqueness within the same congregation
-        const normalizedRequestedLocalPosition = (requestData.executive_position || requestData.local_executive_position || "")
+        const normalizedRequestedLocalPosition = (
+          requestData.executive_position ||
+          requestData.local_executive_position ||
+          ""
+        )
           .toString()
           .trim()
           .toLowerCase();
@@ -546,13 +566,12 @@ class DataStore {
           !!existingMembers.find(
             (m) =>
               m.id !== memberId &&
-              (
-                (m.congregation === requestData.congregation || m.congregation?.name === requestData.congregation) &&
-                ((m.executive_position || m.local_executive_position || "")
-                  .toString()
-                  .trim()
-                  .toLowerCase() === normalizedRequestedLocalPosition)
-              )
+              (m.congregation === requestData.congregation ||
+                m.congregation?.name === requestData.congregation) &&
+              (m.executive_position || m.local_executive_position || "")
+                .toString()
+                .trim()
+                .toLowerCase() === normalizedRequestedLocalPosition
           );
 
         if (isLocalPositionTaken) {
@@ -562,7 +581,9 @@ class DataStore {
         }
 
         // Check district position uniqueness across district
-        const normalizedRequestedDistrictPosition = (requestData.district_executive_position || "")
+        const normalizedRequestedDistrictPosition = (
+          requestData.district_executive_position || ""
+        )
           .toString()
           .trim()
           .toLowerCase();
@@ -580,7 +601,9 @@ class DataStore {
           );
 
         if (isDistrictPositionTaken) {
-          throw new Error(`District position already assigned. Choose another.`);
+          throw new Error(
+            `District position already assigned. Choose another.`
+          );
         }
       } catch (precheckError) {
         // Surface pre-validation errors to UI
@@ -622,10 +645,10 @@ class DataStore {
           typeof data?.error === "string"
             ? data.error
             : typeof data?.errors === "string"
-            ? data.errors
-            : data?.errors
-            ? JSON.stringify(data.errors)
-            : "Failed to update member";
+              ? data.errors
+              : data?.errors
+                ? JSON.stringify(data.errors)
+                : "Failed to update member";
         throw new Error(errorMessage);
       }
     } catch (error) {

@@ -483,11 +483,11 @@ export default function LocalDashboardLayout({
     try {
       setProfileLoading(true);
       const congregationName = localStorage.getItem("congregationName");
-      
+
       // Try to get congregation-specific settings from localStorage first
       const localKey = `profile_${congregationName}`;
       const localData = localStorage.getItem(localKey);
-      
+
       if (localData) {
         const data = JSON.parse(localData);
         setProfileData({
@@ -501,7 +501,7 @@ export default function LocalDashboardLayout({
         setProfileLoading(false);
         return;
       }
-      
+
       // No local data found, use default values for this congregation
       const defaultProfile = {
         username: "",
@@ -525,11 +525,11 @@ export default function LocalDashboardLayout({
     try {
       setProfileSaving(true);
       const congregationName = localStorage.getItem("congregationName");
-      
+
       // Save to congregation-specific localStorage
       const localKey = `profile_${congregationName}`;
       localStorage.setItem(localKey, JSON.stringify(updatedData));
-      
+
       // Update local state
       setProfileData(updatedData);
       showSuccess("Profile updated successfully!");
@@ -557,11 +557,11 @@ export default function LocalDashboardLayout({
     try {
       setSecurityLoading(true);
       const congregationName = localStorage.getItem("congregationName");
-      
+
       // Try to get congregation-specific settings from localStorage first
       const localKey = `security_${congregationName}`;
       const localData = localStorage.getItem(localKey);
-      
+
       if (localData) {
         const data = JSON.parse(localData);
         setSecurityData((prev) => ({
@@ -573,7 +573,7 @@ export default function LocalDashboardLayout({
         setSecurityLoading(false);
         return;
       }
-      
+
       // No local data found, use default values for this congregation
       const defaultSecurity = {
         username: "",
@@ -614,16 +614,16 @@ export default function LocalDashboardLayout({
 
       setSecuritySaving(true);
       const congregationName = localStorage.getItem("congregationName");
-      
+
       // Save to congregation-specific localStorage
       const localKey = `security_${congregationName}`;
-      const currentData = JSON.parse(localStorage.getItem(localKey) || '{}');
+      const currentData = JSON.parse(localStorage.getItem(localKey) || "{}");
       const updatedData = {
         ...currentData,
         username: securityData.username,
       };
       localStorage.setItem(localKey, JSON.stringify(updatedData));
-      
+
       showSuccess("Username updated successfully!");
       // Update profile data to reflect the change
       setProfileData((prev) => ({
@@ -671,10 +671,10 @@ export default function LocalDashboardLayout({
 
       setSecuritySaving(true);
       const congregationName = localStorage.getItem("congregationName");
-      
+
       // Update local storage with new password settings
       const localKey = `security_${congregationName}`;
-      const currentData = JSON.parse(localStorage.getItem(localKey) || '{}');
+      const currentData = JSON.parse(localStorage.getItem(localKey) || "{}");
       const updatedData = {
         ...currentData,
         twoFactorAuth: securityData.twoFactorAuth,
@@ -682,7 +682,7 @@ export default function LocalDashboardLayout({
         // For now, we'll just update the 2FA setting
       };
       localStorage.setItem(localKey, JSON.stringify(updatedData));
-      
+
       showSuccess("Password settings updated successfully!");
       // Clear sensitive fields
       setSecurityData((prev) => ({
@@ -712,8 +712,8 @@ export default function LocalDashboardLayout({
         return;
       }
 
-      if (!/^\d{4,6}$/.test(securityData.newPin)) {
-        showError("PIN must be 4-6 digits");
+      if (!/^\d{4}$/.test(securityData.newPin)) {
+        showError("PIN must be exactly 4 digits");
         return;
       }
 
@@ -731,27 +731,48 @@ export default function LocalDashboardLayout({
       }
 
       setSecuritySaving(true);
+
+      // Get congregation info from localStorage
+      const congregationId = localStorage.getItem("congregationId");
       const congregationName = localStorage.getItem("congregationName");
-      
-      // Update local storage with new PIN settings
-      const localKey = `security_${congregationName}`;
-      const currentData = JSON.parse(localStorage.getItem(localKey) || '{}');
-      const updatedData = {
-        ...currentData,
-        requirePinForActions: securityData.requirePinForActions,
-        // Note: In a real app, PINs should be hashed before storage
-        // For now, we'll just update the PIN requirement setting
-      };
-      localStorage.setItem(localKey, JSON.stringify(updatedData));
-      
-      showSuccess("PIN settings updated successfully!");
-      // Clear sensitive fields
-      setSecurityData((prev) => ({
-        ...prev,
-        currentPin: "",
-        newPin: "",
-        confirmPin: "",
-      }));
+
+      // Make API call to update PIN in database
+      const response = await fetch(
+        "http://localhost:8001/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            currentPin: securityData.currentPin,
+            newPin: securityData.newPin,
+            confirmPin: securityData.confirmPin,
+            requirePinForActions: securityData.requirePinForActions,
+            congregation_id: congregationId,
+            congregation_name: congregationName,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.success) {
+          showSuccess("PIN updated successfully!");
+          // Clear sensitive fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPin: "",
+            newPin: "",
+            confirmPin: "",
+          }));
+        } else {
+          showError(data.error || "Failed to update PIN");
+        }
+      } else {
+        showError(data.error || "Failed to update PIN");
+      }
     } catch (error) {
       console.error("Error updating PIN:", error);
       showError("Failed to update PIN");
@@ -986,7 +1007,13 @@ export default function LocalDashboardLayout({
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8001/api/notifications/");
+      const response = await fetch("http://localhost:8001/api/notifications/", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -1014,7 +1041,6 @@ export default function LocalDashboardLayout({
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
-
       setNotifications([]);
     } finally {
       setNotificationsLoading(false);
@@ -1022,11 +1048,17 @@ export default function LocalDashboardLayout({
   };
 
   useEffect(() => {
-    fetchNotifications();
+    // Add a small delay to ensure backend is ready
+    const timeoutId = setTimeout(() => {
+      fetchNotifications();
+    }, 1000);
 
     const interval = setInterval(fetchNotifications, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -1531,7 +1563,7 @@ export default function LocalDashboardLayout({
                                         currentPin: e.target.value,
                                       }))
                                     }
-                                    placeholder="Enter 4-6 digit PIN"
+                                    placeholder="Enter 4-digit PIN"
                                     className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                   />
                                   <button
@@ -1562,7 +1594,7 @@ export default function LocalDashboardLayout({
                                         newPin: e.target.value,
                                       }))
                                     }
-                                    placeholder="Enter 4-6 digit PIN"
+                                    placeholder="Enter 4-digit PIN"
                                     className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                   />
                                   <button
@@ -1591,7 +1623,7 @@ export default function LocalDashboardLayout({
                                         confirmPin: e.target.value,
                                       }))
                                     }
-                                    placeholder="Confirm 4-6 digit PIN"
+                                    placeholder="Confirm 4-digit PIN"
                                     className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                                   />
                                   <button
@@ -1869,8 +1901,8 @@ export default function LocalDashboardLayout({
                             {dataManagementLoading
                               ? "Clearing..."
                               : confirmClear
-                              ? "Click again to confirm"
-                              : "Clear All Data"}
+                                ? "Click again to confirm"
+                                : "Clear All Data"}
                           </button>
                         </div>
                       </div>

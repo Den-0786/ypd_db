@@ -43,7 +43,7 @@ export default function AttendancePage() {
       const userRaw = localStorage.getItem("user");
       if (userRaw) {
         const user = JSON.parse(userRaw);
-        if (user && user.congregationId && user.congregationId !== "district") {
+        if (user && user.congregationId && user.congregationId !== "1") {
           window.location.href = "/local/attendance";
         }
       }

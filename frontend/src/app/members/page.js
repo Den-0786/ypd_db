@@ -10,13 +10,12 @@ import ToastContainer from "../components/ToastContainer";
 import getDataStore from "../utils/dataStore";
 
 export default function MembersPage() {
-  // Redirect local users to local members page
   useEffect(() => {
     try {
       const userRaw = localStorage.getItem("user");
       if (userRaw) {
         const user = JSON.parse(userRaw);
-        if (user && user.congregationId && user.congregationId !== "district") {
+        if (user && user.congregationId && user.congregationId !== "1") {
           window.location.href = "/local/members";
         }
       }
@@ -42,16 +41,12 @@ export default function MembersPage() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  // Statistics
   const [totalMembers, setTotalMembers] = useState(0);
   const [totalMale, setTotalMale] = useState(0);
   const [totalFemale, setTotalFemale] = useState(0);
   const [totalCongregations, setTotalCongregations] = useState(0);
 
-  // Executive toggle state
-  const [executiveView, setExecutiveView] = useState("district"); // "district" or "local"
-
-  // Congregation data
+  const [executiveView, setExecutiveView] = useState("district");
   const [congregationName, setCongregationName] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("congregationName");
@@ -63,7 +58,6 @@ export default function MembersPage() {
     fetchMembers();
   }, []);
 
-  // Get congregation name from localStorage
   useEffect(() => {
     const storedCongregationName = localStorage.getItem("congregationName");
     if (storedCongregationName) {
@@ -71,24 +65,14 @@ export default function MembersPage() {
     }
   }, []);
 
-  // Removed forced data clearing to preserve congregation names and settings
-
   const fetchMembers = async () => {
     try {
       setLoading(true);
-
-      // Get congregation name from localStorage
       const storedCongregationName = localStorage.getItem("congregationName");
-
-      // Get members from data store (no mock data)
       const allMembers = await getDataStore().getMembers();
-
-      // Remove any leftover mock entry (John Doe)
       const cleanedMembers = allMembers.filter(
         (m) => (m.name || "").toLowerCase() !== "john doe"
       );
-
-      // Filter members based on logged-in congregation (except for District Admin)
       let filteredMembers = cleanedMembers;
       if (
         storedCongregationName &&
@@ -97,11 +81,10 @@ export default function MembersPage() {
         filteredMembers = cleanedMembers.filter(
           (member) =>
             member.congregation === storedCongregationName ||
-            member.congregation === "District Office" // Always show district executives
+            member.congregation === "District Office"
         );
       }
 
-      // Separate executives and regular members
       const executivesList = filteredMembers.filter(
         (member) => member.is_executive
       );
@@ -112,14 +95,12 @@ export default function MembersPage() {
       setExecutives(executivesList);
       setMembers(regularMembers);
 
-      // Calculate statistics
       setTotalMembers(filteredMembers.length);
       setTotalMale(filteredMembers.filter((m) => m.gender === "Male").length);
       setTotalFemale(
         filteredMembers.filter((m) => m.gender === "Female").length
       );
 
-      // Count unique congregations (for local congregations, this will be 1 or 2)
       const congregations = new Set(filteredMembers.map((m) => m.congregation));
       setTotalCongregations(congregations.size);
 
@@ -130,7 +111,6 @@ export default function MembersPage() {
     }
   };
 
-  // Filter executives based on current view
   const getFilteredExecutives = () => {
     if (executiveView === "district") {
       const districtExecs = executives.filter(
@@ -151,7 +131,6 @@ export default function MembersPage() {
     }
   };
 
-  // Group local executives by congregation
   const getGroupedLocalExecutives = () => {
     const localExecutives = executives.filter(
       (exec) =>
@@ -170,13 +149,10 @@ export default function MembersPage() {
 
     return grouped;
   };
-
-  // Handle executive view toggle
   const handleExecutiveViewToggle = () => {
     setExecutiveView(executiveView === "district" ? "local" : "district");
   };
 
-  // Handle member selection
   const handleSelectMember = (memberId) => {
     setSelectedMembers((prev) =>
       prev.includes(memberId)
@@ -185,7 +161,6 @@ export default function MembersPage() {
     );
   };
 
-  // Handle select all members
   const handleSelectAll = () => {
     const currentExecutives = getFilteredExecutives();
     if (selectedMembers.length === currentExecutives.length) {
@@ -194,17 +169,13 @@ export default function MembersPage() {
       setSelectedMembers(currentExecutives.map((member) => member.id));
     }
   };
-
-  // Handle view details
   const handleViewDetails = (member) => {
     setSelectedMember(member);
     setShowViewModal(true);
   };
 
-  // Handle edit member
   const handleEditMember = (member) => {
     setSelectedMember(member);
-    // Initialize edit form with member data
     setEditForm({
       first_name: member.first_name || member.name?.split(" ")[0] || "",
       last_name:
@@ -238,7 +209,6 @@ export default function MembersPage() {
     setShowPinModal(true);
   };
 
-  // Handle delete member
   const handleDeleteMember = (member) => {
     setSelectedMember(member);
     setPendingAction("delete");
@@ -249,8 +219,6 @@ export default function MembersPage() {
     });
     setShowPinModal(true);
   };
-
-  // Handle PIN success
   const handlePinSuccess = () => {
     if (pendingAction === "edit") {
       setShowEditModal(true);
@@ -268,14 +236,12 @@ export default function MembersPage() {
         onConfirm: async () => {
           try {
             const ds = getDataStore();
-            // Optimistic UI update
             setMembers((prev) =>
               prev.filter((m) => m.id !== selectedMember.id)
             );
             setExecutives((prev) =>
               prev.filter((m) => m.id !== selectedMember.id)
             );
-            // Update stats optimistically
             const removed = selectedMember;
             setTotalMembers((n) => Math.max(0, n - 1));
             if ((removed.gender || "").toLowerCase() === "male") {
@@ -284,7 +250,6 @@ export default function MembersPage() {
               setTotalFemale((n) => Math.max(0, n - 1));
             }
 
-            // Attempt backend/local delete
             await ds.deleteMember(selectedMember.id);
 
             if (typeof window !== "undefined" && window.showToast) {
@@ -304,38 +269,25 @@ export default function MembersPage() {
     }
   };
 
-  // Handle close PIN modal
   const handleClosePinModal = () => {
     setShowPinModal(false);
     setPendingAction(null);
     setSelectedMember(null);
   };
-
-  // Handle close view modal
   const handleCloseViewModal = () => {
     setShowViewModal(false);
     setSelectedMember(null);
   };
-
-  // Handle close edit modal
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     setSelectedMember(null);
     setEditForm({});
   };
-
-  // Handle save member edit
   const handleSaveMemberEdit = async () => {
     try {
       setLoading(true);
-
-      // Get dataStore instance
       const dataStore = getDataStore();
-
-      // Update member in dataStore (which will also update backend)
       await dataStore.updateMember(selectedMember.id, editForm);
-
-      // Update local state
       const updatedMembers = members.map((member) =>
         member.id === selectedMember.id
           ? {
@@ -374,8 +326,6 @@ export default function MembersPage() {
       setShowEditModal(false);
       setSelectedMember(null);
       setEditForm({});
-
-      // Show success message
       if (typeof window !== "undefined" && window.showToast) {
         window.showToast("Member updated successfully!", "success");
       }
@@ -388,8 +338,6 @@ export default function MembersPage() {
       setLoading(false);
     }
   };
-
-  // Get initials for avatar
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -398,7 +346,6 @@ export default function MembersPage() {
       .toUpperCase();
   };
 
-  // Get color for avatar
   const getInitialsColor = (name) => {
     const colors = [
       "bg-blue-500",
@@ -429,7 +376,6 @@ export default function MembersPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse"></div>
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
-
           <div className="relative z-10 p-6 lg:p-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
               <div className="mb-4 lg:mb-0">
@@ -1022,11 +968,12 @@ export default function MembersPage() {
       {/* Edit Modal */}
       {showEditModal && selectedMember && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Edit Member Details
+                  <i className="fas fa-edit text-blue-500 mr-2"></i>
+                  Edit Member - {selectedMember.name}
                 </h3>
                 <button
                   onClick={handleCloseEditModal}
@@ -1035,19 +982,17 @@ export default function MembersPage() {
                   <i className="fas fa-times text-xl"></i>
                 </button>
               </div>
-            </div>
-            <div className="p-6">
               <div className="space-y-6">
-                {/* Section A: Personal Information */}
-                <div className="space-y-4 neumorphic-light dark:neumorphic-dark p-6">
-                  <h4 className="text-md font-semibold text-light-text dark:text-dark-text border-b border-light-border dark:border-dark-border pb-2">
-                    Section A: Personal Information
+                {/* Personal Information Section */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <i className="fas fa-user text-blue-500 mr-2"></i>
+                    Personal Information
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        First Name{" "}
-                        <span className="text-red-500 font-bold">*</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        First Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -1058,14 +1003,14 @@ export default function MembersPage() {
                             first_name: e.target.value,
                           })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="First Name"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Last Name{" "}
-                        <span className="text-red-500 font-bold">*</span>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Last Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -1076,14 +1021,14 @@ export default function MembersPage() {
                             last_name: e.target.value,
                           })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Last Name"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Phone Number{" "}
-                        <span className="text-red-500 font-bold">*</span>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Phone Number <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="tel"
@@ -1094,330 +1039,540 @@ export default function MembersPage() {
                             phone_number: e.target.value,
                           })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0XXXXXXXXX"
+                        required
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Gender <span className="text-red-500 font-bold">*</span>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Gender <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={editForm.gender || ""}
                         onChange={(e) =>
                           setEditForm({ ...editForm, gender: e.target.value })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       >
-                        <option
-                          value=""
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Select Gender
-                        </option>
-                        <option
-                          value="Male"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Male
-                        </option>
-                        <option
-                          value="Female"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Female
-                        </option>
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
                       </select>
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Email
                       </label>
                       <input
                         type="email"
-                        defaultValue={selectedMember.email || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Email"
+                        value={editForm.email || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="email@example.com"
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Date of Birth
                       </label>
                       <input
                         type="date"
-                        defaultValue={selectedMember.date_of_birth || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Occupation
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={selectedMember.occupation || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Occupation"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Address
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={selectedMember.address || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Address"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Emergency Contact Name
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={
-                          selectedMember.emergency_contact_name || ""
+                        value={editForm.date_of_birth || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            date_of_birth: e.target.value,
+                          })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Emergency Contact Name"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Emergency Contact Phone
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Place of Residence{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.place_of_residence || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            place_of_residence: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="City/Town"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Residential Address
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.residential_address || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            residential_address: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Residential address"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Profession
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.profession || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            profession: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Student, Teacher, etc."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Hometown <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.hometown || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            hometown: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Hometown"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Relative Contact <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="tel"
-                        defaultValue={
-                          selectedMember.emergency_contact_phone || ""
+                        value={editForm.relative_contact || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            relative_contact: e.target.value,
+                          })
                         }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="0XXXXXXXXX"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Emergency Contact Relationship
-                      </label>
-                      <input
-                        type="text"
-                        defaultValue={
-                          selectedMember.emergency_contact_relationship || ""
-                        }
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Relationship"
+                        required
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Section B: Church Information */}
-                <div className="space-y-4 neumorphic-light dark:neumorphic-dark p-6">
-                  <h4 className="text-md font-semibold text-light-text dark:text-dark-text border-b border-light-border dark:border-dark-border pb-2">
-                    Section B: Church Information
+                {/* Church Information Section */}
+                <div className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl p-6">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                    <i className="fas fa-church text-indigo-500 mr-2"></i>
+                    Church Information
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Congregation{" "}
-                        <span className="text-red-500 font-bold">*</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Congregation <span className="text-red-500">*</span>
                       </label>
                       <select
-                        defaultValue={selectedMember.congregation || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                        value={editForm.congregation || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            congregation: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         required
                       >
-                        <option
-                          value=""
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Select Congregation
-                        </option>
-                        <option
-                          value="Emmanuel Congregation Ahinsan"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Emmanuel Congregation Ahinsan
-                        </option>
-                        <option
-                          value="Peniel Congregation Esreso No1"
-                          className="text-light-text dark:text-dark-text"
-                        >
+                        <option value="">Select Congregation</option>
+                        <option value="Peniel Congregation Esreso No1">
                           Peniel Congregation Esreso No1
                         </option>
-                        <option
-                          value="Mizpah Congregation Odagya No1"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Mizpah Congregation Odagya No1
-                        </option>
-                        <option
-                          value="Christ Congregation Ahinsan Estate"
-                          className="text-light-text dark:text-dark-text"
-                        >
+                        <option value="Christ Congregation Ahinsan Estate">
                           Christ Congregation Ahinsan Estate
                         </option>
-                        <option
-                          value="Ebenezer Congregation Dompoase Aprabo"
-                          className="text-light-text dark:text-dark-text"
-                        >
+                        <option value="Ebenezer Congregation Dompoase Aprabo">
                           Ebenezer Congregation Dompoase Aprabo
                         </option>
-                        <option
-                          value="Favour Congregation Esreso No2"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Favour Congregation Esreso No2
-                        </option>
-                        <option
-                          value="Liberty Congregation Esreso High Tension"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Liberty Congregation Esreso High Tension
-                        </option>
-                        <option
-                          value="Odagya No2"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Odagya No2
-                        </option>
-                        <option
-                          value="NOM"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          NOM
-                        </option>
-                        <option
-                          value="Kokobriko"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Kokobriko
+                        <option value="Mizpah Congregation Odagya No1">
+                          Mizpah Congregation Odagya No1
                         </option>
                       </select>
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Position
                       </label>
                       <input
                         type="text"
-                        defaultValue={selectedMember.position || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                        placeholder="Position"
+                        value={editForm.position || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            position: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Member, Elder, etc."
                       />
                     </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Communicant
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Membership Status
                       </label>
                       <select
-                        defaultValue={selectedMember.communicant || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                        value={editForm.membership_status || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            membership_status: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
-                        <option
-                          value=""
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Select Communicant Status
-                        </option>
-                        <option
-                          value="Yes"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          Yes
-                        </option>
-                        <option
-                          value="No"
-                          className="text-light-text dark:text-dark-text"
-                        >
-                          No
-                        </option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
                       </select>
                     </div>
-                    {selectedMember.is_executive && (
-                      <>
-                        <div className="sm:col-span-1">
-                          <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                            Executive Level
-                          </label>
-                          <select
-                            defaultValue={selectedMember.executive_level || ""}
-                            className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                          >
-                            <option
-                              value=""
-                              className="text-light-text dark:text-dark-text"
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Confirmation <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={editForm.confirmation || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            confirmation: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Confirmation Status</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Baptism <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={editForm.baptism || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            baptism: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Baptism Status</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Communicant <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={editForm.communicant || ""}
+                        onChange={(e) =>
+                          setEditForm({
+                            ...editForm,
+                            communicant: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select Communicant Status</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Executive Information */}
+                  <div className="mt-6">
+                    <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-white dark:bg-gray-700">
+                      <div className="flex items-center mb-4">
+                        <input
+                          type="checkbox"
+                          id="is_executive"
+                          checked={editForm.is_executive || false}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              is_executive: e.target.checked,
+                            })
+                          }
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <label
+                          htmlFor="is_executive"
+                          className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        >
+                          Is Executive Member
+                        </label>
+                      </div>
+
+                      {editForm.is_executive && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Executive Level
+                            </label>
+                            <select
+                              value={editForm.executive_level || ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  executive_level: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
-                              Select Executive Level
-                            </option>
-                            <option
-                              value="District"
-                              className="text-light-text dark:text-dark-text"
-                            >
-                              District
-                            </option>
-                            <option
-                              value="Local"
-                              className="text-light-text dark:text-dark-text"
-                            >
-                              Local
-                            </option>
-                          </select>
+                              <option value="">Select Level</option>
+                              <option value="local">Local</option>
+                              <option value="district">District</option>
+                              <option value="both">Both</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Executive Position
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.executive_position || ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  executive_position: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="President, Secretary, etc."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              District Executive Position
+                            </label>
+                            <input
+                              type="text"
+                              value={editForm.district_executive_position || ""}
+                              onChange={(e) =>
+                                setEditForm({
+                                  ...editForm,
+                                  district_executive_position: e.target.value,
+                                })
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="District position"
+                            />
+                          </div>
                         </div>
-                      </>
-                    )}
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Baptism Date
-                      </label>
-                      <input
-                        type="date"
-                        defaultValue={selectedMember.baptism_date || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Confirmation Date
-                      </label>
-                      <input
-                        type="date"
-                        defaultValue={selectedMember.confirmation_date || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className="block text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mb-2">
-                        Membership Date
-                      </label>
-                      <input
-                        type="date"
-                        defaultValue={selectedMember.membership_date || ""}
-                        className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                      />
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-            <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex space-x-3">
+
+              <div className="flex space-x-3 mt-6">
                 <button
                   onClick={handleCloseEditModal}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveMemberEdit}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
+                  <i className="fas fa-save mr-2"></i>
                   Save Changes
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* View Modal */}
+      {showViewModal && selectedMember && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Member Details - {selectedMember.name}
+              </h3>
+              <button
+                onClick={handleCloseViewModal}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <i className="fas fa-times text-xl"></i>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Personal Information
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Name:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedMember.name}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Phone:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedMember.phone || selectedMember.phone_number}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Email:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedMember.email || "Not provided"}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Gender:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedMember.gender}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Congregation:
+                      </span>
+                      <p className="text-gray-900 dark:text-white">
+                        {selectedMember.congregation}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Church Information
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Status:
+                      </span>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedMember.status === "Active" ||
+                          selectedMember.membership_status === "Active"
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {selectedMember.status ||
+                          selectedMember.membership_status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Baptism:
+                      </span>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedMember.baptism === "Yes" ||
+                          selectedMember.is_baptized
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {selectedMember.baptism ||
+                          (selectedMember.is_baptized ? "Yes" : "No")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Confirmation:
+                      </span>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedMember.confirmation === "Yes" ||
+                          selectedMember.is_confirmed
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {selectedMember.confirmation ||
+                          (selectedMember.is_confirmed ? "Yes" : "No")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        Communicant:
+                      </span>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          selectedMember.communicant === "Yes" ||
+                          selectedMember.is_communicant
+                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                        }`}
+                      >
+                        {selectedMember.communicant ||
+                          (selectedMember.is_communicant ? "Yes" : "No")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1428,15 +1583,24 @@ export default function MembersPage() {
       <PinModal
         isOpen={showPinModal}
         onClose={handleClosePinModal}
-        onSuccess={handlePinSuccess}
-        config={pinModalConfig}
+        onPinSuccess={handlePinSuccess}
+        title={pinModalConfig.title}
+        description={pinModalConfig.description}
+        type={pinModalConfig.type}
       />
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteConfirmModalOpen}
         onClose={() => setDeleteConfirmModalOpen(false)}
-        config={deleteConfirmConfig}
+        onConfirm={deleteConfirmConfig.onConfirm}
+        title={deleteConfirmConfig.title}
+        message={deleteConfirmConfig.message}
+        confirmText={deleteConfirmConfig.confirmText}
+        cancelText={deleteConfirmConfig.cancelText}
+        type={deleteConfirmConfig.type}
+        itemName={deleteConfirmConfig.itemName}
+        itemCount={deleteConfirmConfig.itemCount}
       />
 
       {/* Toast Container */}

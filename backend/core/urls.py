@@ -63,6 +63,7 @@ urlpatterns = [
     path("api/attendance/<int:attendance_id>/delete/", views.api_delete_attendance, name="api_delete_attendance"),
     path("api/members/add/", views.api_add_member, name="api_add_member"),
     path("api/members/update/<int:member_id>/", views.api_update_member, name="api_update_member"),
+    path("api/members/<int:member_id>/delete/", views.api_delete_member, name="api_delete_member"),
     path(
         "api/analytics/attendance-chart/",
         views.api_attendance_chart_data,
@@ -120,6 +121,8 @@ urlpatterns = [
     path('api/settings/profile/', views.api_settings_profile, name='api_settings_profile'),
     path('api/settings/security/', views.api_settings_security, name='api_settings_security'),
     path('api/settings/website/', views.api_settings_website, name='api_settings_website'),
+    path('api/validate-pin/', views.api_validate_pin, name='api_validate_pin'),
+    path('api/get-current-pin/', views.api_get_current_pin, name='api_get_current_pin'),
     
     # Data Management API URLs
     path('api/data/export/csv/', views.api_export_csv, name='api_export_csv'),

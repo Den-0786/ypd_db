@@ -37,10 +37,10 @@ export default function Sidebar({
         try {
           const parsedUser = JSON.parse(user);
 
-          if (parsedUser.congregationId === "district") {
+          if (parsedUser.congregationId === "1") {
             setUserInfo({
               username: "District Admin",
-              congregationName: "District Executive",
+              congregationName: "District Admin",
             });
           } else {
             setUserInfo(parsedUser);
@@ -48,7 +48,7 @@ export default function Sidebar({
         } catch (e) {
           setUserInfo({
             username: "District Admin",
-            congregationName: "District Executive",
+            congregationName: "District Admin",
           });
         }
       }
@@ -163,7 +163,7 @@ export default function Sidebar({
               href={
                 typeof window !== "undefined" &&
                 localStorage.getItem("congregationId") &&
-                localStorage.getItem("congregationId") !== "district"
+                localStorage.getItem("congregationId") !== "1"
                   ? "/local/dashboard"
                   : "/dashboard"
               }

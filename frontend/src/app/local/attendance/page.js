@@ -23,8 +23,9 @@ export default function LocalAttendancePage() {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showJointProgramModal, setShowJointProgramModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState(null); 
-  const [pendingDeleteAction, setPendingDeleteAction] = useState(null); 
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [pendingDeleteAction, setPendingDeleteAction] = useState(null);
   const [pendingEditAction, setPendingEditAction] = useState(null);
   const [editData, setEditData] = useState(null);
   const [prefillForm, setPrefillForm] = useState(null);
@@ -38,7 +39,7 @@ export default function LocalAttendancePage() {
     total: 0,
     loggedBy: "",
     position: "",
-    congregation: congregationName || "Local Congregation", 
+    congregation: congregationName || "Local Congregation",
   });
   const [jointProgramForm, setJointProgramForm] = useState({
     week: "",
@@ -62,7 +63,6 @@ export default function LocalAttendancePage() {
   });
   const [loading, setLoading] = useState(true);
 
-  
   const getWeekNumber = (date) => {
     const d = new Date(date);
     const dayOfMonth = d.getDate();
@@ -89,7 +89,11 @@ export default function LocalAttendancePage() {
     attendanceRecords.forEach((r) => {
       const key = `${r.date}__${r.congregation || ""}`;
       const existing = dedupMap.get(key);
-      if (!existing || new Date(r.timestamp || r.date) > new Date(existing.timestamp || existing.date)) {
+      if (
+        !existing ||
+        new Date(r.timestamp || r.date) >
+          new Date(existing.timestamp || existing.date)
+      ) {
         dedupMap.set(key, r);
       }
     });
@@ -169,7 +173,11 @@ export default function LocalAttendancePage() {
     attendanceRecords.forEach((r) => {
       const key = `${r.date}__${r.congregation || ""}`;
       const existing = dedupMap.get(key);
-      if (!existing || new Date(r.timestamp || r.date) > new Date(existing.timestamp || existing.date)) {
+      if (
+        !existing ||
+        new Date(r.timestamp || r.date) >
+          new Date(existing.timestamp || existing.date)
+      ) {
         dedupMap.set(key, r);
       }
     });
@@ -303,8 +311,14 @@ export default function LocalAttendancePage() {
   };
 
   // Generate current month and year data with memoization
-  const currentMonthData = useMemo(() => generateCurrentMonthData(), [attendanceRecords]);
-  const currentYearData = useMemo(() => generateCurrentYearData(), [attendanceRecords]);
+  const currentMonthData = useMemo(
+    () => generateCurrentMonthData(),
+    [attendanceRecords]
+  );
+  const currentYearData = useMemo(
+    () => generateCurrentYearData(),
+    [attendanceRecords]
+  );
 
   // Get attendance data for the selected date
   const getAttendanceForDate = (date) => {
@@ -377,26 +391,21 @@ export default function LocalAttendancePage() {
     setShowPinModal(true);
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = async () => {
+    console.log("pendingDeleteAction:", pendingDeleteAction);
+    console.log("attendanceRecords:", attendanceRecords);
+
     if (pendingDeleteAction) {
-      // Handle delete operations
-      switch (pendingDeleteAction) {
-        case "week":
-          window.showToast("PIN verified for week delete operation", "success");
-          break;
-        case "month":
-          window.showToast(
-            "PIN verified for month delete operation",
-            "success"
-          );
-          break;
-        case "day":
-          window.showToast("PIN verified for day delete operation", "success");
-          break;
-        default:
-          break;
+      // Check if there are records to delete
+      if (attendanceRecords.length === 0) {
+        window.showToast("No attendance records to delete", "error");
+        setPendingDeleteAction(null);
+        setShowPinModal(false);
+        return;
       }
-      setPendingDeleteAction(null);
+
+      // Show confirmation modal
+      setShowDeleteConfirmModal(true);
     } else if (pendingEditAction) {
       // Handle edit operations
       switch (pendingEditAction) {
@@ -444,6 +453,185 @@ export default function LocalAttendancePage() {
     setPendingAction(null);
     setPendingDeleteAction(null);
     setPendingEditAction(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowDeleteConfirmModal(false);
+
+    try {
+      let deletedCount = 0;
+
+      switch (pendingDeleteAction) {
+        case "week":
+          // For testing - delete ALL records to see if API works
+          console.log("All attendance records:", attendanceRecords);
+          console.log("Total records to delete:", attendanceRecords.length);
+
+          for (const record of attendanceRecords) {
+            console.log(
+              `Attempting to delete record ID: ${record.id}, Date: ${record.date}`
+            );
+            try {
+              const response = await fetch(
+                `http://localhost:8001/api/attendance/${record.id}/delete/`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+              console.log(
+                `Response for ID ${record.id}:`,
+                response.status,
+                response.ok
+              );
+              if (response.ok) {
+                deletedCount++;
+                console.log(`Successfully deleted record ID: ${record.id}`);
+              } else {
+                const errorText = await response.text();
+                console.error(
+                  `Failed to delete record ID ${record.id}:`,
+                  errorText
+                );
+              }
+            } catch (error) {
+              console.error(`Error deleting record ID ${record.id}:`, error);
+            }
+          }
+          console.log(
+            `Total deleted: ${deletedCount} out of ${attendanceRecords.length}`
+          );
+          if (deletedCount > 0) {
+            window.showToast(
+              `Deleted ${deletedCount} attendance records`,
+              "success"
+            );
+          } else {
+            window.showToast("No records were deleted", "error");
+          }
+          break;
+
+        case "month":
+          // Delete all records for the current month
+          const currentMonthRecords = attendanceRecords.filter((record) => {
+            const recordDate = new Date(record.date);
+            const today = new Date();
+            return (
+              recordDate.getMonth() === today.getMonth() &&
+              recordDate.getFullYear() === today.getFullYear()
+            );
+          });
+
+          for (const record of currentMonthRecords) {
+            const response = await fetch(
+              `http://localhost:8001/api/attendance/${record.id}/delete/`,
+              {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
+            );
+            if (response.ok) {
+              deletedCount++;
+            }
+          }
+          if (deletedCount > 0) {
+            window.showToast(
+              `Deleted ${deletedCount} attendance records for this month`,
+              "success"
+            );
+          } else {
+            window.showToast("No records were deleted", "error");
+          }
+          break;
+
+        case "day":
+          // For testing - delete ALL records to see if API works
+          console.log(
+            "Day delete - all attendance records:",
+            attendanceRecords
+          );
+          console.log("Total records to delete:", attendanceRecords.length);
+
+          for (const record of attendanceRecords) {
+            console.log(
+              `Attempting to delete record ID: ${record.id}, Date: ${record.date}`
+            );
+            try {
+              const response = await fetch(
+                `http://localhost:8001/api/attendance/${record.id}/delete/`,
+                {
+                  method: "DELETE",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+              console.log(
+                `Response for ID ${record.id}:`,
+                response.status,
+                response.ok
+              );
+              if (response.ok) {
+                deletedCount++;
+                console.log(`Successfully deleted record ID: ${record.id}`);
+              } else {
+                const errorText = await response.text();
+                console.error(
+                  `Failed to delete record ID ${record.id}:`,
+                  errorText
+                );
+              }
+            } catch (error) {
+              console.error(`Error deleting record ID ${record.id}:`, error);
+            }
+          }
+          console.log(
+            `Total deleted: ${deletedCount} out of ${attendanceRecords.length}`
+          );
+          if (deletedCount > 0) {
+            window.showToast(
+              `Deleted ${deletedCount} attendance records`,
+              "success"
+            );
+          } else {
+            window.showToast("No records were deleted", "error");
+          }
+          break;
+
+        default:
+          break;
+      }
+
+      // Update UI immediately after deletion
+      if (deletedCount > 0) {
+        console.log("Updating UI immediately...");
+        // Clear all records immediately for instant UI update
+        setAttendanceRecords([]);
+
+        // Also refresh from server to ensure consistency
+        console.log("Refreshing attendance data from server...");
+        const dataStore = getDataStore();
+        const refreshedRecords = await dataStore.getAttendanceRecords({
+          congregation: congregationName,
+        });
+        setAttendanceRecords(refreshedRecords);
+        console.log("Attendance data refreshed");
+      }
+    } catch (error) {
+      console.error("Error deleting attendance records:", error);
+      window.showToast("Failed to delete attendance records", "error");
+    }
+
+    setPendingDeleteAction(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmModal(false);
+    setPendingDeleteAction(null);
   };
 
   const handleCloseLogModal = () => {
@@ -672,7 +860,14 @@ export default function LocalAttendancePage() {
           onEditWeek={(week) => {
             setEditData(week);
             // Prefill from underlying records for this week
-            const weekNumber = parseInt((week.week || week.weekNumber || "").toString().replace("Week ", "")) || week.weekNumber || 0;
+            const weekNumber =
+              parseInt(
+                (week.week || week.weekNumber || "")
+                  .toString()
+                  .replace("Week ", "")
+              ) ||
+              week.weekNumber ||
+              0;
             // Determine target month/year from latest record or currentMonthData
             let targetMonthIndex = new Date().getMonth();
             let targetYear = new Date().getFullYear();
@@ -700,7 +895,8 @@ export default function LocalAttendancePage() {
 
             const maleVal = week.male || latestWeekRecord?.male || 0;
             const femaleVal = week.female || latestWeekRecord?.female || 0;
-            const dateVal = latestWeekRecord?.date || new Date().toISOString().split("T")[0];
+            const dateVal =
+              latestWeekRecord?.date || new Date().toISOString().split("T")[0];
             const monthVal = (targetMonthIndex + 1).toString().padStart(2, "0");
             const yearVal = targetYear.toString();
             const weekVal = weekNumber ? `week-${weekNumber}` : "";
@@ -777,6 +973,76 @@ export default function LocalAttendancePage() {
         }
         type={pendingDeleteAction ? "delete" : "edit"}
       />
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  <i className="fas fa-exclamation-triangle text-red-500 mr-2"></i>
+                  Confirm Delete
+                </h3>
+                <button
+                  onClick={handleCancelDelete}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <i className="fas fa-times text-xl"></i>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <i className="fas fa-exclamation-triangle text-red-500 mt-0.5 mr-2"></i>
+                    <div>
+                      <p className="text-sm text-red-700 dark:text-red-300 font-medium mb-2">
+                        Are you sure you want to delete attendance records?
+                      </p>
+                      <p className="text-sm text-red-600 dark:text-red-400">
+                        This action cannot be undone. The attendance data will
+                        be permanently removed.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                    Records to Delete
+                  </h4>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {pendingDeleteAction === "week" && "All attendance records"}
+                    {pendingDeleteAction === "month" &&
+                      "Current month's attendance records"}
+                    {pendingDeleteAction === "day" && "All attendance records"}
+                    <br />
+                    <span className="font-medium">
+                      Total: {attendanceRecords.length} record(s)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleCancelDelete}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                  >
+                    Delete Records
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ToastContainer />
     </LocalDashboardLayout>

@@ -172,12 +172,10 @@ const LoginAttemptTracker = ({ onLoginSuccess }) => {
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
             placeholder={
-              loginType === "password"
-                ? "Enter password"
-                : "Enter 4-6 digit PIN"
+              loginType === "password" ? "Enter password" : "Enter 4-digit PIN"
             }
-            maxLength={loginType === "pin" ? "6" : undefined}
-            pattern={loginType === "pin" ? "[0-9]{4,6}" : undefined}
+            maxLength={loginType === "pin" ? "4" : undefined}
+            pattern={loginType === "pin" ? "[0-9]{4}" : undefined}
             required
           />
         </div>

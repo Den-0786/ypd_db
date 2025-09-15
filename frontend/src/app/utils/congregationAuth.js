@@ -13,7 +13,7 @@ const congregationCredentials = {
   "District Admin": {
     username: "district_admin",
     password: "district2024",
-    id: "district",
+    id: "1",
   },
   "Mizpah Congregation Odagya No1": {
     username: "mizpah_odagya1",

@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import ToastContainer from "../components/ToastContainer";
 import autoLogout from "../utils/autoLogout";
+import getDataStore from "../utils/dataStore";
 
 export default function DashboardPage() {
   // Redirect local users to their local dashboard
@@ -13,7 +14,7 @@ export default function DashboardPage() {
       const userRaw = localStorage.getItem("user");
       if (userRaw) {
         const user = JSON.parse(userRaw);
-        if (user && user.congregationId && user.congregationId !== "district") {
+        if (user && user.congregationId && user.congregationId !== "1") {
           window.location.href = "/local/dashboard";
         }
       }
@@ -81,17 +82,15 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8001/api/home-stats/");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
+      const dataStore = getDataStore();
+      const stats = await dataStore.fetchHomeStats();
+      if (stats) {
           setDashboardStats({
-            totalMembers: data.data.totalMembers || 0,
-            totalCongregations: data.data.totalCongregations || 0,
-            thisWeekAttendance: data.data.thisWeekAttendance || 0,
-            newMembersThisMonth: data.data.newMembersThisMonth || 0,
-          });
-        }
+          totalMembers: stats.totalMembers || 0,
+          totalCongregations: stats.totalCongregations || 0,
+          thisWeekAttendance: stats.thisWeekAttendance || 0,
+          newMembersThisMonth: stats.newMembersThisMonth || 0,
+        });
       } else {
         showToast("Failed to fetch dashboard data", "error");
       }
