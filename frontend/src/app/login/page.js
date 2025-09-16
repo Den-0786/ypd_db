@@ -20,15 +20,12 @@ export default function LoginPage() {
   const [forgotPasswordData, setForgotPasswordData] = useState({
     email: "",
   });
-  const [showCredentials, setShowCredentials] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState("success");
 
   useEffect(() => {
     setMounted(true);
-
-    // Set up global toast function
     if (typeof window !== "undefined") {
       window.showToast = (message, type = "success", duration = 3000) => {
         setToastMessage(message);
@@ -89,7 +86,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Use Django API login for proper session authentication
       const response = await apiFetch("/api/auth/login/", {
         method: "POST",
         body: JSON.stringify({
@@ -101,14 +97,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Get congregation info from the custom auth system for UI purposes
         const authResult = authenticateCongregation(
           formData.username,
           formData.password
         );
 
         if (authResult.success) {
-          // Set auth token and congregation info
           localStorage.setItem(
             "user",
             JSON.stringify({
@@ -129,7 +123,6 @@ export default function LoginPage() {
           setToastType("success");
           setShowToast(true);
 
-          // Redirect congregation users to local dashboard, district users to main dashboard
           setTimeout(() => {
             if (authResult.congregation.id === "1") {
               window.location.href = "/dashboard";
@@ -141,9 +134,10 @@ export default function LoginPage() {
           setError("Authentication failed");
         }
       } else {
-        // Handle different error types
         if (response.status === 429) {
-          setError("Maximum attempts reached. Please try again in 5 hours.");
+          setError(
+            data.error || "Maximum attempts reached. Please try again later."
+          );
         } else if (response.status === 401) {
           setError("Invalid credentials.");
         } else {
@@ -347,7 +341,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/30 hover:border-white/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-white/30 hover:border-white/50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>
@@ -367,195 +361,12 @@ export default function LoginPage() {
                 <i className="fas fa-arrow-left mr-2"></i>
                 Back to Home
               </button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setShowCredentials(!showCredentials)}
-                  className="text-white/70 hover:text-white transition-colors text-xs underline"
-                >
-                  <i className="fas fa-info-circle mr-1"></i>
-                  View Congregation Credentials
-                </button>
-              </div>
             </form>
           </div>
         </div>
       </div>
 
       <ToastContainer />
-
-      {/* Credentials Modal */}
-      {showCredentials && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">
-                  Congregation Login Credentials
-                </h3>
-                <button
-                  onClick={() => setShowCredentials(false)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <i className="fas fa-times"></i>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Emmanuel Congregation Ahinsan
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username: <span className="font-mono">emmanuel</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">emmanuel123</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Peniel Congregation Esreso No1
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username: <span className="font-mono">peniel</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">peniel123</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3 bg-blue-50">
-                    <h4 className="font-semibold text-sm mb-2 text-blue-800">
-                      District Admin
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">district_admin</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">district2024</span>
-                    </p>
-                    <p className="text-xs text-blue-600 mt-1">
-                      Access to all congregations
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Mizpah Congregation Odagya No1
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">mizpah_odagya1</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">mizpah2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Christ Congregation Ahinsan Estate
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">christ_ahinsan</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">christ2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Ebenezer Congregation Dompoase Aprabo
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">ebenezer_dompoase</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">ebenezer2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Favour Congregation Esreso No2
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">favour_esreso2</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">favour2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">
-                      Liberty Congregation Esreso High Tension
-                    </h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">liberty_esreso</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">liberty2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">Odagya No2</h4>
-                    <p className="text-xs text-gray-600">
-                      Username: <span className="font-mono">odagya2</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">odagya2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">NOM</h4>
-                    <p className="text-xs text-gray-600">
-                      Username:{" "}
-                      <span className="font-mono">nom_congregation</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">nom2024</span>
-                    </p>
-                  </div>
-
-                  <div className="border rounded-lg p-3">
-                    <h4 className="font-semibold text-sm mb-2">Kokobriko</h4>
-                    <p className="text-xs text-gray-600">
-                      Username: <span className="font-mono">kokobriko</span>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Password: <span className="font-mono">kokobriko2024</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 text-center">
-                <button
-                  onClick={() => setShowCredentials(false)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Container */}
       <ToastContainer
         show={showToast}
         message={toastMessage}
