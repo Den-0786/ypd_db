@@ -166,15 +166,6 @@ def api_login(request):
                 'error': 'Username and password are required'
             }, status=400)
         
-        # Optional rate limit check (disabled during testing)
-        if LOGIN_RATE_LIMIT_ENABLED:
-        is_allowed, block_message = check_login_attempts(request, username)
-        if not is_allowed:
-            return JsonResponse({
-                'success': False,
-                'error': block_message
-                }, status=429)
-        
         # Attempt authentication
         user = authenticate(request, username=username, password=password)
         
@@ -208,23 +199,9 @@ def api_login(request):
             })
         else:
             # Failed login
-            if LOGIN_RATE_LIMIT_ENABLED:
-                attempt_count = record_failed_attempt(request, username)
-            remaining_attempts = 3 - attempt_count
-            if remaining_attempts > 0:
                 return JsonResponse({
                     'success': False,
-                    'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
-                }, status=401)
-            else:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Maximum attempts reached. Please try again in 5 hours.'
-                }, status=429)
-            else:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Invalid credentials.'
+                'error': 'Invalid credentials.'
                 }, status=401)
                 
     except json.JSONDecodeError:
@@ -256,11 +233,11 @@ def api_pin_login(request):
         
         # Optional rate limit check (disabled during testing)
         if LOGIN_RATE_LIMIT_ENABLED:
-        is_allowed, block_message = check_login_attempts(request, username)
-        if not is_allowed:
-            return JsonResponse({
-                'success': False,
-                'error': block_message
+            is_allowed, block_message = check_login_attempts(request, username)
+            if not is_allowed:
+                return JsonResponse({
+                    'success': False,
+                    'error': block_message
                 }, status=429)
         
         # Validate PIN format
@@ -278,8 +255,6 @@ def api_pin_login(request):
             if congregation.pin == pin:
                 # Successful PIN login
                 login(request, user)
-                if LOGIN_RATE_LIMIT_ENABLED:
-                record_successful_attempt(request, username)
                 
                 return JsonResponse({
                     'success': True,
@@ -297,19 +272,10 @@ def api_pin_login(request):
                 })
             else:
                 # Failed PIN login
-                attempt_count = record_failed_attempt(request, username)
-                remaining_attempts = 3 - attempt_count
-                
-                if remaining_attempts > 0:
                     return JsonResponse({
                         'success': False,
-                        'error': f'Invalid PIN. {remaining_attempts} attempts remaining.'
+                    'error': 'Invalid PIN.'
                     }, status=401)
-                else:
-                    return JsonResponse({
-                        'success': False,
-                        'error': 'Maximum attempts reached. Please try again in 5 hours.'
-                    }, status=429)
                     
         except User.DoesNotExist:
             return JsonResponse({
@@ -3077,7 +3043,7 @@ def api_settings_security(request):
                 # Determine target user for password change
                 try:
                     target_user = None
-                            if request.user.is_authenticated:
+                    if request.user.is_authenticated:
                         target_user = request.user
                     # Prefer resolving via congregation for local context
                     elif data.get('congregation_id') or data.get('congregation_name'):
