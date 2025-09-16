@@ -100,21 +100,26 @@ export default function LoginPage() {
           "user",
           JSON.stringify({
             username: data.user.username,
-            congregationId: data.user.congregation_id,
-            congregationName: data.user.congregation_name,
+            congregationId: data.congregation?.id || "1",
+            congregationName: data.congregation?.name || "District Admin",
           })
         );
-        localStorage.setItem("congregationId", data.user.congregation_id);
-        localStorage.setItem("congregationName", data.user.congregation_name);
+        localStorage.setItem("congregationId", data.congregation?.id || "1");
+        localStorage.setItem(
+          "congregationName",
+          data.congregation?.name || "District Admin"
+        );
 
         autoLogout.updateLoginStatus(true);
 
-        setToastMessage(`Welcome back, ${data.user.congregation_name}!`);
+        setToastMessage(
+          `Welcome back, ${data.congregation?.name || "District Admin"}!`
+        );
         setToastType("success");
         setShowToast(true);
 
         setTimeout(() => {
-          if (data.user.is_district) {
+          if (data.congregation?.id === "1" || !data.congregation) {
             window.location.href = "/dashboard";
           } else {
             window.location.href = "/local/dashboard";
