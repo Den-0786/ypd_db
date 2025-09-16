@@ -67,95 +67,95 @@ export default function LocalMembersPage() {
   // Fetch data for congregation
   useEffect(() => {
     if (typeof window !== "undefined") {
-    const fetchMembers = async () => {
-      if (congregationName && congregationId) {
-        try {
-          setLoading(true);
-          // Get members for this congregation
-          const dataStore = getDataStore();
-          const allMembers = await dataStore.getMembers({
-            congregation: congregationId,
-          });
-
-          if (allMembers.length > 0) {
-            console.log("Sample member fields:", {
-              phone: allMembers[0].phone,
-              phone_number: allMembers[0].phone_number,
-              gender: allMembers[0].gender,
-              membership_status: allMembers[0].membership_status,
-              status: allMembers[0].status,
-              is_communicant: allMembers[0].is_communicant,
-              communicant: allMembers[0].communicant,
-              is_baptized: allMembers[0].is_baptized,
-              baptism: allMembers[0].baptism,
+      const fetchMembers = async () => {
+        if (congregationName && congregationId) {
+          try {
+            setLoading(true);
+            // Get members for this congregation
+            const dataStore = getDataStore();
+            const allMembers = await dataStore.getMembers({
+              congregation: congregationId,
             });
-          }
 
-          if (Array.isArray(allMembers)) {
-            // Separate executives from regular members
-            const executivesList = allMembers.filter(
-              (member) => member.is_executive
-            );
-            const regularMembers = allMembers.filter(
-              (member) => !member.is_executive
-            );
+            if (allMembers.length > 0) {
+              console.log("Sample member fields:", {
+                phone: allMembers[0].phone,
+                phone_number: allMembers[0].phone_number,
+                gender: allMembers[0].gender,
+                membership_status: allMembers[0].membership_status,
+                status: allMembers[0].status,
+                is_communicant: allMembers[0].is_communicant,
+                communicant: allMembers[0].communicant,
+                is_baptized: allMembers[0].is_baptized,
+                baptism: allMembers[0].baptism,
+              });
+            }
 
-            // Set members data (only non-executives)
-            setMembers(regularMembers);
-            setExecutives(executivesList);
+            if (Array.isArray(allMembers)) {
+              // Separate executives from regular members
+              const executivesList = allMembers.filter(
+                (member) => member.is_executive
+              );
+              const regularMembers = allMembers.filter(
+                (member) => !member.is_executive
+              );
 
-            // Calculate statistics
-            const totalMembers = allMembers.length;
-            const totalMale = allMembers.filter(
-              (m) => m.gender === "Male"
-            ).length;
-            const totalFemale = allMembers.filter(
-              (m) => m.gender === "Female"
-            ).length;
-            const communicant = allMembers.filter(
-              (m) => m.communicant === "Yes"
-            ).length;
-            const confirmed = allMembers.filter(
-              (m) => m.confirmation === "Yes"
-            ).length;
-            const baptism = allMembers.filter(
-              (m) => m.baptism === "Yes"
-            ).length;
-            const activeGuilders = allMembers.filter(
-              (m) => m.status === "Active"
-            ).length;
-            const distantGuilders = allMembers.filter(
-              (m) => m.status === "Inactive"
-            ).length;
+              // Set members data (only non-executives)
+              setMembers(regularMembers);
+              setExecutives(executivesList);
 
-            setStats({
-              totalMembers,
-              totalMale,
-              totalFemale,
-              communicant,
-              confirmed,
-              baptism,
-              activeGuilders,
-              distantGuilders,
-            });
-          } else {
-            console.error("getMembers did not return an array:", allMembers);
+              // Calculate statistics
+              const totalMembers = allMembers.length;
+              const totalMale = allMembers.filter(
+                (m) => m.gender === "Male"
+              ).length;
+              const totalFemale = allMembers.filter(
+                (m) => m.gender === "Female"
+              ).length;
+              const communicant = allMembers.filter(
+                (m) => m.communicant === "Yes"
+              ).length;
+              const confirmed = allMembers.filter(
+                (m) => m.confirmation === "Yes"
+              ).length;
+              const baptism = allMembers.filter(
+                (m) => m.baptism === "Yes"
+              ).length;
+              const activeGuilders = allMembers.filter(
+                (m) => m.status === "Active"
+              ).length;
+              const distantGuilders = allMembers.filter(
+                (m) => m.status === "Inactive"
+              ).length;
+
+              setStats({
+                totalMembers,
+                totalMale,
+                totalFemale,
+                communicant,
+                confirmed,
+                baptism,
+                activeGuilders,
+                distantGuilders,
+              });
+            } else {
+              console.error("getMembers did not return an array:", allMembers);
+              setMembers([]);
+              setExecutives([]);
+            }
+          } catch (error) {
+            console.error("Error fetching members:", error);
             setMembers([]);
             setExecutives([]);
+          } finally {
+            setLoading(false);
           }
-        } catch (error) {
-          console.error("Error fetching members:", error);
-          setMembers([]);
-          setExecutives([]);
-        } finally {
+        } else {
           setLoading(false);
         }
-      } else {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchMembers();
+      fetchMembers();
     }
   }, [congregationName, congregationId]);
 
@@ -442,19 +442,19 @@ export default function LocalMembersPage() {
 
               if (response.ok) {
                 const responseData = await response.json();
-            const filteredMembers = members.filter(
-              (m) => m.id !== pendingAction.member.id
-            );
+                const filteredMembers = members.filter(
+                  (m) => m.id !== pendingAction.member.id
+                );
                 console.log(
                   "Deleting member with ID:",
                   pendingAction.member.id
                 );
                 console.log("Members before delete:", members.length);
                 console.log("Members after delete:", filteredMembers.length);
-            setMembers(filteredMembers);
-            showSuccess(
-              `${pendingAction.member.name || `${pendingAction.member.first_name} ${pendingAction.member.last_name}`} deleted successfully!`
-            );
+                setMembers(filteredMembers);
+                showSuccess(
+                  `${pendingAction.member.name || `${pendingAction.member.first_name} ${pendingAction.member.last_name}`} deleted successfully!`
+                );
               } else {
                 const errorData = await response.json();
                 showError(errorData.error || "Failed to delete member");
@@ -489,14 +489,14 @@ export default function LocalMembersPage() {
               const allSuccessful = responses.every((response) => response.ok);
 
               if (allSuccessful) {
-            const updatedMembers = members.filter(
-              (member) => !pendingAction.memberIds.includes(member.id)
-            );
-            setMembers(updatedMembers);
-            setSelectedMembers([]);
-            showSuccess(
-              `${pendingAction.memberIds.length} member(s) deleted successfully!`
-            );
+                const updatedMembers = members.filter(
+                  (member) => !pendingAction.memberIds.includes(member.id)
+                );
+                setMembers(updatedMembers);
+                setSelectedMembers([]);
+                showSuccess(
+                  `${pendingAction.memberIds.length} member(s) deleted successfully!`
+                );
               } else {
                 showError("Failed to delete some members");
               }
@@ -2002,14 +2002,63 @@ export default function LocalMembersPage() {
                         <input
                           type="date"
                           value={editForm.date_of_birth}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const selectedDate = e.target.value;
+                            if (selectedDate) {
+                              const today = new Date();
+                              const birthDate = new Date(selectedDate);
+                              const age =
+                                today.getFullYear() - birthDate.getFullYear();
+                              const monthDiff =
+                                today.getMonth() - birthDate.getMonth();
+
+                              // Adjust age if birthday hasn't occurred this year
+                              const actualAge =
+                                monthDiff < 0 ||
+                                (monthDiff === 0 &&
+                                  today.getDate() < birthDate.getDate())
+                                  ? age - 1
+                                  : age;
+
+                              if (actualAge < 17) {
+                                setEditFormErrors((prev) => ({
+                                  ...prev,
+                                  date_of_birth: "Age cannot be less than 17",
+                                }));
+                              } else if (actualAge > 30) {
+                                setEditFormErrors((prev) => ({
+                                  ...prev,
+                                  date_of_birth: "Age cannot be more than 30",
+                                }));
+                              } else {
+                                setEditFormErrors((prev) => ({
+                                  ...prev,
+                                  date_of_birth: "",
+                                }));
+                              }
+                            } else {
+                              setEditFormErrors((prev) => ({
+                                ...prev,
+                                date_of_birth: "",
+                              }));
+                            }
+
                             setEditForm({
                               ...editForm,
-                              date_of_birth: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              date_of_birth: selectedDate,
+                            });
+                          }}
+                          className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            editFormErrors.date_of_birth
+                              ? "border-red-500 focus:ring-red-500"
+                              : "border-gray-300 dark:border-gray-600"
+                          }`}
                         />
+                        {editFormErrors.date_of_birth && (
+                          <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                            {editFormErrors.date_of_birth}
+                          </p>
+                        )}
                       </div>
 
                       <div>

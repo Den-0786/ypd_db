@@ -253,14 +253,54 @@ export default function PersonalInfoSection({
           <input
             type="date"
             value={currentMember.date_of_birth}
-            onChange={(e) =>
+            onChange={(e) => {
+              const selectedDate = e.target.value;
+              if (selectedDate) {
+                const today = new Date();
+                const birthDate = new Date(selectedDate);
+                const age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+
+                // Adjust age if birthday hasn't occurred this year
+                const actualAge =
+                  monthDiff < 0 ||
+                  (monthDiff === 0 && today.getDate() < birthDate.getDate())
+                    ? age - 1
+                    : age;
+
+                if (actualAge < 17) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    date_of_birth: "Age cannot be less than 17",
+                  }));
+                } else if (actualAge > 30) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    date_of_birth: "Age cannot be more than 30",
+                  }));
+                } else {
+                  setErrors((prev) => ({ ...prev, date_of_birth: "" }));
+                }
+              } else {
+                setErrors((prev) => ({ ...prev, date_of_birth: "" }));
+              }
+
               setCurrentMember({
                 ...currentMember,
-                date_of_birth: e.target.value,
-              })
-            }
-            className="w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+                date_of_birth: selectedDate,
+              });
+            }}
+            className={`w-full max-w-xs lg:max-w-none px-2 py-1.5 lg:px-3 lg:py-2 border rounded-md focus:outline-none focus:ring-2 text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset ${
+              errors.date_of_birth
+                ? "border-red-500 focus:ring-red-500"
+                : "border-light-border dark:border-dark-border focus:ring-light-accent dark:focus:ring-dark-accent"
+            }`}
           />
+          {errors.date_of_birth && (
+            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+              {errors.date_of_birth}
+            </p>
+          )}
         </div>
 
         <div className="sm:col-span-1">

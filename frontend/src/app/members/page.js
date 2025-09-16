@@ -1085,14 +1085,63 @@ export default function MembersPage() {
                       <input
                         type="date"
                         value={editForm.date_of_birth || ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const selectedDate = e.target.value;
+                          if (selectedDate) {
+                            const today = new Date();
+                            const birthDate = new Date(selectedDate);
+                            const age =
+                              today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff =
+                              today.getMonth() - birthDate.getMonth();
+
+                            // Adjust age if birthday hasn't occurred this year
+                            const actualAge =
+                              monthDiff < 0 ||
+                              (monthDiff === 0 &&
+                                today.getDate() < birthDate.getDate())
+                                ? age - 1
+                                : age;
+
+                            if (actualAge < 17) {
+                              setEditFormErrors((prev) => ({
+                                ...prev,
+                                date_of_birth: "Age cannot be less than 17",
+                              }));
+                            } else if (actualAge > 30) {
+                              setEditFormErrors((prev) => ({
+                                ...prev,
+                                date_of_birth: "Age cannot be more than 30",
+                              }));
+                            } else {
+                              setEditFormErrors((prev) => ({
+                                ...prev,
+                                date_of_birth: "",
+                              }));
+                            }
+                          } else {
+                            setEditFormErrors((prev) => ({
+                              ...prev,
+                              date_of_birth: "",
+                            }));
+                          }
+
                           setEditForm({
                             ...editForm,
-                            date_of_birth: e.target.value,
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            date_of_birth: selectedDate,
+                          });
+                        }}
+                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          editFormErrors.date_of_birth
+                            ? "border-red-500 focus:ring-red-500"
+                            : "border-gray-300 dark:border-gray-600"
+                        }`}
                       />
+                      {editFormErrors.date_of_birth && (
+                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                          {editFormErrors.date_of_birth}
+                        </p>
+                      )}
                     </div>
 
                     <div>

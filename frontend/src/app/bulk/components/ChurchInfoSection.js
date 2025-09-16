@@ -175,200 +175,76 @@ export default function ChurchInfoSection({
           </div>
           <div className="flex items-center space-x-2">
             {currentMember.is_executive ? (
-              <div className="flex-1 space-y-2">
-                <select
-                  value={currentMember.executive_level}
-                  onChange={(e) => {
-                    const level = e.target.value;
-                    setCurrentMember({
-                      ...currentMember,
-                      executive_level: level,
-                      executive_position: "",
-                      local_executive_position: "",
-                      district_executive_position: "",
-                      position: "",
-                    });
-                  }}
-                  className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+              <select
+                value={currentMember.district_executive_position}
+                onChange={(e) => {
+                  const position = e.target.value;
+                  const positionDisplay = getExecutivePositionDisplay(position);
+                  setCurrentMember({
+                    ...currentMember,
+                    executive_level: "district",
+                    district_executive_position: position,
+                    executive_position: position,
+                    position: positionDisplay,
+                  });
+                }}
+                className="flex-1 px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
+              >
+                <option
+                  value=""
+                  className="text-light-text dark:text-dark-text"
                 >
-                  <option
-                    value=""
-                    className="text-light-text dark:text-dark-text"
-                  >
-                    Select Level
-                  </option>
-                  <option
-                    value="local"
-                    className="text-light-text dark:text-dark-text"
-                  >
-                    Local
-                  </option>
-                  <option
-                    value="district"
-                    className="text-light-text dark:text-dark-text"
-                  >
-                    District
-                  </option>
-                  <option
-                    value="both"
-                    className="text-light-text dark:text-dark-text"
-                  >
-                    Both
-                  </option>
-                </select>
-                {(currentMember.executive_level === "local" ||
-                  currentMember.executive_level === "both") && (
-                  <select
-                    value={currentMember.local_executive_position}
-                    onChange={(e) => {
-                      const position = e.target.value;
-                      const positionDisplay =
-                        getExecutivePositionDisplay(position);
-                      setCurrentMember({
-                        ...currentMember,
-                        local_executive_position: position,
-                        executive_position:
-                          currentMember.executive_level === "local"
-                            ? position
-                            : currentMember.executive_position,
-                        position: positionDisplay,
-                      });
-                    }}
-                    className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                  >
-                    <option
-                      value=""
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Select Local Position
-                    </option>
-                    <option
-                      value="president"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      President
-                    </option>
-                    <option
-                      value="vice_president"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Vice President
-                    </option>
-                    <option
-                      value="secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Secretary
-                    </option>
-                    <option
-                      value="assistant_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Assistant Secretary
-                    </option>
-                    <option
-                      value="financial_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Financial Secretary
-                    </option>
-                    <option
-                      value="treasurer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Treasurer
-                    </option>
-                    <option
-                      value="organizer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Organizer
-                    </option>
-                    <option
-                      value="evangelism_coordinator"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Evangelism Coordinator
-                    </option>
-                  </select>
-                )}
-                {(currentMember.executive_level === "district" ||
-                  currentMember.executive_level === "both") && (
-                  <select
-                    value={currentMember.district_executive_position}
-                    onChange={(e) => {
-                      const position = e.target.value;
-                      const positionDisplay =
-                        getExecutivePositionDisplay(position);
-                      setCurrentMember({
-                        ...currentMember,
-                        district_executive_position: position,
-                        executive_position:
-                          currentMember.executive_level === "district"
-                            ? position
-                            : currentMember.executive_position,
-                        position: positionDisplay,
-                      });
-                    }}
-                    className="w-full px-2 py-1.5 lg:px-3 lg:py-2 border border-light-border dark:border-dark-border rounded-md focus:outline-none focus:ring-2 focus:ring-light-accent dark:focus:ring-dark-accent text-light-text dark:text-dark-text bg-light-surface dark:bg-dark-surface text-sm lg:text-base neumorphic-light-inset dark:neumorphic-dark-inset"
-                  >
-                    <option
-                      value=""
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Select District Position
-                    </option>
-                    <option
-                      value="president"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      President
-                    </option>
-                    <option
-                      value="presidents_rep"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      President's Rep
-                    </option>
-                    <option
-                      value="secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Secretary
-                    </option>
-                    <option
-                      value="assistant_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Assistant Secretary
-                    </option>
-                    <option
-                      value="financial_secretary"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Financial Secretary
-                    </option>
-                    <option
-                      value="treasurer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Treasurer
-                    </option>
-                    <option
-                      value="organizer"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Organizer
-                    </option>
-                    <option
-                      value="evangelism_coordinator"
-                      className="text-light-text dark:text-dark-text"
-                    >
-                      Evangelism Coordinator
-                    </option>
-                  </select>
-                )}
-              </div>
+                  Select District Position
+                </option>
+                <option
+                  value="president"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  President
+                </option>
+                <option
+                  value="presidents_rep"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  President's Rep
+                </option>
+                <option
+                  value="secretary"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Secretary
+                </option>
+                <option
+                  value="assistant_secretary"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Assistant Secretary
+                </option>
+                <option
+                  value="financial_secretary"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Financial Secretary
+                </option>
+                <option
+                  value="treasurer"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Treasurer
+                </option>
+                <option
+                  value="organizer"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Organizer
+                </option>
+                <option
+                  value="evangelism_coordinator"
+                  className="text-light-text dark:text-dark-text"
+                >
+                  Evangelism Coordinator
+                </option>
+              </select>
             ) : (
               <input
                 type="text"

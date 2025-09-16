@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/DashboardLayout";
 import PersonalInfoSection from "./components/PersonalInfoSection";
 import ChurchInfoSection from "./components/ChurchInfoSection";

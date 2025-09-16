@@ -239,6 +239,7 @@ export default function DashboardLayout({
     role: "System Administrator",
   });
   const [profileLoading, setProfileLoading] = useState(false);
+  const [originalUsername, setOriginalUsername] = useState("district_admin");
 
   // Security state management
   const [securityData, setSecurityData] = useState({
@@ -295,12 +296,18 @@ export default function DashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/profile/"
+        "http://localhost:8001/api/settings/profile/",
+        {
+          credentials: "include",
+        }
       );
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.profile) {
           setProfileData(data.profile);
+          if (data.profile.username) {
+            setOriginalUsername(data.profile.username);
+          }
         }
       }
     } catch (error) {
@@ -326,6 +333,7 @@ export default function DashboardLayout({
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify(profileData),
         }
       );
@@ -352,6 +360,53 @@ export default function DashboardLayout({
       showError("Failed to update profile");
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const handleUsernameOnlyUpdate = async () => {
+    try {
+      setSecurityLoading(true);
+
+      const newUsername = profileData.username?.trim() || "";
+      if (!newUsername) {
+        showError("Username is required");
+        return;
+      }
+
+      if (newUsername === originalUsername) {
+        showError(
+          "New username cannot be the same as current username. Please use a different username."
+        );
+        return;
+      }
+
+      const response = await fetch(
+        "http://localhost:8001/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            username: newUsername,
+            currentUsername: originalUsername,
+            congregation_id: "district",
+          }),
+        }
+      );
+
+      const data = await response.json();
+      if (response.ok && data.success) {
+        showSuccess("Username updated successfully!");
+        setOriginalUsername(newUsername);
+      } else {
+        showError(data.error || "Failed to update username");
+      }
+    } catch (error) {
+      showError("Failed to update username");
+    } finally {
+      setSecurityLoading(false);
     }
   };
 
@@ -384,12 +439,14 @@ export default function DashboardLayout({
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             username: profileData.username,
             currentPassword: securityData.currentPassword,
             newPassword: securityData.newPassword,
             confirmPassword: securityData.confirmPassword,
             twoFactorAuth: securityData.twoFactorAuth,
+            congregation_id: "district",
           }),
         }
       );
@@ -1241,6 +1298,20 @@ export default function DashboardLayout({
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs sm:text-base"
                               disabled={securityLoading}
                             />
+                            <button
+                              onClick={handleUsernameOnlyUpdate}
+                              disabled={securityLoading}
+                              className="mt-2 w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {securityLoading ? (
+                                <>
+                                  <i className="fas fa-spinner fa-spin mr-2"></i>
+                                  Updating Username...
+                                </>
+                              ) : (
+                                "Update Username"
+                              )}
+                            </button>
                           </div>
                           <div>
                             <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 sm:mb-2">

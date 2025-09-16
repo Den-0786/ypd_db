@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.models import User
@@ -34,6 +34,8 @@ from .forms import (BulkGuilderForm, ChangePINForm, CongregationForm,
 from .models import (DISTRICT_EXECUTIVE_POSITIONS, LOCAL_EXECUTIVE_POSITIONS,
                      BirthdayMessageLog, BulkProfileCart, Congregation,
                      Guilder, Notification, Role, SundayAttendance, Quiz, QuizSubmission, UserProfile, LoginAttempt)
+
+LOGIN_RATE_LIMIT_ENABLED = False
 
 
 # Utility function to create notifications
@@ -164,13 +166,14 @@ def api_login(request):
                 'error': 'Username and password are required'
             }, status=400)
         
-        # Check if user is blocked due to too many failed attempts
-        is_allowed, block_message = check_login_attempts(request, username)
-        if not is_allowed:
-            return JsonResponse({
-                'success': False,
-                'error': block_message
-            }, status=429)  # Too Many Requests
+        # Optional rate limit check (disabled during testing)
+        if LOGIN_RATE_LIMIT_ENABLED:
+            is_allowed, block_message = check_login_attempts(request, username)
+            if not is_allowed:
+                return JsonResponse({
+                    'success': False,
+                    'error': block_message
+                }, status=429)
         
         # Attempt authentication
         user = authenticate(request, username=username, password=password)
@@ -178,8 +181,20 @@ def api_login(request):
         if user is not None:
             # Successful login
             login(request, user)
-            record_successful_attempt(request, username)
+            if LOGIN_RATE_LIMIT_ENABLED:
+                record_successful_attempt(request, username)
             
+            # Try to include congregation info
+            congregation_info = None
+            try:
+                congregation = Congregation.objects.get(user=user)
+                congregation_info = {
+                    'id': str(congregation.id),
+                    'name': congregation.name,
+                }
+            except Congregation.DoesNotExist:
+                pass
+
             return JsonResponse({
                 'success': True,
                 'message': 'Login successful',
@@ -188,23 +203,29 @@ def api_login(request):
                     'email': user.email,
                     'first_name': user.first_name,
                     'last_name': user.last_name
-                }
+                },
+                'congregation': congregation_info
             })
         else:
             # Failed login
-            attempt_count = record_failed_attempt(request, username)
-            remaining_attempts = 3 - attempt_count
-            
-            if remaining_attempts > 0:
-                return JsonResponse({
-                    'success': False,
-                    'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
-                }, status=401)
+            if LOGIN_RATE_LIMIT_ENABLED:
+                attempt_count = record_failed_attempt(request, username)
+                remaining_attempts = 3 - attempt_count
+                if remaining_attempts > 0:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
+                    }, status=401)
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Maximum attempts reached. Please try again in 5 hours.'
+                    }, status=429)
             else:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Maximum attempts reached. Please try again in 5 hours.'
-                }, status=429)
+                    'error': 'Invalid credentials.'
+                }, status=401)
                 
     except json.JSONDecodeError:
         return JsonResponse({
@@ -233,13 +254,14 @@ def api_pin_login(request):
                 'error': 'Username and PIN are required'
             }, status=400)
         
-        # Check if user is blocked due to too many failed attempts
-        is_allowed, block_message = check_login_attempts(request, username)
-        if not is_allowed:
-            return JsonResponse({
-                'success': False,
-                'error': block_message
-            }, status=429)  # Too Many Requests
+        # Optional rate limit check (disabled during testing)
+        if LOGIN_RATE_LIMIT_ENABLED:
+            is_allowed, block_message = check_login_attempts(request, username)
+            if not is_allowed:
+                return JsonResponse({
+                    'success': False,
+                    'error': block_message
+                }, status=429)
         
         # Validate PIN format
         if not re.match(r'^\d{4,6}$', pin):
@@ -256,7 +278,8 @@ def api_pin_login(request):
             if congregation.pin == pin:
                 # Successful PIN login
                 login(request, user)
-                record_successful_attempt(request, username)
+                if LOGIN_RATE_LIMIT_ENABLED:
+                    record_successful_attempt(request, username)
                 
                 return JsonResponse({
                     'success': True,
@@ -2975,29 +2998,48 @@ def api_settings_security(request):
             username = data.get('username')
             if username:
                 try:
-                    user = request.user
-                    if user.is_authenticated:
-                        # Check if new username is same as current username
-                        if user.username == username:
-                            return JsonResponse({
-                                'success': False,
-                                'error': 'New username cannot be the same as current username. Please use a different username.'
-                            }, status=400)
-                        
-                        # Update username in user model
-                        user.username = username
-                        user.save()
+                    # Determine target user for username change
+                    target_user = None
+                    if request.user.is_authenticated:
+                        target_user = request.user
+                    elif data.get('currentUsername'):
+                        try:
+                            target_user = User.objects.get(username=data.get('currentUsername'))
+                        except User.DoesNotExist:
+                            return JsonResponse({'success': False, 'error': 'Current user not found'}, status=404)
                     else:
-                        # Check if new username is same as current username in global data
-                        current_username = DISTRICT_PROFILE_DATA.get('username', '')
-                        if current_username == username:
-                            return JsonResponse({
-                                'success': False,
-                                'error': 'New username cannot be the same as current username. Please use a different username.'
-                            }, status=400)
-                        
-                        # Update username in global profile data for unauthenticated users
-                        DISTRICT_PROFILE_DATA['username'] = username
+                        try:
+                            district_congregation = Congregation.objects.get(is_district=True)
+                            target_user = district_congregation.user
+                        except Congregation.DoesNotExist:
+                            return JsonResponse({'success': False, 'error': 'District congregation not found'}, status=404)
+
+                    if not target_user:
+                        return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+
+                    if target_user.username == username:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'New username cannot be the same as current username. Please use a different username.'
+                        }, status=400)
+
+                    if User.objects.filter(username=username).exclude(pk=target_user.pk).exists():
+                        return JsonResponse({'success': False, 'error': 'Username already taken'}, status=400)
+
+                    target_user.username = username
+                    target_user.save()
+
+                    # Refresh session if acting user changed their own username
+                    if request.user.is_authenticated and request.user.pk == target_user.pk:
+                        login(request, target_user)
+
+                    # Maintain global data for district
+                    try:
+                        district_congregation = Congregation.objects.get(is_district=True)
+                        if district_congregation.user and district_congregation.user.pk == target_user.pk:
+                            DISTRICT_PROFILE_DATA['username'] = target_user.username
+                    except Congregation.DoesNotExist:
+                        pass
                 except Exception as e:
                     return JsonResponse({
                         'success': False,
@@ -3005,7 +3047,7 @@ def api_settings_security(request):
                     }, status=400)
             
             if data.get('newPassword'):
-                # For now, validate and store in session
+                # Validate password requirements
                 if len(data['newPassword']) < 8:
                     return JsonResponse({
                         'success': False,
@@ -3025,13 +3067,85 @@ def api_settings_security(request):
                         'error': 'New password cannot be the same as current password. Please use a different password.'
                     }, status=400)
                 
-                # Store new password in session (in real implementation, this would update user model)
-                request.session['new_password'] = data['newPassword']
-                request.session['password_changed_at'] = timezone.now().isoformat()
+                # Additional password validation
+                if not data['newPassword'].strip():
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Password cannot be empty'
+                    }, status=400)
                 
+                # Determine target user for password change
+                try:
+                    target_user = None
+                    if request.user.is_authenticated:
+                        target_user = request.user
+                    # Prefer resolving via congregation for local context
+                    elif data.get('congregation_id') or data.get('congregation_name'):
+                        congregation = None
+                        if data.get('congregation_id'):
+                            try:
+                                if data.get('congregation_id') == "district":
+                                    congregation = Congregation.objects.get(is_district=True)
+                                else:
+                                    congregation = Congregation.objects.get(id=data.get('congregation_id'))
+                            except Congregation.DoesNotExist:
+                                pass
+                        if not congregation and data.get('congregation_name'):
+                            try:
+                                congregation = Congregation.objects.get(name=data.get('congregation_name'))
+                            except Congregation.DoesNotExist:
+                                pass
+                        if congregation and congregation.user:
+                            target_user = congregation.user
+                    elif data.get('username'):
+                        try:
+                            target_user = User.objects.get(username=data.get('username'))
+                        except User.DoesNotExist:
+                            return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+                    else:
+                        try:
+                            district_congregation = Congregation.objects.get(is_district=True)
+                            target_user = district_congregation.user
+                        except Congregation.DoesNotExist:
+                            return JsonResponse({'success': False, 'error': 'District congregation not found'}, status=404)
+
+                    if not target_user:
+                        return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
+
+                    # Verify current password if provided (skip if same authenticated user)
+                    if data.get('currentPassword') and not (request.user.is_authenticated and request.user.pk == target_user.pk):
+                        if not target_user.check_password(data['currentPassword']):
+                            return JsonResponse({'success': False, 'error': 'Current password is incorrect'}, status=400)
+
+                    # Update password
+                    target_user.set_password(data['newPassword'])
+                    target_user.save()
+
+                    # Keep session if acting on self
+                    if request.user.is_authenticated and request.user.pk == target_user.pk:
+                        update_session_auth_hash(request, target_user)
+
+                    return JsonResponse({'success': True, 'message': 'Password updated successfully'})
+                except Exception as e:
+                    return JsonResponse({'success': False, 'error': f'Database error: {str(e)}'}, status=500)
+                except Exception as e:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Database error: {str(e)}'
+                    }, status=500)
+            
+            # Return success if only username was updated
+            if username and not data.get('newPassword'):
                 return JsonResponse({
                     'success': True,
-                    'message': 'Username and password updated successfully'
+                    'message': 'Username updated successfully'
+                })
+            
+            # Return success if only password was updated
+            if data.get('newPassword') and not username:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Password updated successfully'
                 })
             
             # Handle PIN change

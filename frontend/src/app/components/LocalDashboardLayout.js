@@ -613,23 +613,40 @@ export default function LocalDashboardLayout({
       }
 
       setSecuritySaving(true);
-      const congregationName = localStorage.getItem("congregationName");
 
-      // Save to congregation-specific localStorage
-      const localKey = `security_${congregationName}`;
-      const currentData = JSON.parse(localStorage.getItem(localKey) || "{}");
-      const updatedData = {
-        ...currentData,
-        username: securityData.username,
-      };
-      localStorage.setItem(localKey, JSON.stringify(updatedData));
+      // Make API call to update username in database
+      const response = await fetch(
+        "http://localhost:8001/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            username: securityData.username,
+            currentUsername: profileData.username,
+            congregation_id: localStorage.getItem("congregationId"),
+            congregation_name: localStorage.getItem("congregationName"),
+          }),
+        }
+      );
 
-      showSuccess("Username updated successfully!");
-      // Update profile data to reflect the change
-      setProfileData((prev) => ({
-        ...prev,
-        username: securityData.username,
-      }));
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess("Username updated successfully!");
+          // Update profile data to reflect the change
+          setProfileData((prev) => ({
+            ...prev,
+            username: securityData.username,
+          }));
+        } else {
+          showError(data.error || "Failed to update username");
+        }
+      } else {
+        showError("Failed to update username");
+      }
     } catch (error) {
       console.error("Error updating username:", error);
       showError("Failed to update username");
@@ -670,27 +687,45 @@ export default function LocalDashboardLayout({
       }
 
       setSecuritySaving(true);
-      const congregationName = localStorage.getItem("congregationName");
 
-      // Update local storage with new password settings
-      const localKey = `security_${congregationName}`;
-      const currentData = JSON.parse(localStorage.getItem(localKey) || "{}");
-      const updatedData = {
-        ...currentData,
-        twoFactorAuth: securityData.twoFactorAuth,
-        // Note: In a real app, passwords should be hashed before storage
-        // For now, we'll just update the 2FA setting
-      };
-      localStorage.setItem(localKey, JSON.stringify(updatedData));
+      // Make API call to update password in database
+      const response = await fetch(
+        "http://localhost:8001/api/settings/security/",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            username: profileData.username,
+            currentPassword: securityData.currentPassword,
+            newPassword: securityData.newPassword,
+            confirmPassword: securityData.confirmPassword,
+            twoFactorAuth: securityData.twoFactorAuth,
+            congregation_id: localStorage.getItem("congregationId"),
+            congregation_name: localStorage.getItem("congregationName"),
+          }),
+        }
+      );
 
-      showSuccess("Password settings updated successfully!");
-      // Clear sensitive fields
-      setSecurityData((prev) => ({
-        ...prev,
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      }));
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showSuccess("Password updated successfully!");
+          // Clear sensitive fields
+          setSecurityData((prev) => ({
+            ...prev,
+            currentPassword: "",
+            newPassword: "",
+            confirmPassword: "",
+          }));
+        } else {
+          showError(data.error || "Failed to update password");
+        }
+      } else {
+        showError("Failed to update password");
+      }
     } catch (error) {
       console.error("Error updating password:", error);
       showError("Failed to update password");

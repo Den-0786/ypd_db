@@ -88,42 +88,64 @@ export default function LoginPage() {
     setError("");
 
     try {
-      // Authenticate using congregation credentials
-      const authResult = authenticateCongregation(
-        formData.username,
-        formData.password
-      );
+      // Use Django API login for proper session authentication
+      const response = await fetch("http://localhost:8001/api/auth/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
 
-      if (authResult.success) {
-        // Set auth token and congregation info
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const congregation = data.congregation || null;
 
         localStorage.setItem(
           "user",
           JSON.stringify({
-            username: formData.username,
-            congregationId: authResult.congregation.id,
-            congregationName: authResult.congregation.name,
+            username: data.user?.username || formData.username,
+            congregationId: congregation?.id || null,
+            congregationName: congregation?.name || null,
           })
         );
-        localStorage.setItem("congregationId", authResult.congregation.id);
-        localStorage.setItem("congregationName", authResult.congregation.name);
+
+        if (congregation?.id) {
+          localStorage.setItem("congregationId", congregation.id);
+        }
+        if (congregation?.name) {
+          localStorage.setItem("congregationName", congregation.name);
+        }
 
         autoLogout.updateLoginStatus(true);
 
-        setToastMessage(`Welcome back, ${authResult.congregation.name}!`);
+        setToastMessage(
+          `Welcome back${congregation?.name ? ", " + congregation.name : ""}!`
+        );
         setToastType("success");
         setShowToast(true);
 
-        // Redirect congregation users to local dashboard, district users to main dashboard
         setTimeout(() => {
-          if (authResult.congregation.id === "1") {
+          if (congregation?.id === "1") {
             window.location.href = "/dashboard";
           } else {
             window.location.href = "/local/dashboard";
           }
         }, 1500);
       } else {
-        setError(authResult.message || "Invalid username or password");
+        // Handle different error types
+        if (response.status === 429) {
+          setError("Maximum attempts reached. Please try again in 5 hours.");
+        } else if (response.status === 401) {
+          setError("Invalid credentials.");
+        } else {
+          setError(data.error || "Login failed. Please try again.");
+        }
       }
     } catch (err) {
       setError("Network error. Please try again.");
