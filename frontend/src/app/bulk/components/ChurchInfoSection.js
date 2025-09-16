@@ -206,7 +206,7 @@ export default function ChurchInfoSection({
                   value="presidents_rep"
                   className="text-light-text dark:text-dark-text"
                 >
-                  President's Rep
+                  President&apos;s Rep
                 </option>
                 <option
                   value="secretary"

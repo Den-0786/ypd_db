@@ -128,9 +128,11 @@ export const validateCongregationAccess = (congregationId) => {
   );
 };
 
-export default {
+const congregationAuth = {
   authenticateCongregation,
   getCongregationById,
   getAllCongregations,
   validateCongregationAccess,
 };
+
+export default congregationAuth;
