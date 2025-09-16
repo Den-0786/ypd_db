@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ToastContainer from "../components/ToastContainer";
 import autoLogout from "../utils/autoLogout";
 import { authenticateCongregation } from "../utils/congregationAuth";
+import { apiFetch } from "../utils/api";
 
 export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
@@ -89,12 +90,8 @@ export default function LoginPage() {
 
     try {
       // Use Django API login for proper session authentication
-      const response = await fetch("http://localhost:8001/api/auth/login/", {
+      const response = await apiFetch("/api/auth/login/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
@@ -104,39 +101,45 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const congregation = data.congregation || null;
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            username: data.user?.username || formData.username,
-            congregationId: congregation?.id || null,
-            congregationName: congregation?.name || null,
-          })
+        // Get congregation info from the custom auth system for UI purposes
+        const authResult = authenticateCongregation(
+          formData.username,
+          formData.password
         );
 
-        if (congregation?.id) {
-          localStorage.setItem("congregationId", congregation.id);
+        if (authResult.success) {
+          // Set auth token and congregation info
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              username: formData.username,
+              congregationId: authResult.congregation.id,
+              congregationName: authResult.congregation.name,
+            })
+          );
+          localStorage.setItem("congregationId", authResult.congregation.id);
+          localStorage.setItem(
+            "congregationName",
+            authResult.congregation.name
+          );
+
+          autoLogout.updateLoginStatus(true);
+
+          setToastMessage(`Welcome back, ${authResult.congregation.name}!`);
+          setToastType("success");
+          setShowToast(true);
+
+          // Redirect congregation users to local dashboard, district users to main dashboard
+          setTimeout(() => {
+            if (authResult.congregation.id === "1") {
+              window.location.href = "/dashboard";
+            } else {
+              window.location.href = "/local/dashboard";
+            }
+          }, 1500);
+        } else {
+          setError("Authentication failed");
         }
-        if (congregation?.name) {
-          localStorage.setItem("congregationName", congregation.name);
-        }
-
-        autoLogout.updateLoginStatus(true);
-
-        setToastMessage(
-          `Welcome back${congregation?.name ? ", " + congregation.name : ""}!`
-        );
-        setToastType("success");
-        setShowToast(true);
-
-        setTimeout(() => {
-          if (congregation?.id === "1") {
-            window.location.href = "/dashboard";
-          } else {
-            window.location.href = "/local/dashboard";
-          }
-        }, 1500);
       } else {
         // Handle different error types
         if (response.status === 429) {
