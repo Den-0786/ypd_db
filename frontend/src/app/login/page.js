@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import ToastContainer from "../components/ToastContainer";
 import autoLogout from "../utils/autoLogout";
-import { authenticateCongregation } from "../utils/congregationAuth";
 import { apiFetch } from "../utils/api";
 
 export default function LoginPage() {
@@ -97,42 +96,30 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        const authResult = authenticateCongregation(
-          formData.username,
-          formData.password
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            username: data.user.username,
+            congregationId: data.user.congregation_id,
+            congregationName: data.user.congregation_name,
+          })
         );
+        localStorage.setItem("congregationId", data.user.congregation_id);
+        localStorage.setItem("congregationName", data.user.congregation_name);
 
-        if (authResult.success) {
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              username: formData.username,
-              congregationId: authResult.congregation.id,
-              congregationName: authResult.congregation.name,
-            })
-          );
-          localStorage.setItem("congregationId", authResult.congregation.id);
-          localStorage.setItem(
-            "congregationName",
-            authResult.congregation.name
-          );
+        autoLogout.updateLoginStatus(true);
 
-          autoLogout.updateLoginStatus(true);
+        setToastMessage(`Welcome back, ${data.user.congregation_name}!`);
+        setToastType("success");
+        setShowToast(true);
 
-          setToastMessage(`Welcome back, ${authResult.congregation.name}!`);
-          setToastType("success");
-          setShowToast(true);
-
-          setTimeout(() => {
-            if (authResult.congregation.id === "1") {
-              window.location.href = "/dashboard";
-            } else {
-              window.location.href = "/local/dashboard";
-            }
-          }, 1500);
-        } else {
-          setError("Authentication failed");
-        }
+        setTimeout(() => {
+          if (data.user.is_district) {
+            window.location.href = "/dashboard";
+          } else {
+            window.location.href = "/local/dashboard";
+          }
+        }, 1500);
       } else {
         if (response.status === 429) {
           setError(
