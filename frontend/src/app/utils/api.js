@@ -10,6 +10,7 @@ export const apiFetch = async (path, options = {}) => {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
+    timeout: 10000,
     ...options,
   });
 };

@@ -138,14 +138,18 @@ export default function LoginPage() {
           setError(
             data.error || "Maximum attempts reached. Please try again later."
           );
+          setTimeout(() => setError(""), 5000);
         } else if (response.status === 401) {
           setError("Invalid credentials.");
+          setTimeout(() => setError(""), 5000);
         } else {
           setError(data.error || "Login failed. Please try again.");
+          setTimeout(() => setError(""), 5000);
         }
       }
     } catch (err) {
       setError("Network error. Please try again.");
+      setTimeout(() => setError(""), 5000);
     } finally {
       setIsLoading(false);
     }
