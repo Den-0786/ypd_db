@@ -85,7 +85,7 @@ export default function DashboardPage() {
       const dataStore = getDataStore();
       const stats = await dataStore.fetchHomeStats();
       if (stats) {
-          setDashboardStats({
+        setDashboardStats({
           totalMembers: stats.totalMembers || 0,
           totalCongregations: stats.totalCongregations || 0,
           thisWeekAttendance: stats.thisWeekAttendance || 0,
@@ -103,7 +103,9 @@ export default function DashboardPage() {
 
   const fetchActiveQuiz = async () => {
     try {
-      const response = await fetch("http://localhost:8001/api/quizzes/active/");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/active/`
+      );
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.quiz) {
@@ -182,7 +184,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        "http://localhost:8001/api/quizzes/create/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/create/`,
         {
           method: "POST",
           headers: {
@@ -249,7 +251,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8001/api/quizzes/${activeQuiz.id}/end/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/${activeQuiz.id}/end/`,
         {
           method: "POST",
           headers: {
@@ -278,7 +280,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8001/api/quizzes/${activeQuiz.id}/delete/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/${activeQuiz.id}/delete/`,
         {
           method: "DELETE",
           headers: {
@@ -354,7 +356,7 @@ export default function DashboardPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8001/api/quizzes/${activeQuiz.id}/update/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/${activeQuiz.id}/update/`,
         {
           method: "PUT",
           headers: {
@@ -430,7 +432,7 @@ export default function DashboardPage() {
   const handleQuizSubmission = async (submission) => {
     try {
       const response = await fetch(
-        "http://localhost:8001/api/quizzes/submit/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/quizzes/submit/`,
         {
           method: "POST",
           headers: {

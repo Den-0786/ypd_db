@@ -160,14 +160,17 @@ export default function BulkRegistrationPage() {
         communicant: undefined,
       };
 
-      const response = await fetch("http://localhost:8001/api/members/add/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify(memberData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/add/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify(memberData),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
@@ -277,14 +280,17 @@ export default function BulkRegistrationPage() {
         communicant: undefined,
       }));
 
-      const response = await fetch("http://localhost:8001/api/members/add/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify({ members: mappedMembers }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/add/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+          body: JSON.stringify({ members: mappedMembers }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();

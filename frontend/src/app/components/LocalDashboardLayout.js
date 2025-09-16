@@ -616,7 +616,7 @@ export default function LocalDashboardLayout({
 
       // Make API call to update username in database
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -690,7 +690,7 @@ export default function LocalDashboardLayout({
 
       // Make API call to update password in database
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -773,7 +773,7 @@ export default function LocalDashboardLayout({
 
       // Make API call to update PIN in database
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -826,7 +826,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        `http://localhost:8001/api/data/export/${format}/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/export/${format}/`,
         {
           method: "POST",
           headers: {
@@ -874,7 +874,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        "http://localhost:8001/api/data/backup/create/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/backup/create/`,
         {
           method: "POST",
           headers: {
@@ -906,7 +906,7 @@ export default function LocalDashboardLayout({
       setDataManagementLoading(true);
 
       const response = await fetch(
-        "http://localhost:8001/api/data/backup/restore/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/backup/restore/`,
         {
           method: "POST",
           headers: {
@@ -944,15 +944,18 @@ export default function LocalDashboardLayout({
     try {
       setDataManagementLoading(true);
 
-      const response = await fetch("http://localhost:8001/api/data/clear/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          confirmation: "DELETE_ALL_DATA",
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/clear/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            confirmation: "DELETE_ALL_DATA",
+          }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -1042,13 +1045,16 @@ export default function LocalDashboardLayout({
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8001/api/notifications/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();

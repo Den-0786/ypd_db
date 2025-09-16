@@ -86,12 +86,15 @@ const LoginAttemptTracker = ({ onLoginSuccess }) => {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:8001/api/auth/logout/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/auth/logout/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await response.json();
 
@@ -213,8 +216,12 @@ const LoginAttemptTracker = ({ onLoginSuccess }) => {
           Login Attempt Tracking
         </h3>
         <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-          <li>• After 3 failed attempts, you&apos;ll be blocked for 30 minutes</li>
-          <li>• After 6 failed attempts, you&apos;ll be blocked for 24 hours</li>
+          <li>
+            • After 3 failed attempts, you&apos;ll be blocked for 30 minutes
+          </li>
+          <li>
+            • After 6 failed attempts, you&apos;ll be blocked for 24 hours
+          </li>
           <li>• Attempts are tracked by IP address and username</li>
           <li>• Successful login resets the attempt counter</li>
           <li>• Block time is enforced on both password and PIN login</li>

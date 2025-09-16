@@ -112,7 +112,7 @@ export default function LocalSidebar({
       setNotificationsLoading(true);
       const congregationName = localStorage.getItem("congregationName");
 
-      let url = "http://localhost:8001/api/notifications/";
+      let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/`;
       if (congregationName && congregationName !== "District Admin") {
         url += `?congregation=${encodeURIComponent(congregationName)}`;
       }
@@ -158,7 +158,7 @@ export default function LocalSidebar({
       }
 
       const response = await fetch(
-        "http://localhost:8001/api/notifications/mark-read/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/mark-read/`,
         {
           method: "POST",
           headers: {
@@ -187,7 +187,7 @@ export default function LocalSidebar({
       }
 
       const response = await fetch(
-        "http://localhost:8001/api/notifications/clear/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/clear/`,
         {
           method: "POST",
           headers: {
@@ -215,7 +215,7 @@ export default function LocalSidebar({
       }
 
       const response = await fetch(
-        "http://localhost:8001/api/notifications/create-test/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/create-test/`,
         {
           method: "POST",
           headers: {

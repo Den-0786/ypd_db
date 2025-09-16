@@ -430,7 +430,7 @@ export default function LocalMembersPage() {
           onConfirm: async () => {
             try {
               const response = await fetch(
-                `http://localhost:8001/api/members/delete/${pendingAction.member.id}/`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/delete/${pendingAction.member.id}/`,
                 {
                   method: "DELETE",
                   headers: {
@@ -476,13 +476,16 @@ export default function LocalMembersPage() {
           onConfirm: async () => {
             try {
               const deletePromises = pendingAction.memberIds.map((id) =>
-                fetch(`http://localhost:8001/api/members/delete/${id}/`, {
-                  method: "DELETE",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": getCookie("csrftoken"),
-                  },
-                })
+                fetch(
+                  `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/delete/${id}/`,
+                  {
+                    method: "DELETE",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                  }
+                )
               );
 
               const responses = await Promise.all(deletePromises);

@@ -25,7 +25,7 @@ export default function PinModal({
         const congregationId = localStorage.getItem("congregationId");
         const congregationName = localStorage.getItem("congregationName");
 
-        const url = `http://localhost:8001/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
@@ -51,7 +51,7 @@ export default function PinModal({
       const congregationId = localStorage.getItem("congregationId");
       const congregationName = localStorage.getItem("congregationName");
 
-      const url = `http://localhost:8001/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
+      const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/get-current-pin/?congregation_id=${congregationId}&congregation_name=${encodeURIComponent(congregationName || "")}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -74,17 +74,20 @@ export default function PinModal({
       const congregationName = localStorage.getItem("congregationName");
 
       // Validate PIN with server
-      const response = await fetch("http://localhost:8001/api/validate-pin/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          pin: pin,
-          congregation_id: congregationId,
-          congregation_name: congregationName,
-        }),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/validate-pin/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            pin: pin,
+            congregation_id: congregationId,
+            congregation_name: congregationName,
+          }),
+        }
+      );
 
       const data = await response.json();
 

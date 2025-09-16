@@ -473,7 +473,7 @@ export default function LocalAttendancePage() {
             );
             try {
               const response = await fetch(
-                `http://localhost:8001/api/attendance/${record.id}/delete/`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/attendance/${record.id}/delete/`,
                 {
                   method: "DELETE",
                   headers: {
@@ -562,7 +562,7 @@ export default function LocalAttendancePage() {
             );
             try {
               const response = await fetch(
-                `http://localhost:8001/api/attendance/${record.id}/delete/`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/attendance/${record.id}/delete/`,
                 {
                   method: "DELETE",
                   headers: {

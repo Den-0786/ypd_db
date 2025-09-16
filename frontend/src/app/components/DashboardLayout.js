@@ -70,7 +70,9 @@ export default function DashboardLayout({
   useEffect(() => {
     const fetchCongregations = async () => {
       try {
-        const response = await fetch("http://localhost:8001/api/home-stats/");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/home-stats/`
+        );
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data && data.data.congregations) {
@@ -117,7 +119,7 @@ export default function DashboardLayout({
     const fetchReminderSettings = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8001/api/reminder-settings/"
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reminder-settings/`
         );
         if (response.ok) {
           const data = await response.json();
@@ -267,7 +269,7 @@ export default function DashboardLayout({
     try {
       setSecurityLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/"
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`
       );
       if (response.ok) {
         const data = await response.json();
@@ -296,7 +298,7 @@ export default function DashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/profile/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/profile/`,
         {
           credentials: "include",
         }
@@ -327,7 +329,7 @@ export default function DashboardLayout({
     try {
       setProfileLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/profile/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/profile/`,
         {
           method: "PUT",
           headers: {
@@ -381,7 +383,7 @@ export default function DashboardLayout({
       }
 
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -433,7 +435,7 @@ export default function DashboardLayout({
       }
 
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -507,7 +509,7 @@ export default function DashboardLayout({
       const congregationName = localStorage.getItem("congregationName");
 
       const response = await fetch(
-        "http://localhost:8001/api/settings/security/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/security/`,
         {
           method: "PUT",
           headers: {
@@ -586,7 +588,7 @@ export default function DashboardLayout({
   const handleSaveReminderSettings = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8001/api/reminder-settings/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/reminder-settings/`,
         {
           method: "POST",
           headers: {
@@ -613,7 +615,7 @@ export default function DashboardLayout({
   const handleExportData = async (format, type = "all") => {
     try {
       const response = await fetch(
-        `http://localhost:8001/api/data/export/${format}/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/export/${format}/`,
         {
           method: "POST",
           headers: {
@@ -653,7 +655,7 @@ export default function DashboardLayout({
   const handleCreateBackup = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8001/api/data/backup/create/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/backup/create/`,
         {
           method: "POST",
           headers: {
@@ -680,7 +682,7 @@ export default function DashboardLayout({
   const handleRestoreBackup = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8001/api/data/backup/restore/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/backup/restore/`,
         {
           method: "POST",
           headers: {
@@ -711,13 +713,16 @@ export default function DashboardLayout({
 
     if (confirmation === "DELETE_ALL_DATA") {
       try {
-        const response = await fetch("http://localhost:8001/api/data/clear/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ confirmation }),
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data/clear/`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ confirmation }),
+          }
+        );
 
         const data = await response.json();
 
@@ -783,7 +788,7 @@ export default function DashboardLayout({
         .replace(/{location}/g, "Main Hall");
 
       const response = await fetch(
-        "http://localhost:8001/api/notifications/send/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/send/`,
         {
           method: "POST",
           headers: {
@@ -862,13 +867,16 @@ export default function DashboardLayout({
     try {
       setNotificationsLoading(true);
 
-      const response = await fetch("http://localhost:8001/api/notifications/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/notifications/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -934,7 +942,7 @@ export default function DashboardLayout({
     try {
       setWebsiteLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/website/"
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/website/`
       );
       if (response.ok) {
         const data = await response.json();
@@ -965,7 +973,7 @@ export default function DashboardLayout({
     try {
       setWebsiteLoading(true);
       const response = await fetch(
-        "http://localhost:8001/api/settings/website/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/settings/website/`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },

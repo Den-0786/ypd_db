@@ -52,7 +52,7 @@ class DataStore {
   async addAttendanceRecord(record) {
     try {
       const response = await fetch(
-        "http://localhost:8001/api/attendance/log/",
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/attendance/log/`,
         {
           method: "POST",
           headers: {
@@ -93,7 +93,7 @@ class DataStore {
   async getAttendanceRecords(filters = {}) {
     try {
       // Try to get from API first
-      let url = "http://localhost:8001/api/attendance/records/";
+      let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/attendance/records/`;
       const params = new URLSearchParams();
 
       if (filters.congregation) {
@@ -258,13 +258,16 @@ class DataStore {
         throw new Error(`District position already assigned. Choose another.`);
       }
 
-      const response = await fetch("http://localhost:8001/api/members/add/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestData),
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/add/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestData),
+        }
+      );
 
       const data = await response.json();
 
@@ -322,7 +325,7 @@ class DataStore {
   async getMembers(filters = {}) {
     try {
       // Try to get from API first
-      let url = "http://localhost:8001/api/members/";
+      let url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/`;
       const params = new URLSearchParams();
 
       // API expects congregation_id, so we need to convert congregation name to ID
@@ -611,7 +614,7 @@ class DataStore {
       }
 
       const response = await fetch(
-        `http://localhost:8001/api/members/update/${memberId}/`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/members/update/${memberId}/`,
         {
           method: "PUT",
           headers: {
