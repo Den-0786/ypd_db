@@ -168,11 +168,11 @@ def api_login(request):
         
         # Optional rate limit check (disabled during testing)
         if LOGIN_RATE_LIMIT_ENABLED:
-            is_allowed, block_message = check_login_attempts(request, username)
-            if not is_allowed:
-                return JsonResponse({
-                    'success': False,
-                    'error': block_message
+        is_allowed, block_message = check_login_attempts(request, username)
+        if not is_allowed:
+            return JsonResponse({
+                'success': False,
+                'error': block_message
                 }, status=429)
         
         # Attempt authentication
@@ -194,7 +194,7 @@ def api_login(request):
                 }
             except Congregation.DoesNotExist:
                 pass
-
+            
             return JsonResponse({
                 'success': True,
                 'message': 'Login successful',
@@ -210,17 +210,17 @@ def api_login(request):
             # Failed login
             if LOGIN_RATE_LIMIT_ENABLED:
                 attempt_count = record_failed_attempt(request, username)
-                remaining_attempts = 3 - attempt_count
-                if remaining_attempts > 0:
-                    return JsonResponse({
-                        'success': False,
-                        'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
-                    }, status=401)
-                else:
-                    return JsonResponse({
-                        'success': False,
-                        'error': 'Maximum attempts reached. Please try again in 5 hours.'
-                    }, status=429)
+            remaining_attempts = 3 - attempt_count
+            if remaining_attempts > 0:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Invalid credentials. {remaining_attempts} attempts remaining.'
+                }, status=401)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Maximum attempts reached. Please try again in 5 hours.'
+                }, status=429)
             else:
                 return JsonResponse({
                     'success': False,
@@ -256,11 +256,11 @@ def api_pin_login(request):
         
         # Optional rate limit check (disabled during testing)
         if LOGIN_RATE_LIMIT_ENABLED:
-            is_allowed, block_message = check_login_attempts(request, username)
-            if not is_allowed:
-                return JsonResponse({
-                    'success': False,
-                    'error': block_message
+        is_allowed, block_message = check_login_attempts(request, username)
+        if not is_allowed:
+            return JsonResponse({
+                'success': False,
+                'error': block_message
                 }, status=429)
         
         # Validate PIN format
@@ -279,7 +279,7 @@ def api_pin_login(request):
                 # Successful PIN login
                 login(request, user)
                 if LOGIN_RATE_LIMIT_ENABLED:
-                    record_successful_attempt(request, username)
+                record_successful_attempt(request, username)
                 
                 return JsonResponse({
                     'success': True,
@@ -3018,11 +3018,11 @@ def api_settings_security(request):
                         return JsonResponse({'success': False, 'error': 'User not found'}, status=404)
 
                     if target_user.username == username:
-                        return JsonResponse({
-                            'success': False,
-                            'error': 'New username cannot be the same as current username. Please use a different username.'
-                        }, status=400)
-
+                                return JsonResponse({
+                                    'success': False,
+                                    'error': 'New username cannot be the same as current username. Please use a different username.'
+                                }, status=400)
+                            
                     if User.objects.filter(username=username).exclude(pk=target_user.pk).exists():
                         return JsonResponse({'success': False, 'error': 'Username already taken'}, status=400)
 
@@ -3069,15 +3069,15 @@ def api_settings_security(request):
                 
                 # Additional password validation
                 if not data['newPassword'].strip():
-                    return JsonResponse({
-                        'success': False,
+                                    return JsonResponse({
+                                        'success': False,
                         'error': 'Password cannot be empty'
-                    }, status=400)
-                
+                                    }, status=400)
+                            
                 # Determine target user for password change
                 try:
                     target_user = None
-                    if request.user.is_authenticated:
+                            if request.user.is_authenticated:
                         target_user = request.user
                     # Prefer resolving via congregation for local context
                     elif data.get('congregation_id') or data.get('congregation_name'):
