@@ -35,7 +35,7 @@ from .models import (DISTRICT_EXECUTIVE_POSITIONS, LOCAL_EXECUTIVE_POSITIONS,
                      BirthdayMessageLog, BulkProfileCart, Congregation,
                      Guilder, Notification, Role, SundayAttendance, Quiz, QuizSubmission, UserProfile, LoginAttempt)
 
-LOGIN_RATE_LIMIT_ENABLED = False
+LOGIN_RATE_LIMIT_ENABLED = True
 
 
 # Utility function to create notifications
