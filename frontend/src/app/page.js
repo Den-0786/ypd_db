@@ -12,6 +12,7 @@ export default function HomePage() {
     left: [0, 1, 2],
     right: [0, 1, 2],
   });
+  const [mobileShowRight, setMobileShowRight] = useState(false);
   const [countingNumbers, setCountingNumbers] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(null);
@@ -463,6 +464,7 @@ export default function HomePage() {
     const interval = setInterval(() => {
       setCurrentCardIndex((prev) => (prev + 1) % getCardSets().length);
       rotateCardPositions();
+      setMobileShowRight((prev) => !prev);
     }, 10000);
 
     return () => clearInterval(interval);
@@ -551,7 +553,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen h-screen w-screen relative overflow-hidden">
+    <div className="min-h-screen h-screen w-full relative overflow-hidden">
       {/* Prevent scrollbars */}
       <style jsx global>{`
         html,
@@ -563,7 +565,7 @@ export default function HomePage() {
         }
       `}</style>
       {/* Background image and overlay - always cover full viewport */}
-      <div className="fixed inset-0 w-screen h-screen z-0">
+      <div className="fixed inset-0 w-full h-full z-0">
         <img
           src="/land.jpg"
           alt="Background"
@@ -739,7 +741,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={`left-${positionIndex}-${displayIndex}`}
-                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]"
+                    className={`${mobileShowRight ? "hidden" : "flex"} sm:flex bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]`}
                     style={{
                       animationDelay: `${displayIndex * 0.1}s`,
                       animation: "fadeInUp 0.6s ease-out forwards",
@@ -778,7 +780,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={`right-${positionIndex}-${displayIndex}`}
-                    className="bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]"
+                    className={`${mobileShowRight ? "flex" : "hidden"} sm:flex bg-[#f5e9da]/70 backdrop-blur-sm rounded-xl p-4 sm:p-5 border border-[#e9d8c3] border-opacity-60 hover:bg-[#f5e9da]/90 transition-all duration-500 transform hover:scale-105 shadow-lg flex-col items-center justify-center w-full min-w-[250px] sm:min-w-[300px] lg:min-w-[350px] min-h-[120px] sm:min-h-[140px] lg:min-h-[180px] max-w-[400px] sm:max-w-[450px] lg:max-w-[500px] max-h-[160px] sm:max-h-[180px] lg:max-h-[220px]`}
                     style={{
                       animationDelay: `${(displayIndex + 3) * 0.1}s`,
                       animation: "fadeInUp 0.6s ease-out forwards",

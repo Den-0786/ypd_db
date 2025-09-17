@@ -134,11 +134,11 @@ export default function PinModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full">
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-[18rem] sm:max-w-sm md:max-w-md w-full">
+        <div className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white flex items-center">
               <i
                 className={`fas ${type === "edit" ? "fa-edit" : type === "delete" ? "fa-trash" : "fa-lock"} text-red-500 mr-2 text-sm`}
               ></i>
@@ -152,7 +152,7 @@ export default function PinModal({
             </button>
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
             {description || message}
           </p>
 
@@ -165,7 +165,7 @@ export default function PinModal({
                 type="password"
                 value={pin}
                 onChange={handlePinChange}
-                className={`w-full px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:border-transparent ${
+                className={`w-full px-2 sm:px-3 py-2 text-sm border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:border-transparent ${
                   error
                     ? "border-red-500 focus:ring-red-500"
                     : "border-gray-300 dark:border-gray-600 focus:ring-blue-500"
@@ -176,7 +176,7 @@ export default function PinModal({
                 autoFocus
               />
               {error && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                <p className="mt-1 text-[11px] sm:text-xs text-red-600 dark:text-red-400">
                   {error}
                 </p>
               )}
@@ -186,24 +186,24 @@ export default function PinModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`flex-1 px-3 py-2 text-sm text-white rounded-md transition-colors bg-blue-600 hover:bg-blue-700 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`flex-1 px-2 sm:px-3 py-2 text-xs sm:text-sm text-white rounded-md transition-colors bg-blue-600 hover:bg-blue-700 ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                 disabled={isLoading || !pin}
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
-                    <i className="fas fa-spinner fa-spin mr-1 text-xs"></i>
+                    <i className="fas fa-spinner fa-spin mr-1 text-[11px] sm:text-xs"></i>
                     Verifying...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <i className="fas fa-check mr-1 text-xs"></i>
+                    <i className="fas fa-check mr-1 text-[11px] sm:text-xs"></i>
                     Confirm
                   </span>
                 )}

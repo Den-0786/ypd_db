@@ -57,7 +57,8 @@ export default function LocalBulkAddPage() {
         return mappedMember;
       });
 
-      const response = await fetch("http://localhost:8001/api/members/add/", {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/";
+      const response = await fetch(`${base}/api/members/add/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

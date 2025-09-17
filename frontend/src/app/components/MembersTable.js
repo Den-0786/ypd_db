@@ -171,27 +171,29 @@ export default function MembersTable({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => onView(member)}
-                      className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3"
-                      title="View Details"
-                    >
-                      <i className="fas fa-eye mr-1"></i>View
-                    </button>
-                    <button
-                      onClick={() => onEdit(member)}
-                      className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-3"
-                      title="Edit Member"
-                    >
-                      <i className="fas fa-edit mr-1"></i>Edit
-                    </button>
-                    <button
-                      onClick={() => onDelete(member)}
-                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                      title="Delete Member"
-                    >
-                      <i className="fas fa-trash mr-1"></i>Delete
-                    </button>
+                    <div className="flex items-center space-x-3 sm:space-x-2">
+                      <button
+                        onClick={() => onView(member)}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 p-2 rounded"
+                        title="View Details"
+                      >
+                        <i className="fas fa-eye mr-1"></i>View
+                      </button>
+                      <button
+                        onClick={() => onEdit(member)}
+                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 p-2 rounded"
+                        title="Edit Member"
+                      >
+                        <i className="fas fa-edit mr-1"></i>Edit
+                      </button>
+                      <button
+                        onClick={() => onDelete(member)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 p-2 rounded"
+                        title="Delete Member"
+                      >
+                        <i className="fas fa-trash mr-1"></i>Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

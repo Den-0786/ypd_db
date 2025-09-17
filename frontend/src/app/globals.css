@@ -9,6 +9,11 @@ body {
   min-height: 100vh;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 .dark {
   background: #0f172a;
   color: #f1f5f9;

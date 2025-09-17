@@ -382,11 +382,15 @@ export default function LocalAttendancePage() {
   };
 
   const handleLogAttendance = () => {
+    setPendingDeleteAction(null);
+    setPendingEditAction(null);
     setPendingAction("log");
     setShowPinModal(true);
   };
 
   const handleJointProgram = () => {
+    setPendingDeleteAction(null);
+    setPendingEditAction(null);
     setPendingAction("joint");
     setShowPinModal(true);
   };
@@ -436,16 +440,20 @@ export default function LocalAttendancePage() {
           break;
       }
       setPendingEditAction(null);
+      setShowPinModal(false);
+      return;
     } else if (pendingAction === "log") {
       // Handle log attendance
       window.showToast("PIN verified for attendance logging", "success");
+      setShowPinModal(false);
       setShowLogModal(true);
     } else if (pendingAction === "joint") {
       // Handle joint program
       window.showToast("PIN verified for joint program", "success");
+      setShowPinModal(false);
       setShowJointProgramModal(true);
     }
-    setShowPinModal(false);
+    setPendingAction(null);
   };
 
   const handleClosePinModal = () => {
@@ -525,8 +533,9 @@ export default function LocalAttendancePage() {
           });
 
           for (const record of currentMonthRecords) {
+            const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/";
             const response = await fetch(
-              `http://localhost:8001/api/attendance/${record.id}/delete/`,
+              `${base}/api/attendance/${record.id}/delete/`,
               {
                 method: "DELETE",
                 headers: {

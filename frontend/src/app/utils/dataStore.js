@@ -663,10 +663,10 @@ class DataStore {
 
   async deleteMember(memberId) {
     try {
-      const response = await fetch(
-        `http://localhost:8001/api/members/${memberId}/delete/`,
-        { method: "DELETE" }
-      );
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/";
+      const response = await fetch(`${base}/api/members/${memberId}/delete/`, {
+        method: "DELETE",
+      });
       if (!response.ok) throw new Error("Failed to delete member");
       this.membersData = this.membersData.filter((m) => m.id !== memberId);
       this.saveToStorage("membersData", this.membersData);
@@ -965,7 +965,8 @@ class DataStore {
 
     try {
       // Use the Django backend URL directly
-      const response = await fetch("http://localhost:8001/api/home-stats/");
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/";
+      const response = await fetch(`${base}/api/home-stats/`);
 
       if (!response.ok) {
         console.warn(

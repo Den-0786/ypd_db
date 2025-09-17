@@ -161,6 +161,10 @@ export default function AttendancePage() {
   };
 
   const handleJointProgram = () => {
+    setPendingDeleteAction(null);
+    setSelectedRecords([]);
+    setShowViewModal(false);
+    setShowExportModal(false);
     setShowPinModal(true);
   };
 
@@ -195,8 +199,11 @@ export default function AttendancePage() {
       }
       setPendingDeleteAction(null);
       setSelectedRecords([]);
+      setShowPinModal(false);
+      return;
     } else {
       // Original joint program logic
+      setShowPinModal(false);
       setShowJointProgramModal(true);
     }
   };
@@ -204,6 +211,7 @@ export default function AttendancePage() {
   const handleClosePinModal = () => {
     setShowPinModal(false);
     setPendingDeleteAction(null);
+    setSelectedRecords([]);
   };
 
   const handleCloseJointProgramModal = () => {
@@ -253,16 +261,22 @@ export default function AttendancePage() {
     setShowExportModal(false);
   };
 
-  // Check if there's a joint program for the current Sunday
-  const getCurrentSunday = () => {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? 0 : 7);
-    const sunday = new Date(today.setDate(diff));
-    return sunday.toISOString().split("T")[0];
+  // Weekly window: Sunday 00:00 through Saturday 23:00
+  const getCurrentWeekRange = () => {
+    const now = new Date();
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay()); // Sunday
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6); // Saturday
+    end.setHours(23, 0, 0, 0); // 11pm
+
+    return { start, end };
   };
 
-  const currentSunday = getCurrentSunday();
+  const { start: weekStart, end: weekEnd } = getCurrentWeekRange();
+  const currentSunday = new Date(weekStart).toISOString().split("T")[0];
   const hasJointProgramThisWeek = jointPrograms.some(
     (program) => program.date === currentSunday
   );
@@ -659,10 +673,17 @@ export default function AttendancePage() {
     "NOM",
     "Kokobriko",
   ];
-  // Congregations that have submitted for current Sunday
-  const submittedCongregations = attendanceRecords
-    .filter((r) => r.date === currentSunday)
-    .map((r) => r.congregation.name);
+  // Congregations that have submitted within the current weekly window
+  const submittedCongregations = Array.from(
+    new Set(
+      attendanceRecords
+        .filter((r) => {
+          const d = new Date(r.date);
+          return d >= weekStart && d <= weekEnd;
+        })
+        .map((r) => r.congregation.name)
+    )
+  );
   const notSubmittedCongregations = allCongNames.filter(
     (name) => !submittedCongregations.includes(name)
   );
@@ -1308,16 +1329,16 @@ export default function AttendancePage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2">
+                            <div className="flex space-x-3 sm:space-x-2">
                               <button
-                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200 p-2 rounded"
                                 title="View attendance details"
                                 onClick={() => handleViewRecord(record)}
                               >
                                 <i className="fas fa-eye"></i>
                               </button>
                               <button
-                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200 p-2 rounded"
                                 title="Delete attendance record"
                                 onClick={() => {
                                   setPendingDeleteAction("single");
@@ -1443,9 +1464,9 @@ export default function AttendancePage() {
                             {data.total.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2 justify-center">
+                            <div className="flex space-x-3 sm:space-x-2 justify-center">
                               <button
-                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200 p-2 rounded"
                                 title="View monthly details"
                                 onClick={() =>
                                   handleViewMonthlyRecord(congName, data)
@@ -1454,7 +1475,7 @@ export default function AttendancePage() {
                                 <i className="fas fa-eye"></i>
                               </button>
                               <button
-                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200 p-2 rounded"
                                 title="Delete monthly record"
                                 onClick={() => {
                                   setPendingDeleteAction("monthly");
@@ -1576,9 +1597,9 @@ export default function AttendancePage() {
                             {data.total.toLocaleString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-2 justify-center">
+                            <div className="flex space-x-3 sm:space-x-2 justify-center">
                               <button
-                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                className="text-blue-600 hover:text-blue-900 transition-colors duration-200 p-2 rounded"
                                 title="View yearly details"
                                 onClick={() =>
                                   handleViewYearlyRecord(congName, data)
@@ -1587,7 +1608,7 @@ export default function AttendancePage() {
                                 <i className="fas fa-eye"></i>
                               </button>
                               <button
-                                className="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                className="text-red-600 hover:text-red-900 transition-colors duration-200 p-2 rounded"
                                 title="Delete yearly record"
                                 onClick={() => {
                                   setPendingDeleteAction("yearly");
