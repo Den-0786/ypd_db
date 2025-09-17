@@ -199,10 +199,10 @@ def api_login(request):
             })
         else:
             # Failed login
-                return JsonResponse({
-                    'success': False,
+            return JsonResponse({
+                'success': False,
                 'error': 'Invalid credentials.'
-                }, status=401)
+            }, status=401)
                 
     except json.JSONDecodeError:
         return JsonResponse({
@@ -3035,10 +3035,10 @@ def api_settings_security(request):
                 
                 # Additional password validation
                 if not data['newPassword'].strip():
-                                    return JsonResponse({
-                                        'success': False,
+                    return JsonResponse({
+                        'success': False,
                         'error': 'Password cannot be empty'
-                                    }, status=400)
+                    }, status=400)
                             
                 # Determine target user for password change
                 try:
